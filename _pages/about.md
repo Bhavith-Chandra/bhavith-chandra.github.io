@@ -13,10 +13,11 @@ I am a postdoctoral researcher (and Young Investigator) at the Allen Institute f
 I completed my PhD in Natural Language Pocessing at the [NLP lab of Bar Ilan University](https://biu-nlp.github.io), supervised by Prof. Ido Dagan and Prof. Reut Tsarfaty. I also was a visiting PhD student at [UW NLP](https://nlp.washington.edu) and had the pleasure of interning twice at the [Allen Institute for AI](https://allenai.org). My work has been awarded a Best Paper Award and an Outstanding Paper Award, at ACL 2024. I am also very honored to have received the [AI2 Outstanding Intern of the Year Award](https://allenai.org/outstanding-interns).
 Previously I did a research internship at Google, obtained an MSc from the University of Edinburgh and a BA from the University of Zurich. 
 
+<div style="background-color: #cfc ; padding: 10px; border: 1px solid green;">
 My research focuses on *semantics* and *pragmatics* for Language Models. My main interest currently lies in question generation and using RL (with human feedback) for natural language generation. I am also interested in underspecified, ambiguous and implicit language and in teaching language models how to better deal with such phenomena. More specifically:
 * <b>test</b>
 * <b>test</b>
-
+</div>
 
 
 ### News
