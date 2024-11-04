@@ -5,7 +5,7 @@ permalink: /publications/
 author_profile: true
 ---
 
- {% if author.googlescholar %}
+<!--- {% if author.googlescholar %}
   <u><a href="{{author.googlescholar}}">My Google Scholar profile</a> will </u>
 {% endif %}
 
@@ -13,7 +13,7 @@ author_profile: true
 
 {% for post in site.publications reversed %}
   {% include archive-single.html %}
-{% endfor %} 
+{% endfor %} -->
 
 # Selected Publications
 
