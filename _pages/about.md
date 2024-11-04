@@ -16,9 +16,9 @@ Previously I did a research internship at Google, obtained an MSc from the Unive
 <div style="background-color: #cfc ; padding: 10px; border: 1px solid green;">
 My research focuses on *semantics* and *pragmatics* for Language Models. My main interest currently lies in question generation and using RL (with human feedback) for natural language generation. I am also interested in underspecified, ambiguous and implicit language and in teaching language models how to better deal with such phenomena. More specifically:
 <ul>
-  <li><b>Post-Training</b></li>
-  <li><b>Natural Language Understanding</b></li>
-  <li><b>Critical Evaluation</b></li>
+  <li><b>Post-Training and LM Adaptation:</b> Finding optimal recipes for LM post-training - from data to algorithms.</li>
+  <li><b>Natural Language Understanding:</b> Deeper semantic reasoning and better handling of ambiguity and underspecification for LLMs.</li>
+  <li><b>Critical Evaluation:</b> Testing LMs' abilities to perform pragmatic inferences, when they deal with ambiguity, and extracting their implicit values.</li>
 </ul>
 </div>
 
