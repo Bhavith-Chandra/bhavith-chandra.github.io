@@ -16,9 +16,9 @@ Previously I did a research internship at Google, obtained an MSc from the Unive
 <div style="background-color: #cfc ; padding: 10px; border: 1px solid green;">
 My research focuses on *semantics* and *pragmatics* for Language Models. My main interest currently lies in question generation and using RL (with human feedback) for natural language generation. I am also interested in underspecified, ambiguous and implicit language and in teaching language models how to better deal with such phenomena. More specifically:
 <ul>
-  <li>Coffee</li>
-  <li>Tea</li>
-  <li>Milk</li>
+  <li>Post-Training</li>
+  <li>Natural Language Understanding</li>
+  <li>Critical Evaluation</li>
 </ul>
 </div>
 
