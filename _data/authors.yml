@@ -1,18 +1,10 @@
 # Authors
 
-Name Name:
-  name        : "Name Name"
-  uri         : "http://name.com"
-  email       : "name@name.com"
-  bio         : "This is the first name."
-  avatar      : "bio-photo-2.jpg"
-  twitter     : "name"
-  google_plus : "Name"
-
-Name2 Name2:
-  name        : "Name2 Name2"
-  email       : "name2@name2.com"
-  bio         : "I ordered what?"
-  avatar      : "bio-photo.jpg"
-  twitter     : "name2"
-  google_plus : "Name"
+Bhavith Chandra:
+  name        : "Bhavith Chandra"
+  uri         : "https://www.linkedin.com/in/bhavith-chandra/"
+  bio         : "MS CS @ NYU · Mechanistic Interpretability · World Models · AI Safety"
+  avatar      : "profile.jpg"
+  github      : "Bhavith-Chandra"
+  linkedin    : "bhavith-chandra"
+  googlescholar: "https://scholar.google.com/citations?user=nV1hdiMAAAAJ&hl=en"

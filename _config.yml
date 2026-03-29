@@ -7,13 +7,13 @@
 
 # Site Settings
 locale                   : "en-US"
-title                    : "Valentina Pyatkin Homepage"
+title                    : "Bhavith Chandra | MS CS @ NYU"
 title_separator          : "-"
-name                     : &name "Valentina Pyatkin"
-description              : &description "Postdoctoral Researcher at the Allen Institute for AI"
-url                      : https://valentinapy.github.io # the base hostname & protocol for your site e.g. "https://mmistakes.github.io"
+name                     : &name "Bhavith Chandra"
+description              : &description "Graduate Student at New York University · Mechanistic Interpretability · World Models · AI Safety"
+url                      : https://bhavith-chandra.github.io # the base hostname & protocol for your site e.g. "https://mmistakes.github.io"
 baseurl                  : "" # the subpath of your site, e.g. "/blog"
-repository               : "ValentinaPy/valentinapy.github.io"
+repository               : "Bhavith-Chandra/bhavith-chandra.github.io"
 teaser                   :  # filename of teaser fallback teaser image placed in /images/, .e.g. "500x300.png"
 breadcrumbs              : false # true, false (default)
 words_per_minute         : 160
@@ -80,15 +80,15 @@ analytics:
 
 # Site Author
 author:
-  name             : "Valentina Pyatkin"
-  avatar           : "pic3.jpg"
-  bio              : "Postdoctoral Researcher at the Allen Institute for AI"
-  location         : # "Location"
-  employer         :
-  pubmed           : # "https://www.ncbi.nlm.nih.gov/pubmed/?term=john+snow"
-  googlescholar    : "https://scholar.google.com/citations?hl=en&user=E9EgKkMAAAAJ"
-  email            : "valentinap@allenai.org"
-  researchgate     :  # example: "https://www.researchgate.net/profile/yourprofile"
+  name             : "Bhavith Chandra"
+  avatar           : "profile.jpg"
+  bio              : "MS CS @ NYU · Mechanistic Interpretability · World Models · AI Safety"
+  location         :
+  employer         : "New York University"
+  pubmed           :
+  googlescholar    : "https://scholar.google.com/citations?user=nV1hdiMAAAAJ&hl=en"
+  email            : # add your NYU email here
+  researchgate     :
   uri              :
   bitbucket        :
   codepen          :
@@ -96,20 +96,20 @@ author:
   flickr           :
   facebook         :
   foursquare       :
-  github           : "ValentinaPy"
+  github           : "Bhavith-Chandra"
   google_plus      :
   keybase          :
   instagram        :
-  impactstory      : #"https://profiles.impactstory.org/u/xxxx-xxxx-xxxx-xxxx"
+  impactstory      :
   lastfm           :
-  linkedin         :
-  orcid            : #"http://orcid.org/yourorcidurl"
+  linkedin         : "bhavith-chandra"
+  orcid            :
   pinterest        :
   soundcloud       :
-  stackoverflow    : # http://stackoverflow.com/users/123456/username
+  stackoverflow    :
   steam            :
   tumblr           :
-  twitter          : "@valentina__py"
+  twitter          :
   vine             :
   weibo            :
   xing             :

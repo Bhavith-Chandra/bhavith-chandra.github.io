@@ -7,47 +7,17 @@ redirect_from:
   - /about/
   - /about.html
 ---
-<b>I am on the academic job market for faculty positions!</b> *Feel free to reach out if you have an opening in your department* .
+# Bio
+I am a Graduate Student at New York University. I was a Teaching Assistant for [Deep Learning](https://atcold.github.io/NYU-DLFL25U/) by Prof. [Alfredo Canziani](https://atcold.github.io/) and [Prof. Yann LeCun](http://yann.lecun.com/). I am doing my Thesis in Predictive Modeling and Interpretability supervised by Prof. [Vedant Das Swain](https://vedantdasswain.com/) in [COPHEE Lab](https://cophee-lab.com/). I did my Bachelor's in CS with AI at SRM, with research supervised by Prof. [Alice Nithya](https://www.srmist.edu.in/faculty/mrs-a-alice-nithya/). I had the pleasure of interning at UCL under Prof. [Philip Trelevean](https://en.wikipedia.org/wiki/Philip_Treleaven), working with [Andy Pardoe](https://pardoe.ai/) on Informed.AI, and at the DISNET Lab at the University of Melbourne under Prof. [Adel Toosi](https://adelnadjarantoosi.info/). Previously, Interned at NIT Suratkal and was AR/VR Lens Developer at Snap Inc.
 
-I am a postdoctoral researcher (and Young Investigator) at the [Allen Institute for AI](https://allenai.org) and the University of Washington, advised by Prof. Yejin Choi.
-I completed my PhD in Natural Language Pocessing at the [NLP lab of Bar Ilan University](https://biu-nlp.github.io), supervised by Prof. Ido Dagan and Prof. Reut Tsarfaty. I also was a visiting PhD student at [UW NLP](https://nlp.washington.edu) and had the pleasure of interning twice at the [Allen Institute for AI](https://allenai.org). My work has been awarded an [ACL Outstanding Paper Award](https://arxiv.org/pdf/2402.16786) and the ACL [Best Theme Paper Award](http://arxiv.org/pdf/2402.00838). I am also very honored to have received the [AI2 Outstanding Intern of the Year Award](https://allenai.org/outstanding-interns).
-Previously I did a research internship at Google, obtained an MSc from the University of Edinburgh and a BA from the University of Zurich. 
+My work won the Best Project Award in TechKnow 2021. I won the Best Entrepreneur Award of 2025 with my work in [HydroMind](https://www.linkedin.com/company/hydromind-group/) (acquired by 6th Element Ventures). I was also an exchange student at Tamkang University, Taiwan.
 
-<div style="background-color: #cfc ; padding: 10px; border: 1px solid green;">
-My research focuses on post-training and the adaptation of Language Models, in order to make them better semantic and pragmatic reasoners. In the past, I worked on question generation, natural language representations, and discourse. I am also interested in underspecified, ambiguous and implicit language and in teaching language models how to better deal with such phenomena. More specifically, my research is centered around:
-<ul>
-  <li><b>Post-Training and LM Adaptation:</b> Finding optimal recipes for LM post-training - from analyzing preference data to algorithms.</li>
-  <li><b>Natural Language Understanding:</b> Deeper semantic reasoning across a broader discourse and better handling of ambiguity and underspecification for LLMs.</li>
-  <li><b>Critical Evaluation:</b> Testing LMs' abilities to perform pragmatic inferences, extracting their implicit values, and evaluating Reward Models.</li>
-</ul>
-</div>
+# Research
+My research focuses on mechanistic interpretability, world models, and AI safety. Currently working on World-Model-Lens, an open-source toolkit for world model observability. In the past, I engineered vision-language and sequence processing systems. More specifically, my research is centered around:
 
+**Mechanistic Interpretability:** Toolkit-based causal tracing, activation manipulation, circuit extraction, and decoding the BlackBox in Models
+>I am a core contributor to [World-Model-Lens](https://github.com/Bhavith-Chandra/WorldModelLens), where I develop interpretability tooling, including causal tracing, information theory analysis, dynamical systems, multi-agent theory of mind probing, and explanation modules (like SHAP/LIME).
 
-### News
-* I'm attending COLM and will also be a mentor at the [MLR at Penn workshop](https://sites.google.com/view/mlrpenn-mentor/schedule?authuser=0)!
-* 2 paper awards at ACL 2024!
-* Jul. 2024: Co-organizing the [SoLaR workshop](https://solar-neurips.github.io/) on Socially Responsible Language Modelling Research at NeurIPS 2024.
-* Jun. 2024: Serving as Internal Communication Chair for [ACL 2024](https://2024.aclweb.org/organization/)
-* Apr. 2024: Invited talk at the UMass NLP Seminar.
-* Mar. 2024: Invited talk at the University of Edinburgh.
-* Mar. 2024: Excited to be serving as an Area Chair/Action Editor of ARR.
-* Mar. 2024: Co-organized the [UnImplicit workshop](https://unimplicit2024.github.io/) at EACL-2024.
-* Mar. 2024: Invited talk at the [Harvard Efficient ML Seminar](https://sites.google.com/view/harvard-efficient-ml).
-* Mar. 2024: DAAD sponsored visit to the University of Saarbrücken, the Max Planck Institute for Software Systems and the University of Stuttgart.
-* Feb. 2024: Invited talk at the UBC NLP group.
-* Dec. 2023: Invited talk at Brown/Tübingen.
-* Sep. 2023: Gave a talk at a local Seattle high school on deep learning, LLMs and ethics.
-* Sep. 2023: Gave an invited talk at the [KR 2023 workshop on Computational Machine Ethics](https://sites.google.com/view/cme2023/home).
-* Jan. 2023: Invited talk at the [UT Austin Seminar on "Social Implications and Impact of NLP"](https://jessyli.com/courses/lin393_s23).
-* Jul. 2022: Co-organized the [UnImplicit workshop](https://unimplicit2022.github.io/) at NAACL-2022.
+**World Model Debugging:** Activation caching, trajectory visualization, state inspection tools
 
-### Awards
-* Aug. 2024: [ACL Outstanding Paper Award](https://arxiv.org/pdf/2402.16786)!
-* Aug. 2024: ACL Theme Paper Award for [OLMo](http://arxiv.org/pdf/2402.00838)!
-* Oct. 2023: Was selected as a [DAAD AInet fellow](https://www.daad.de/en/the-daad/postdocnet/)
-* Feb. 2023: Was awarded a postdoctoral scholarship from the Eric and Wendy Schmidt Foundation.
-* Jan. 2023: Was awarded the [AI2 Outstanding Intern of the Year Award](https://allenai.org/outstanding-interns)
-* Jan. 2021: Awarded the Nadav Award for Excellence in Research.
-
-### Misc
-Besides this I love rowing (currently at Lake Washington Rowing Club) and going to the "cinemathèque". My Erdős number is 3 (Paul Erdős → Noga Alon → Ido Dagan → Me) and my Kevin Knight number is 2 (Kevin Knight → Yejin Choi → Me).
+**AI Safety:** Open safety auditing tools, OOD detection modules, hallucination diagnostics

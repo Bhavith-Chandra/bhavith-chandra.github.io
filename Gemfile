@@ -22,6 +22,9 @@ gem "wdm", "~> 0.1.0" if Gem.win_platform?
 group :jekyll_plugins do
   # gem "jekyll-archives"
   gem "jekyll-feed"
-  gem 'jekyll-sitemap'
-  gem 'hawkins'
+  gem 'csv'
+  gem 'webrick'
+  gem 'bigdecimal'
+  gem 'ostruct'
+  gem 'logger'
 end
