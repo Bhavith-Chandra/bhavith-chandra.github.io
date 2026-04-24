@@ -3,7 +3,7 @@
     <div class="idemo__head"><span class="idemo__title">Interactive · MLP neuron inspector</span></div>
     <div class="idemo__body">
 
-      <p class="ni-lead">An MLP block has two linear layers with a non-linearity between them. The intermediate dimension is huge — typically 4× the hidden size. So in distilGPT2, each block has <strong>3,072 MLP neurons</strong>. Each one is a tiny pattern detector. Click a neuron below to see what it fires on and what it writes back to the stream.</p>
+      <p class="ni-lead">An MLP block has two linear layers with a non-linearity between them. The intermediate dimension is huge, typically 4× the hidden size. So in distilGPT2, each block has <strong>3,072 MLP neurons</strong>. Each one is a tiny pattern detector. Click a neuron below to see what it fires on and what it writes back to the stream.</p>
 
       <div class="ni-flow" data-ni-flow>
         <div class="ni-flow__stage">
@@ -39,19 +39,19 @@
 
       <div class="ni-card" data-ni-card>
         <div class="ni-card__head">
-          <div class="ni-card__addr" data-ni-addr>—</div>
-          <div class="ni-card__name" data-ni-name>—</div>
+          <div class="ni-card__addr" data-ni-addr>, </div>
+          <div class="ni-card__name" data-ni-name>, </div>
           <div class="ni-card__tag" data-ni-tag></div>
         </div>
         <div class="ni-card__desc" data-ni-desc></div>
 
         <div class="ni-card__split">
           <div class="ni-card__col">
-            <div class="ni-card__col-label">Top-activating contexts <span class="ni-card__col-hint">("keys" — what triggers this neuron)</span></div>
+            <div class="ni-card__col-label">Top-activating contexts <span class="ni-card__col-hint">("keys", what triggers this neuron)</span></div>
             <ol class="ni-contexts" data-ni-contexts></ol>
           </div>
           <div class="ni-card__col">
-            <div class="ni-card__col-label">Output direction <span class="ni-card__col-hint">("values" — what this neuron writes toward)</span></div>
+            <div class="ni-card__col-label">Output direction <span class="ni-card__col-hint">("values", what this neuron writes toward)</span></div>
             <ul class="ni-output" data-ni-output></ul>
           </div>
         </div>
@@ -64,7 +64,7 @@
 
       <details>
         <summary>Why MLPs as "key-value memories"</summary>
-        <p>Geva et al. (<a href="https://arxiv.org/abs/2012.14913" target="_blank" rel="noopener">2021</a>) showed that you can read the up-projection rows as <em>keys</em> (patterns the neuron looks for in the residual stream) and the down-projection columns as <em>values</em> (vectors the neuron writes into the stream when it fires). That decomposition turns each neuron into a key-value pair: "if you see X, write Y." It's the cleanest way to think about MLPs that exists. Bricken et al. (<a href="https://transformer-circuits.pub/2023/monosemantic-features/index.html" target="_blank" rel="noopener">2023</a>) extended this with sparse autoencoders to handle the messy fact that real neurons mix many features in superposition — but the key-value framing is still the foundation.</p>
+        <p>Geva et al. (<a href="https://arxiv.org/abs/2012.14913" target="_blank" rel="noopener">2021</a>) showed that you can read the up-projection rows as <em>keys</em> (patterns the neuron looks for in the residual stream) and the down-projection columns as <em>values</em> (vectors the neuron writes into the stream when it fires). That decomposition turns each neuron into a key-value pair: "if you see X, write Y." It's the cleanest way to think about MLPs that exists. Bricken et al. (<a href="https://transformer-circuits.pub/2023/monosemantic-features/index.html" target="_blank" rel="noopener">2023</a>) extended this with sparse autoencoders to handle the messy fact that real neurons mix many features in superposition, but the key-value framing is still the foundation.</p>
       </details>
     </div>
   </div>
@@ -203,7 +203,7 @@
       addr: "L0 · N1842",
       name: "Capital-letter detector",
       tag: "monosemantic",
-      desc: "Fires on tokens that begin with a capital letter. Common in early layers — basic surface features. Useful to downstream blocks for tagging proper nouns.",
+      desc: "Fires on tokens that begin with a capital letter. Common in early layers, basic surface features. Useful to downstream blocks for tagging proper nouns.",
       contexts: [
         { act: 6.2, before: "she met ", word: "John", after: " at the cafe" },
         { act: 5.8, before: "based in ", word: "Paris", after: " since 2010" },
@@ -221,7 +221,7 @@
       addr: "L1 · N712",
       name: "Python-keyword neuron",
       tag: "monosemantic",
-      desc: "Fires strongly on Python language tokens — def, class, return, import, lambda. Doesn't fire on similar English words used outside code contexts. The model discovered code is a different mode of operation.",
+      desc: "Fires strongly on Python language tokens, def, class, return, import, lambda. Doesn't fire on similar English words used outside code contexts. The model discovered code is a different mode of operation.",
       contexts: [
         { act: 7.8, before: "", word: "def", after: " hello():" },
         { act: 7.2, before: "    ", word: "return", after: " x + y" },
@@ -257,7 +257,7 @@
       addr: "L3 · N228",
       name: "Definite-article expectation",
       tag: "syntactic",
-      desc: "Fires after possessive constructions where the model expects a noun next. Pushes the next-token distribution toward concrete nouns. Less interpretable on its own — part of a syntactic-prediction circuit.",
+      desc: "Fires after possessive constructions where the model expects a noun next. Pushes the next-token distribution toward concrete nouns. Less interpretable on its own, part of a syntactic-prediction circuit.",
       contexts: [
         { act: 5.5, before: "the doctor's ", word: "office", after: "" },
         { act: 5.1, before: "Anna's ", word: "dog", after: " barked" },
@@ -293,7 +293,7 @@
       addr: "L4 · N2204",
       name: "Polysemantic mixed bag",
       tag: "polysemantic ⚠",
-      desc: "Classic polysemantic neuron. Fires on what look like four totally unrelated patterns — DNA letters, car-brand names, the word 'thursday', and Latin botanical names. None of these are individually decoded by this neuron alone; they live in superposition with each other and only get cleanly separated by sparse-autoencoder analysis.",
+      desc: "Classic polysemantic neuron. Fires on what look like four totally unrelated patterns, DNA letters, car-brand names, the word 'thursday', and Latin botanical names. None of these are individually decoded by this neuron alone; they live in superposition with each other and only get cleanly separated by sparse-autoencoder analysis.",
       contexts: [
         { act: 5.4, before: "the gene encodes ", word: "GATTACA", after: " sequence" },
         { act: 5.2, before: "drove a ", word: "Ferrari", after: " through" },
@@ -312,7 +312,7 @@
       addr: "L5 · N501",
       name: "Sentiment shift detector",
       tag: "abstract",
-      desc: "Activates on conjunctions that signal a sentiment flip — 'but', 'however', 'although', 'despite'. Pushes the next-token distribution to expect contrasting evaluation. Common in late-layer 'glue' neurons.",
+      desc: "Activates on conjunctions that signal a sentiment flip, 'but', 'however', 'although', 'despite'. Pushes the next-token distribution to expect contrasting evaluation. Common in late-layer 'glue' neurons.",
       contexts: [
         { act: 6.1, before: "the food was great ", word: "but", after: " the service" },
         { act: 5.7, before: "I love this car. ", word: "However", after: ", the price" },

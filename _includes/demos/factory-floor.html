@@ -44,7 +44,7 @@
 
       <div class="fac-info" data-fac-info>
         <div class="fac-info__head">
-          <span class="fac-info__idx" data-fac-idx>—</span>
+          <span class="fac-info__idx" data-fac-idx>, </span>
           <span class="fac-info__title" data-fac-title>Click a station</span>
         </div>
         <div class="fac-info__desc" data-fac-desc>Each station does one job. Pick one to see what happens to our little traveller token.</div>
@@ -53,7 +53,7 @@
 
       <details>
         <summary>What's actually happening inside each station</summary>
-        <p><strong>1. Tokenizer</strong> splits text into numeric IDs (often subword pieces). <strong>2. Embedding</strong> looks up a vector for each ID from a big table. <strong>3. Attention</strong> lets every position peek at every other position and pull in what's relevant. <strong>4. MLP</strong> is a per-position feed-forward network that transforms the vector non-linearly. <strong>5. Repeat</strong> stacks attention+MLP dozens of times. <strong>6. Unembedding</strong> projects the final vector into a probability over the vocabulary. The belt you see is the <em>residual stream</em> — the running total that every block reads from and writes to.</p>
+        <p><strong>1. Tokenizer</strong> splits text into numeric IDs (often subword pieces). <strong>2. Embedding</strong> looks up a vector for each ID from a big table. <strong>3. Attention</strong> lets every position peek at every other position and pull in what's relevant. <strong>4. MLP</strong> is a per-position feed-forward network that transforms the vector non-linearly. <strong>5. Repeat</strong> stacks attention+MLP dozens of times. <strong>6. Unembedding</strong> projects the final vector into a probability over the vocabulary. The belt you see is the <em>residual stream</em>, the running total that every block reads from and writes to.</p>
       </details>
     </div>
   </div>
@@ -175,30 +175,30 @@
       idx: "02",
       label: "Embedding",
       desc: "Each ID looks up a fat vector (768 numbers in GPT-2 small). Similar-meaning tokens get similar vectors. This is the model's first guess at what each word 'means'.",
-      tokenView: () => `Vectors · 768-d each · 'sat' ≈ [0.12, −0.41, 0.88, 0.03, ...]`
+      tokenView: () => `Vectors · 768-d each · 'sat' ≈ [0.12, −0.41, 0.88, 0.03...]`
     },
     {
       idx: "03",
       label: "Attention",
-      desc: "Every position looks at every other position and pulls in relevant info. 'sat' notices 'cat' — that's the subject it should agree with. This is how context flows.",
+      desc: "Every position looks at every other position and pulls in relevant info. 'sat' notices 'cat', that's the subject it should agree with. This is how context flows.",
       tokenView: () => `Mixed vectors · 'sat' now also carries info about 'cat' and 'the'`
     },
     {
       idx: "04",
       label: "MLP",
-      desc: "A per-position feed-forward network. Transforms each vector non-linearly. Think of it as the model doing a little thinking in place — factual recall, transformation, all of it lives here.",
+      desc: "A per-position feed-forward network. Transforms each vector non-linearly. Think of it as the model doing a little thinking in place, factual recall, transformation, all of it lives here.",
       tokenView: () => `Transformed vectors · same shape, new meaning embedded`
     },
     {
       idx: "05",
       label: "Repeat · 12× blocks",
-      desc: "Attention + MLP is one block. Stack twelve of them (for GPT-2 small). Each block reads from and writes to the shared 'residual stream' — the belt. The stream accumulates meaning.",
+      desc: "Attention + MLP is one block. Stack twelve of them (for GPT-2 small). Each block reads from and writes to the shared 'residual stream', the belt. The stream accumulates meaning.",
       tokenView: () => `After 12 blocks · vector now encodes 'something that probably follows sat on the'`
     },
     {
       idx: "06",
       label: "Unembedding",
-      desc: "Project the final vector against every word in the vocabulary. The word with the highest dot-product wins. Out comes a probability distribution — 'mat' 41%, 'floor' 18%, 'couch' 9%...",
+      desc: "Project the final vector against every word in the vocabulary. The word with the highest dot-product wins. Out comes a probability distribution, 'mat' 41%, 'floor' 18%, 'couch' 9%...",
       tokenView: (s) => `Top guess: '${s.guess}' (${s.prob})`
     }
   ];
@@ -258,7 +258,7 @@
 
   function updateInfo(station){
     if (station < 0) {
-      infoIdx.textContent = "—";
+      infoIdx.textContent = ", ";
       infoTitle.textContent = "Click a station";
       infoDesc.textContent = "Each station does one job. Pick one to see what happens to our little traveller token.";
       infoToken.textContent = "";

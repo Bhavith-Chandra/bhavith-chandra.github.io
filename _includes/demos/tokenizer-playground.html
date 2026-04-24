@@ -34,9 +34,9 @@
           <span class="tok-detail__text" data-tok-detail-text></span>
         </div>
         <div class="tok-detail__rows">
-          <div class="tok-detail__row"><span>ID</span><code data-tok-detail-id>—</code></div>
-          <div class="tok-detail__row"><span>Bytes</span><code data-tok-detail-bytes>—</code></div>
-          <div class="tok-detail__row"><span>Unicode</span><code data-tok-detail-uni>—</code></div>
+          <div class="tok-detail__row"><span>ID</span><code data-tok-detail-id>, </code></div>
+          <div class="tok-detail__row"><span>Bytes</span><code data-tok-detail-bytes>, </code></div>
+          <div class="tok-detail__row"><span>Unicode</span><code data-tok-detail-uni>, </code></div>
         </div>
       </div>
 
@@ -44,7 +44,7 @@
 
       <details>
         <summary>Why this tokenizer isn't a simple whitespace split</summary>
-        <p>This demo uses real <strong>Byte-Pair Encoding (BPE)</strong> — the same algorithm GPT-2 and (close relatives of) GPT-3/4 use. BPE starts from single bytes and learns which byte-pairs to merge based on frequency in the training corpus. The result is a vocabulary of ~50,000 subword pieces: common whole words ("the", "and"), common word-chunks ("ing", "tion"), and everything else falls back to individual bytes. That's why "unhappily" becomes three pieces but "cat" stays whole — "cat" was common enough in the training text to earn its own merge. We run this via the <code>gpt-tokenizer</code> library, fetched lazily. Fallback to an illustrative split if the CDN is unreachable.</p>
+        <p>This demo uses real <strong>Byte-Pair Encoding (BPE)</strong>, the same algorithm GPT-2 and (close relatives of) GPT-3/4 use. BPE starts from single bytes and learns which byte-pairs to merge based on frequency in the training corpus. The result is a vocabulary of ~50,000 subword pieces: common whole words ("the", "and"), common word-chunks ("ing", "tion"), and everything else falls back to individual bytes. That's why "unhappily" becomes three pieces but "cat" stays whole, "cat" was common enough in the training text to earn its own merge. We run this via the <code>gpt-tokenizer</code> library, fetched lazily. Fallback to an illustrative split if the CDN is unreachable.</p>
       </details>
     </div>
   </div>
@@ -160,7 +160,7 @@
   let mode = "loading"; // loading | bpe | fallback
 
   // Fallback "looks like BPE" tokenizer for when the CDN is unreachable.
-  // Not accurate — but the *shape* (subwords, space-prefix, byte explode) is right.
+  // Not accurate, but the *shape* (subwords, space-prefix, byte explode) is right.
   function fallbackEncode(text){
     const out = [];
     const chunks = text.match(/ ?[A-Za-z]+|\s+|\d+|[^A-Za-z\d\s]+/g) || [];
@@ -245,7 +245,7 @@
       Array.from(bytes).map(b => b.toString(16).padStart(2, "0")).join(" ") + ` (${bytes.length} bytes)`;
     // unicode codepoints
     const cps = Array.from(tok.text).map(c => "U+" + c.codePointAt(0).toString(16).toUpperCase().padStart(4, "0"));
-    root.querySelector("[data-tok-detail-uni]").textContent = cps.join(" ") || "—";
+    root.querySelector("[data-tok-detail-uni]").textContent = cps.join(" ") || ", ";
   }
 
   // preset buttons
@@ -270,7 +270,7 @@
       status.classList.add("is-ready");
     } catch (e) {
       mode = "fallback";
-      status.textContent = "Couldn't load the real BPE tables — showing an approximate split. Shape is right; IDs aren't real.";
+      status.textContent = "Couldn't load the real BPE tables, showing an approximate split. Shape is right; IDs aren't real.";
       status.classList.add("is-fallback");
     }
     render();

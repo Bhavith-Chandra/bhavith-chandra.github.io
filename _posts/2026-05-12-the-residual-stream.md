@@ -13,7 +13,7 @@ I'm going to do something slightly unusual. I'm going to spend an entire post on
 
 The idea: the **residual stream**.
 
-Informally: the conveyor belt from the last post. Formally: a running sum, one vector per token position, that every block in the network reads from and writes to, and that stays coherent — in the same "language" — from the input embeddings all the way to the final logits.
+Informally: the conveyor belt from the last post. Formally: a running sum, one vector per token position, that every block in the network reads from and writes to, and that stays coherent, in the same "language", from the input embeddings all the way to the final logits.
 
 That last part is the deep bit. Most of the cleverness in modern MI comes from taking that fact seriously.
 
@@ -57,14 +57,14 @@ This is how classical feed-forward networks work, and it's how RNNs work. It has
 
 Both problems were well known by 2015. The fix, in vision and then in language, was residual connections ([He et al., 2015](https://arxiv.org/abs/1512.03385)). Add instead of replace. Now:
 
-- Information from layer 1 can flow unchanged all the way to layer $L$ — it's still in there, mixed with everything added after.
+- Information from layer 1 can flow unchanged all the way to layer $L$, it's still in there, mixed with everything added after.
 - Gradients flow backward through the "+" without shrinking. Deep networks train stably.
 
 For a transformer, this becomes the residual stream: one shared vector per position, accumulated across all blocks. Each block writes a (usually small) correction. The final state is the sum of every correction ever made to each position.
 
 <aside class="callout callout--analogy">
   <div class="callout__label">Analogy</div>
-  <p>Picture a Google Doc that a whole team of editors is working on at once. Nobody's allowed to delete anything; everyone can only add a comment or a suggestion. At the end of the day the document is the sum of everyone's contributions. To figure out what the document "means," you don't have to interview every editor — you just read the document. To figure out what <em>one editor</em> contributed, you look at the diff they made. The document is the residual stream. The editors are the layers.</p>
+  <p>Picture a Google Doc that a whole team of editors is working on at once. Nobody's allowed to delete anything; everyone can only add a comment or a suggestion. At the end of the day the document is the sum of everyone's contributions. To figure out what the document "means," you don't have to interview every editor, you just read the document. To figure out what <em>one editor</em> contributed, you look at the diff they made. The document is the residual stream. The editors are the layers.</p>
 </aside>
 
 ## Reading the stream: the logit lens
@@ -81,7 +81,7 @@ This is called the **logit lens**, and it's what the demo above is showing you.
 
 Run it on "Paris is the capital of ___" and watch the evolution.
 
-- **Embedding layer.** Junk. Maybe "the" or "a". The raw token embedding for "of" has no idea what it wants to predict next — it just contains info about the token itself.
+- **Embedding layer.** Junk. Maybe "the" or "a". The raw token embedding for "of" has no idea what it wants to predict next, it just contains info about the token itself.
 - **Block 0–1.** Still pretty junky, but starting to look vaguely like geography words. "the", "a", "this".
 - **Block 2–3.** Converging on the semantic type. Country names start showing up in the top-5. "Europe", "France", "Germany".
 - **Block 4–5.** Top-1 is "France" with high confidence. The answer has arrived.
@@ -90,7 +90,7 @@ The logit lens *works* because the residual stream is coherent from start to fin
 
 <aside class="callout callout--key">
   <div class="callout__label">Why this matters for MI</div>
-  <p>The logit lens is a free, training-free tool for seeing what a model is thinking at every intermediate layer. Many modern techniques — tuned lens, direct logit attribution, activation patching — are refinements of or close cousins to this idea. If you learn one interpretability technique, learn this one first.</p>
+  <p>The logit lens is a free, training-free tool for seeing what a model is thinking at every intermediate layer. Many modern techniques, tuned lens, direct logit attribution, activation patching, are refinements of or close cousins to this idea. If you learn one interpretability technique, learn this one first.</p>
 </aside>
 
 ## Direct logit attribution
@@ -105,14 +105,14 @@ This is **direct logit attribution (DLA)** and it's the Swiss army knife of tran
 
 ## Why the "channels" metaphor is helpful (and also a lie)
 
-You'll sometimes hear the residual stream described as a bunch of "channels" — loosely, dimensions — each carrying a specific piece of information. Position 0 channel 5 might be "this token is a verb." Position 0 channel 73 might be "this token is the subject of the sentence."
+You'll sometimes hear the residual stream described as a bunch of "channels", loosely, dimensions, each carrying a specific piece of information. Position 0 channel 5 might be "this token is a verb." Position 0 channel 73 might be "this token is the subject of the sentence."
 
 This is kind of true and kind of not. The real situation ([Elhage et al., 2021](https://transformer-circuits.pub/2021/framework/index.html)):
 
 - The residual stream has $d$ dimensions (768 for GPT-2, 4096 for Llama 3, much bigger for frontier models).
 - Blocks read from and write to specific *subspaces* of the stream.
-- Those subspaces are generally not axis-aligned — a "feature" is a direction in the space, not a single coordinate.
-- Many features live on top of each other in **superposition** — more features than there are dimensions, packed in by relying on sparsity.
+- Those subspaces are generally not axis-aligned, a "feature" is a direction in the space, not a single coordinate.
+- Many features live on top of each other in **superposition**, more features than there are dimensions, packed in by relying on sparsity.
 
 So "channels" is a useful first approximation. The refined view is "directions in a high-dimensional space, many of them overlapping." We'll spend serious time on superposition in later posts, because it's *why* neurons are often polysemantic. For now, think of the stream as a busy 768-lane highway where lanes overlap and cars can ride partly in two lanes at once. Fine? Fine.
 
@@ -136,15 +136,15 @@ Amber saturation = the model's confidence in its top guess at that cell. Watch h
 
 1. The saturation increases monotonically.
 2. The *top-1 token* changes 2-3 times as layers refine.
-3. The final column (the last token of the input) is where prediction happens — earlier columns are mostly the model maintaining information about those tokens rather than predicting anything.
+3. The final column (the last token of the input) is where prediction happens, earlier columns are mostly the model maintaining information about those tokens rather than predicting anything.
 
-That last observation is important. The model only needs to predict *one* next token. All the work on earlier positions is setup — those positions are accumulating information that the attention mechanism will later pull into the final position. They're not trying to predict; they're trying to be *useful*.
+That last observation is important. The model only needs to predict *one* next token. All the work on earlier positions is setup, those positions are accumulating information that the attention mechanism will later pull into the final position. They're not trying to predict; they're trying to be *useful*.
 
 ## The BOS token scratchpad
 
 One charming empirical finding from [Scaling Monosemanticity (Templeton et al., 2024)](https://transformer-circuits.pub/2024/scaling-monosemanticity/index.html): the beginning-of-sequence token's residual stream ends up carrying a bunch of model-wide "housekeeping" state. Averaged running statistics, attention sinks, odd summary features. Kind of like a blank page at the front of the doc where the model scribbles notes to itself that don't correspond to any particular input token.
 
-You don't need to understand why right now — just note that the first token's stream often looks weird in diagnostics, and this is the reason.
+You don't need to understand why right now, just note that the first token's stream often looks weird in diagnostics, and this is the reason.
 
 ## What to take away
 

@@ -3,7 +3,7 @@ layout: post-article
 title: "MLPs: The Other Half of Every Block"
 date: 2026-06-08
 permalink: /posts/mlps-the-other-half-of-every-block/
-excerpt: "Attention gets the press. But two-thirds of a transformer's parameters live in the MLPs. They are the model's filing cabinet — where facts, transformations, and unreasonably specific patterns end up stored as little key-value pairs."
+excerpt: "Attention gets the press. But two-thirds of a transformer's parameters live in the MLPs. They are the model's filing cabinet, where facts, transformations, and unreasonably specific patterns end up stored as little key-value pairs."
 read_time_label: "12 min read"
 accent: amber
 math: true
@@ -11,7 +11,7 @@ math: true
 
 If attention is the part of the model that *retrieves* information from context, the MLP is the part that *stores* information from training. About two-thirds of a transformer's parameters sit in the MLPs. If you want to know where the model's knowledge lives, you point at these.
 
-For a long time the MLP got short shrift in the interpretability literature. Attention was sexy. Attention had named heads (induction! copy! name-mover!). MLPs were a featureless wall of weights — a single number times another single number, repeated 3,072 times.
+For a long time the MLP got short shrift in the interpretability literature. Attention was sexy. Attention had named heads (induction! copy! name-mover!). MLPs were a featureless wall of weights, a single number times another single number, repeated 3,072 times.
 
 That changed around 2021, when [Geva et al.](https://arxiv.org/abs/2012.14913) made a beautifully simple argument: an MLP layer can be read as a **key-value memory**. Each neuron is a *key* (a pattern in the residual stream) paired with a *value* (a vector to write back). Suddenly MLPs had structure. Suddenly we could name them.
 
@@ -38,14 +38,14 @@ The "wider dimension" is typically $4 \times d_{\text{model}}$. So GPT-2 small h
 Three things to notice:
 
 1. **MLPs operate on each position independently.** Unlike attention, there is no mixing across token positions. Each token's MLP runs on its own residual vector, in parallel.
-2. **The wider intermediate dimension matters.** That's where the actual storage capacity lives. 3,072 neurons in a single block of GPT-2 — multiply by 12 blocks and you get 36,864 distinct units to study.
+2. **The wider intermediate dimension matters.** That's where the actual storage capacity lives. 3,072 neurons in a single block of GPT-2, multiply by 12 blocks and you get 36,864 distinct units to study.
 3. **The non-linearity is what makes it a feature detector.** Without GELU, two stacked linear layers collapse into a single linear layer and the MLP can't represent anything interesting. The non-linearity makes each neuron a thresholded-gate: "fire if the input matches my pattern, otherwise don't."
 
 ## Reading MLPs as key-value memories
 
-Here is the move. The first matrix, $W_{\text{in}}$, has shape $[d_{\text{model}}, d_{\text{ffn}}]$. Each *column* is a vector in residual-stream space — call it the **key** for neuron $n$. The dot product $W_{\text{in}}[:, n] \cdot x$ measures *how much $x$ matches that key*.
+Here is the move. The first matrix, $W_{\text{in}}$, has shape $[d_{\text{model}}, d_{\text{ffn}}]$. Each *column* is a vector in residual-stream space, call it the **key** for neuron $n$. The dot product $W_{\text{in}}[:, n] \cdot x$ measures *how much $x$ matches that key*.
 
-The second matrix, $W_{\text{out}}$, has shape $[d_{\text{ffn}}, d_{\text{model}}]$. Each *row* is a vector in residual-stream space — call it the **value** for neuron $n$. When neuron $n$ fires (its activation is large), it writes that value (scaled by the activation) back to the residual stream.
+The second matrix, $W_{\text{out}}$, has shape $[d_{\text{ffn}}, d_{\text{model}}]$. Each *row* is a vector in residual-stream space, call it the **value** for neuron $n$. When neuron $n$ fires (its activation is large), it writes that value (scaled by the activation) back to the residual stream.
 
 So the MLP layer's update can be rewritten as:
 
@@ -70,7 +70,7 @@ Early-layer neurons that fire on simple lexical patterns: capital letters, punct
 
 ### Syntactic neurons
 
-Mid-layer neurons that fire after specific grammatical patterns — possessives, definite articles, sentence beginnings. They write contributions that bias the next-token distribution toward syntactically valid continuations.
+Mid-layer neurons that fire after specific grammatical patterns, possessives, definite articles, sentence beginnings. They write contributions that bias the next-token distribution toward syntactically valid continuations.
 
 ### Factual-recall neurons
 
@@ -88,7 +88,7 @@ A nontrivial fraction of neurons just don't have a clean interpretation when you
 
 Here's the thing nobody mentions in their first introduction to MI: **most real neurons are not monosemantic.**
 
-The "Python-keyword neuron" looks clean. The "polysemantic mixed bag" neuron in the demo also looks clean — at exactly four totally different things. DNA letters. Car brands. Weekday names. Latin botanical names. There is no single concept that ties these together. The neuron just happens to fire strongly on all of them.
+The "Python-keyword neuron" looks clean. The "polysemantic mixed bag" neuron in the demo also looks clean, at exactly four totally different things. DNA letters. Car brands. Weekday names. Latin botanical names. There is no single concept that ties these together. The neuron just happens to fire strongly on all of them.
 
 Why? Because a transformer needs to represent *more concepts than it has neurons*. GPT-2 small has 36,864 MLP neurons total. The number of distinct concepts it has learned to distinguish is far larger than that. So the model packs concepts on top of each other. This is called **superposition**.
 
@@ -98,7 +98,7 @@ Practical consequences:
 
 - Most individual neurons look polysemantic when you read their top-activating examples.
 - The "real" features are linear combinations of neurons, not individual ones.
-- To recover monosemantic features, you need a tool that can decompose a high-dimensional space into its underlying directions — even when those directions outnumber the dimensions.
+- To recover monosemantic features, you need a tool that can decompose a high-dimensional space into its underlying directions, even when those directions outnumber the dimensions.
 
 That tool turned out to be **sparse autoencoders**, which is the punchline of the whole second half of the modern interpretability era. We'll meet them properly later. For now, just know:
 
@@ -122,21 +122,21 @@ Three pieces of evidence:
 2. **Editing experiments.** ROME and MEMIT can edit a specific fact (say "the Eiffel Tower is in Paris" → "in Rome") by tweaking only a small number of MLP neurons in mid layers. Editing attention parameters does not produce the same effect.
 3. **Probing.** When researchers probe for the presence of factual information at intermediate layers, the signal jumps sharply at MLP layers, not at attention layers. The MLP is where information gets *added* to the stream.
 
-A clean way to internalise it: **attention moves information around. MLPs add new information.** Both contribute to the final answer, but in different ways. This is also why MLPs at different depths specialise — early MLPs add surface features, mid-layer MLPs add facts and syntax, late MLPs add abstract semantics.
+A clean way to internalise it: **attention moves information around. MLPs add new information.** Both contribute to the final answer, but in different ways. This is also why MLPs at different depths specialise, early MLPs add surface features, mid-layer MLPs add facts and syntax, late MLPs add abstract semantics.
 
 ## The thing nobody tells you about GELU
 
-A small implementation note that becomes important if you read MI papers. The non-linearity choice — GELU vs ReLU vs SwiGLU — affects how cleanly you can decompose the MLP.
+A small implementation note that becomes important if you read MI papers. The non-linearity choice, GELU vs ReLU vs SwiGLU, affects how cleanly you can decompose the MLP.
 
 ReLU is a hard gate: $\sigma(x) = \max(0, x)$. Either the neuron fires or it doesn't. Easy to interpret as a binary decision.
 
 GELU and SwiGLU are softer. They produce small non-zero outputs even for slightly negative inputs. This means a neuron's "off" state still leaks a small contribution, which makes the per-neuron analysis a bit messier. In practice, you compensate by looking at activations as continuous and analysing only neurons whose activations exceed a threshold.
 
-Modern frontier models almost all use SwiGLU. When you read papers about MLPs in Llama or Claude, that's the non-linearity in play. The key-value framing still applies — the math just has an extra gating term.
+Modern frontier models almost all use SwiGLU. When you read papers about MLPs in Llama or Claude, that's the non-linearity in play. The key-value framing still applies, the math just has an extra gating term.
 
 ## Wrap
 
-MLPs are 60% of a transformer's parameters. They are the model's stored memory. They can be read as key-value pairs: each neuron has a key (a pattern in the residual stream that activates it) and a value (a vector it writes back). Some neurons are clean — Python keywords, capital letters, individual facts. Many neurons are polysemantic, packing multiple concepts on top of each other through superposition.
+MLPs are 60% of a transformer's parameters. They are the model's stored memory. They can be read as key-value pairs: each neuron has a key (a pattern in the residual stream that activates it) and a value (a vector it writes back). Some neurons are clean, Python keywords, capital letters, individual facts. Many neurons are polysemantic, packing multiple concepts on top of each other through superposition.
 
 Attention does retrieval. MLPs do storage. Together they alternate, block by block, accumulating contributions on the residual stream until the unembedding layer can read off a confident next token.
 

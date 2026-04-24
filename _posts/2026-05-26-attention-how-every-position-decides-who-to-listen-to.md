@@ -3,7 +3,7 @@ layout: post-article
 title: "Attention: How Every Position Decides Who to Listen To"
 date: 2026-05-26
 permalink: /posts/attention-how-every-position-decides-who-to-listen-to/
-excerpt: "The word 'it' has to figure out what noun it refers to. The verb has to find its subject. All of this happens through attention — the routing mechanism that took NLP from sad to superhuman in five years."
+excerpt: "The word 'it' has to figure out what noun it refers to. The verb has to find its subject. All of this happens through attention, the routing mechanism that took NLP from sad to superhuman in five years."
 read_time_label: "15 min read"
 accent: amber
 math: true
@@ -11,11 +11,11 @@ math: true
 
 At the risk of being obvious about it: if you want to understand the sentence *"The cat sat on the mat because it was warm,"* the word that has to do some work is **it**. Does "it" refer to the cat, or the mat?
 
-Humans do this effortlessly. Early language models were terrible at it. The fix — the single biggest architectural idea in NLP in the last decade — was attention.
+Humans do this effortlessly. Early language models were terrible at it. The fix, the single biggest architectural idea in NLP in the last decade, was attention.
 
 Attention is a mechanism by which every position in the sequence gets to peek at every other position and decide how much each one matters. The word "it" doesn't sit there clueless. It looks around the sentence, computes a weight for every other word, and pulls in the relevant information. If "cat" wins most of the weight, "it" now knows what it refers to.
 
-That's the mechanical description. The interesting question — the one that animates modern interpretability — is: *what specific rules do specific attention heads actually learn to follow?* The answer, it turns out, is that different heads learn genuinely different, human-describable routing policies. Copy this token. Attend to the previous noun. Look for the same word earlier in the sequence and copy what came after it.
+That's the mechanical description. The interesting question, the one that animates modern interpretability, is: *what specific rules do specific attention heads actually learn to follow?* The answer, it turns out, is that different heads learn genuinely different, human-describable routing policies. Copy this token. Attend to the previous noun. Look for the same word earlier in the sequence and copy what came after it.
 
 We can go read them.
 
@@ -90,7 +90,7 @@ QK pattern: attend to the token one position back. OV: copy the embedding of tha
 
 The most famous one. An induction head does **in-context copying**: if earlier in the sequence we saw the bigram "$A$ $B$", then the next time we see "$A$", the head attends to "$B$" and copies it forward. Which means: the model learns to continue patterns on the fly, without ever being trained on that specific pattern. This is widely believed to be the mechanistic basis of in-context learning ([Olsson et al., 2022](https://transformer-circuits.pub/2022/in-context-learning-and-induction-heads/index.html)).
 
-In the demo, try the "A B C D … A B" preset and look at layer 2–3 heads. When the attention matrix has strong off-diagonal structure pointing a few tokens back — often one token back from an earlier match — you're looking at something induction-flavoured.
+In the demo, try the "A B C D … A B" preset and look at layer 2–3 heads. When the attention matrix has strong off-diagonal structure pointing a few tokens back, often one token back from an earlier match, you're looking at something induction-flavoured.
 
 ### Positional / syntactic heads
 
@@ -98,7 +98,7 @@ Heads that attend based mostly on position (e.g., "the start of this sentence") 
 
 ### The BOS sink
 
-This is a weirder one. Many heads in middle layers dump most of their attention mass onto the beginning-of-sequence token (position 0). Why? Because the softmax always has to sum to 1 — it can't choose *not to attend* — so when a head has nothing useful to do on a given token, it "rests" by attending to BOS. The residual-stream update from this is small (because attending to a near-constant vector adds a near-constant amount), which is basically the head's way of staying out of the way. Sometimes called the "attention sink" ([Xiao et al., 2023](https://arxiv.org/abs/2309.17453)).
+This is a weirder one. Many heads in middle layers dump most of their attention mass onto the beginning-of-sequence token (position 0). Why? Because the softmax always has to sum to 1, it can't choose *not to attend*, so when a head has nothing useful to do on a given token, it "rests" by attending to BOS. The residual-stream update from this is small (because attending to a near-constant vector adds a near-constant amount), which is basically the head's way of staying out of the way. Sometimes called the "attention sink" ([Xiao et al., 2023](https://arxiv.org/abs/2309.17453)).
 
 In the demo, the "BOS sink" diagnostic fires on many heads, especially in layers 1-3. Don't be alarmed.
 
@@ -124,15 +124,15 @@ In the demo, the John/Mary preset is the setup. Browse layers 7-10 and see which
 
 ## Causal attention and why autoregressive models only look backward
 
-One small but important technical thing. In a **decoder-only** model (GPT, Claude, Llama — all of them), attention is *causal*: position $i$ can only attend to positions $j \le i$. This is enforced by masking — we set $a_{ij} = 0$ for $j > i$ before softmaxing.
+One small but important technical thing. In a **decoder-only** model (GPT, Claude, Llama, all of them), attention is *causal*: position $i$ can only attend to positions $j \le i$. This is enforced by masking, we set $a_{ij} = 0$ for $j > i$ before softmaxing.
 
 Why? Because the model is trained to predict the next token given previous tokens. If position 5 could look at position 6, the model could cheat by just reading the answer. Causal masking forces every prediction to be made using only past information.
 
-This is why the attention matrices in the demo are always lower-triangular — everything above the diagonal is zero. If a head wants to attend to "the future" it cannot. The only information it has is the tokens it has already seen.
+This is why the attention matrices in the demo are always lower-triangular, everything above the diagonal is zero. If a head wants to attend to "the future" it cannot. The only information it has is the tokens it has already seen.
 
 ## The softmax is doing something load-bearing
 
-One thing worth pausing on. The softmax in attention is not just a normalisation; it is the mechanism that gives attention its selectivity. If it were a simple sum or average, every position would contribute equally and the routing would be useless. Softmax is the reason the head can produce sharp, peaky attention patterns — a single attended-to position getting most of the weight.
+One thing worth pausing on. The softmax in attention is not just a normalisation; it is the mechanism that gives attention its selectivity. If it were a simple sum or average, every position would contribute equally and the routing would be useless. Softmax is the reason the head can produce sharp, peaky attention patterns, a single attended-to position getting most of the weight.
 
 That selectivity is also a constraint. Softmax forces the weights to sum to exactly 1, which creates the "must attend to something" effect that produces BOS sinks. It's a design choice with downstream consequences. Some recent architectures (YOCO, RetNet) swap softmax for other mixing schemes, partly to escape these quirks.
 
@@ -142,7 +142,7 @@ Zooming out. Why does attention work so well? One frame that's been useful to me
 
 When you type a question to an LLM, the attention mechanism is letting the final token (where the prediction happens) reach back through the entire context and *retrieve* relevant pieces. It's not storage. It's retrieval.
 
-The MLPs, by contrast, store things — weights learned during training encode facts that don't change per-prompt. Attention is the look-up. MLPs are the filing cabinet. A transformer alternates them because generation requires both: retrieve what's in front of me, transform it using what I've memorised, repeat.
+The MLPs, by contrast, store things, weights learned during training encode facts that don't change per-prompt. Attention is the look-up. MLPs are the filing cabinet. A transformer alternates them because generation requires both: retrieve what's in front of me, transform it using what I've memorised, repeat.
 
 That's a useful duality to hold onto. I'll talk about the MLP half in the next blog.
 
@@ -150,7 +150,7 @@ That's a useful duality to hold onto. I'll talk about the MLP half in the next b
 
 1. Attention is a dot-product-based routing mechanism between positions. Every position queries, every position offers keys, the soft-matched queries pull values.
 2. Each head is best understood as two orthogonal matrices: **QK** (who to attend to) and **OV** (what to write back). Both are small, both are analyzable.
-3. Real heads learn concrete, human-readable rules — previous-token, induction, name-movers. Finding and characterising them is what circuit-level MI does.
+3. Real heads learn concrete, human-readable rules, previous-token, induction, name-movers. Finding and characterising them is what circuit-level MI does.
 
 Next up: the MLP. The other half of every block, and where most of the model's factual knowledge turns out to live.
 

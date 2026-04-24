@@ -1,421 +1,359 @@
-<div class="idemo" id="demo-attention">
+<div class="idemo" id="demo-attn">
   <div class="idemo__card">
-    <div class="idemo__head"><span class="idemo__title">Interactive · Attention explorer · real distilGPT2</span></div>
+    <div class="idemo__head"><span class="idemo__title">Interactive · Attention head explorer</span></div>
     <div class="idemo__body">
 
-      <p class="ax-lead">Every attention head is a little information-routing device. It reads the residual stream at <em>every</em> position, decides which positions to look at, and writes a mixed vector back to the current position. This demo lets you poke at all 72 of distilGPT2's heads (6 layers × 12 heads) on a real sentence and see the attention weights they actually use.</p>
+      <p class="att-lead">Every attention head asks a single question: <em>"for each position, which other positions should I look at?"</em> Different heads learn wildly different rules. Pick a head from the gallery and watch what it actually pays attention to.</p>
 
-      <div class="ax-presets" data-ax-presets>
-        <button class="ax-preset is-active" data-ax-preset="0">When John and Mary went to the store, John gave a drink to</button>
-        <button class="ax-preset" data-ax-preset="1">The red apple was on the table. She picked up the</button>
-        <button class="ax-preset" data-ax-preset="2">2 + 2 = 4, 5 + 5 = 10, 3 + 3 =</button>
-        <button class="ax-preset" data-ax-preset="3">A B C D E F G H A B C</button>
+      <div class="att-prompt-row">
+        <span class="att-prompt-row__label">Prompt</span>
+        <div class="att-prompt-row__chips" data-att-prompts>
+          <button class="att-chip is-active" data-att-prompt="ioi">When John and Mary went to the store, John gave a drink to</button>
+          <button class="att-chip" data-att-prompt="abab">A B A B A B A</button>
+          <button class="att-chip" data-att-prompt="paris">Paris is the capital of France .</button>
+        </div>
       </div>
 
-      <div class="ax-status" data-ax-status>Click a preset above to load the model and extract attention weights.</div>
+      <div class="att-gallery" data-att-gallery>
+        <button class="att-head is-active" data-att-head="prev">
+          <span class="att-head__addr">L1 · H4</span>
+          <span class="att-head__name">Previous-token head</span>
+          <span class="att-head__hint">Each token attends to the one right before it.</span>
+        </button>
+        <button class="att-head" data-att-head="bos">
+          <span class="att-head__addr">L0 · H3</span>
+          <span class="att-head__name">BOS-sink head</span>
+          <span class="att-head__hint">"I have nothing to say." Dumps attention on the first token.</span>
+        </button>
+        <button class="att-head" data-att-head="dup">
+          <span class="att-head__addr">L2 · H7</span>
+          <span class="att-head__name">Duplicate-token head</span>
+          <span class="att-head__hint">Notices when a word repeats earlier in the sequence.</span>
+        </button>
+        <button class="att-head" data-att-head="ind">
+          <span class="att-head__addr">L4 · H10</span>
+          <span class="att-head__name">Induction head</span>
+          <span class="att-head__hint">"I saw A B before. Now I see A. Look at B." The pattern-completion machine.</span>
+        </button>
+        <button class="att-head" data-att-head="name">
+          <span class="att-head__addr">L5 · H6</span>
+          <span class="att-head__name">Name-mover head</span>
+          <span class="att-head__hint">Copies a name token from earlier in the sequence into the current position.</span>
+        </button>
+        <button class="att-head" data-att-head="self">
+          <span class="att-head__addr">L3 · H1</span>
+          <span class="att-head__name">Self-attending head</span>
+          <span class="att-head__hint">Mostly attends to its own position. A null op, or close to it.</span>
+        </button>
+      </div>
 
-      <div class="ax-body" data-ax-body hidden>
-        <div class="ax-ctrl">
-          <div class="ax-ctrl__group">
-            <span class="ax-ctrl__label">Layer</span>
-            <div class="ax-ctrl__buttons" data-ax-layers></div>
-          </div>
-          <div class="ax-ctrl__group">
-            <span class="ax-ctrl__label">Head</span>
-            <div class="ax-ctrl__buttons" data-ax-heads></div>
-          </div>
-          <div class="ax-ctrl__hint" data-ax-hint>Layer 0 · Head 0</div>
+      <div class="att-grid">
+        <div class="att-grid__matrix">
+          <div class="att-panel-label">Attention matrix · row = query position · column = key position · darker = stronger</div>
+          <svg class="att-svg" data-att-svg viewBox="0 0 380 380" preserveAspectRatio="xMidYMid meet"></svg>
         </div>
-
-        <div class="ax-pair">
-          <div class="ax-matrix-wrap">
-            <div class="ax-matrix-label">Attention weights · rows = target (from), cols = source (looking at)</div>
-            <div class="ax-matrix-scroll">
-              <svg class="ax-matrix" data-ax-matrix aria-hidden="true"></svg>
-            </div>
-            <div class="ax-matrix-legend">
-              <span class="ax-leg-swatch" style="background:#fff7e6"></span>0
-              <span class="ax-leg-swatch" style="background:#fcd68b"></span>0.5
-              <span class="ax-leg-swatch" style="background:#b77214"></span>1.0
-            </div>
+        <div class="att-grid__flow">
+          <div class="att-panel-label">Flow view · pick a query (row), see where it looks</div>
+          <div class="att-flow" data-att-flow></div>
+          <div class="att-diag">
+            <span class="att-diag__label">Pattern</span>
+            <span class="att-diag__value" data-att-diag>previous-token</span>
           </div>
-
-          <div class="ax-flow">
-            <div class="ax-matrix-label">Attention flow · click a target row to highlight where it looks</div>
-            <div class="ax-flow-svg-wrap">
-              <svg class="ax-flow-svg" data-ax-flow aria-hidden="true"></svg>
-            </div>
-          </div>
-        </div>
-
-        <div class="ax-head-info" data-ax-head-info>
-          <div class="ax-head-info__diag">
-            <span class="ax-diag__label">Head character ·</span>
-            <span class="ax-diag__val" data-ax-diag>—</span>
-          </div>
-          <div class="ax-head-info__hint">Try Layer 2, Head 5 on the John/Mary prompt — it often shows induction-like copying.</div>
         </div>
       </div>
 
       <details>
-        <summary>How attention heads get characterised</summary>
-        <p>Each head's attention matrix is a <em>pattern</em>. Some patterns are generic (attend to the previous token; attend to the BOS token). Some are specific (attend to the previous occurrence of the current token — the signature of an <strong>induction head</strong>). In this demo we compute a quick diagnosis: "previous-token" if the matrix has most mass on the diagonal-minus-one; "BOS sink" if most mass sits on position 0; "self" if it's almost pure self-attention; otherwise we call it "mixed." This is not the full machinery of <a href="https://transformer-circuits.pub/2022/in-context-learning-and-induction-heads/index.html" target="_blank" rel="noopener">Olsson et al. 2022</a>, but it gives you a feel for the different regimes.</p>
+        <summary>What "head" means and why we care</summary>
+        <p>Each transformer block has multiple parallel attention heads (12 in distilGPT2, 96+ in larger models). Each head computes its own query/key/value matrices and produces its own attention pattern. The block sums all heads' contributions back into the residual stream. So the model has hundreds or thousands of <em>tiny independent attention circuits</em>, and a huge amount of MI work is just figuring out what each one does. The patterns shown here are textbook archetypes, observed in real GPT-2 small. See <a href="https://transformer-circuits.pub/2021/framework/index.html" target="_blank" rel="noopener">Elhage et al. 2021</a> and <a href="https://transformer-circuits.pub/2022/in-context-learning-and-induction-heads/index.html" target="_blank" rel="noopener">Olsson et al. 2022</a>.</p>
       </details>
     </div>
   </div>
 </div>
 
 <style>
-  #demo-attention .ax-lead { margin: 0 0 1rem !important; font-size: 0.98rem !important; color: var(--nn-body) !important; line-height: 1.6 !important; }
+  #demo-attn .att-lead { margin: 0 0 1.05rem !important; font-size: 0.98rem !important; color: var(--nn-body) !important; line-height: 1.6 !important; }
+  #demo-attn .att-lead em { color: #7c4d0a; font-style: italic; }
 
-  #demo-attention .ax-presets { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.9rem; }
-  #demo-attention .ax-preset {
-    padding: 0.4rem 0.78rem; font-family: var(--nn-mono); font-size: 0.78rem;
-    background: #fff; border: 1px solid var(--nn-line); border-radius: 3px;
-    color: var(--nn-ink); cursor: pointer; transition: all 120ms; max-width: 100%;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  }
-  #demo-attention .ax-preset:hover { border-color: #b77214; }
-  #demo-attention .ax-preset.is-active { background: rgba(251,191,36,0.18); border-color: #b77214; color: #7c4d0a; }
-
-  #demo-attention .ax-status {
-    padding: 0.55rem 0.85rem; font-family: var(--nn-mono); font-size: 0.76rem;
-    color: var(--nn-muted); background: #fafaf7; border: 1px dashed var(--nn-line);
-    border-radius: 3px; margin-bottom: 0.9rem;
-  }
-  #demo-attention .ax-status.is-loading { color: #b77214; border-color: rgba(183,114,20,0.4); }
-  #demo-attention .ax-status.is-ready { color: #2a9e8e; border-color: rgba(42,158,142,0.4); }
-  #demo-attention .ax-status.is-error { color: #c04550; border-color: rgba(192,69,80,0.4); }
-
-  #demo-attention .ax-ctrl {
-    display: flex; gap: 1.3rem; flex-wrap: wrap; align-items: center;
-    padding: 0.75rem 0.95rem; background: #fafaf7; border: 1px solid var(--nn-line);
-    border-radius: 4px; margin-bottom: 0.9rem;
-  }
-  #demo-attention .ax-ctrl__group { display: flex; gap: 0.45rem; align-items: center; flex-wrap: wrap; }
-  #demo-attention .ax-ctrl__label {
-    font-family: var(--nn-mono); font-size: 0.7rem; letter-spacing: 0.1em;
+  #demo-attn .att-prompt-row { display: flex; gap: 0.6rem; margin-bottom: 0.9rem; flex-wrap: wrap; align-items: center; }
+  #demo-attn .att-prompt-row__label {
+    font-family: var(--nn-mono); font-size: 0.7rem; letter-spacing: 0.12em;
     text-transform: uppercase; color: var(--nn-muted);
   }
-  #demo-attention .ax-ctrl__buttons { display: flex; gap: 0.2rem; flex-wrap: wrap; }
-  #demo-attention .ax-btn {
-    padding: 0.25rem 0.55rem; font-family: var(--nn-mono); font-size: 0.75rem;
+  #demo-attn .att-prompt-row__chips { display: flex; gap: 0.35rem; flex-wrap: wrap; flex: 1; }
+  #demo-attn .att-chip {
+    padding: 0.3rem 0.65rem; font-family: var(--nn-mono); font-size: 0.74rem;
     background: #fff; border: 1px solid var(--nn-line); border-radius: 3px;
-    color: var(--nn-ink); cursor: pointer; min-width: 28px;
+    color: var(--nn-ink); cursor: pointer;
   }
-  #demo-attention .ax-btn:hover { border-color: #b77214; }
-  #demo-attention .ax-btn.is-active { background: #b77214; color: #fff; border-color: #b77214; }
-  #demo-attention .ax-ctrl__hint {
-    margin-left: auto; font-family: var(--nn-mono); font-size: 0.74rem; color: var(--nn-muted);
+  #demo-attn .att-chip:hover { border-color: #b77214; }
+  #demo-attn .att-chip.is-active { background: rgba(251,191,36,0.18); border-color: #b77214; color: #7c4d0a; }
+
+  #demo-attn .att-gallery {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: 0.55rem; margin-bottom: 1rem;
   }
+  #demo-attn .att-head {
+    text-align: left; cursor: pointer;
+    padding: 0.65rem 0.75rem; background: #fff;
+    border: 1px solid var(--nn-line); border-radius: 4px; color: var(--nn-ink);
+    display: flex; flex-direction: column; gap: 0.15rem;
+    transition: border-color 120ms, background 120ms;
+  }
+  #demo-attn .att-head:hover { border-color: #b77214; }
+  #demo-attn .att-head.is-active { background: #fffaef; border-color: #b77214; }
+  #demo-attn .att-head__addr {
+    font-family: var(--nn-mono); font-size: 0.66rem; letter-spacing: 0.1em;
+    text-transform: uppercase; color: #b77214;
+  }
+  #demo-attn .att-head__name { font-size: 0.92rem; font-weight: 600; color: var(--nn-ink); }
+  #demo-attn .att-head__hint { font-size: 0.78rem; color: var(--nn-muted); line-height: 1.4; }
 
-  #demo-attention .ax-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 0.9rem; }
-  @media (max-width: 780px) { #demo-attention .ax-pair { grid-template-columns: 1fr; } }
+  #demo-attn .att-grid {
+    display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+    gap: 0.9rem; margin-bottom: 0.9rem;
+  }
+  @media (max-width: 720px) { #demo-attn .att-grid { grid-template-columns: 1fr; } }
 
-  #demo-attention .ax-matrix-wrap, #demo-attention .ax-flow {
+  #demo-attn .att-panel-label {
+    font-family: var(--nn-mono); font-size: 0.7rem; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--nn-muted); margin-bottom: 0.4rem;
+  }
+  #demo-attn .att-grid__matrix, #demo-attn .att-grid__flow {
     background: #fff; border: 1px solid var(--nn-line); border-radius: 4px;
-    padding: 0.75rem 0.8rem;
+    padding: 0.7rem 0.8rem;
   }
-  #demo-attention .ax-matrix-label {
-    font-family: var(--nn-mono); font-size: 0.7rem; letter-spacing: 0.05em;
-    text-transform: uppercase; color: var(--nn-muted); margin-bottom: 0.45rem;
+  #demo-attn .att-svg { display: block; width: 100%; height: auto; }
+  #demo-attn .att-svg .cell { stroke: rgba(255,255,255,0.6); stroke-width: 0.5; cursor: pointer; transition: stroke 100ms; }
+  #demo-attn .att-svg .cell:hover { stroke: #b77214; stroke-width: 2; }
+  #demo-attn .att-svg .cell.is-active { stroke: #b77214; stroke-width: 2.5; }
+  #demo-attn .att-svg .label-row, #demo-attn .att-svg .label-col {
+    font-family: var(--nn-mono); font-size: 9px; fill: var(--nn-muted);
   }
-  #demo-attention .ax-matrix-scroll { overflow: auto; max-width: 100%; }
-  #demo-attention .ax-matrix { display: block; }
-  #demo-attention .ax-matrix rect { cursor: pointer; }
-  #demo-attention .ax-matrix text {
-    font-family: var(--nn-mono); font-size: 9px; fill: var(--nn-muted); pointer-events: none;
-  }
-  #demo-attention .ax-matrix-legend {
-    display: flex; gap: 0.4rem; align-items: center; margin-top: 0.4rem;
-    font-family: var(--nn-mono); font-size: 0.72rem; color: var(--nn-muted);
-  }
-  #demo-attention .ax-leg-swatch {
-    display: inline-block; width: 16px; height: 10px; border: 1px solid var(--nn-line);
-  }
+  #demo-attn .att-svg .label-col { text-anchor: middle; }
+  #demo-attn .att-svg .label-row { text-anchor: end; }
 
-  #demo-attention .ax-flow-svg-wrap { overflow: auto; }
-  #demo-attention .ax-flow-svg { display: block; width: 100%; min-height: 180px; }
-  #demo-attention .ax-flow-svg text {
-    font-family: var(--nn-mono); font-size: 11px; fill: var(--nn-ink);
+  #demo-attn .att-flow {
+    display: flex; flex-direction: column; gap: 0.4rem; min-height: 200px;
   }
-  #demo-attention .ax-flow-svg .ax-flow-tok {
+  #demo-attn .att-flow__row {
+    display: flex; align-items: center; gap: 0.45rem;
+    padding: 0.32rem 0.5rem; border-radius: 3px; transition: background 120ms;
     cursor: pointer;
   }
-  #demo-attention .ax-flow-svg .ax-flow-tok-bg {
-    fill: #fff; stroke: var(--nn-line); stroke-width: 1;
+  #demo-attn .att-flow__row:hover { background: #fffaef; }
+  #demo-attn .att-flow__row.is-active { background: #fff6e0; box-shadow: inset 0 0 0 1px #b77214; }
+  #demo-attn .att-flow__qbadge {
+    font-family: var(--nn-mono); font-size: 0.7rem; padding: 0.1rem 0.4rem;
+    background: rgba(251,191,36,0.18); color: #7c4d0a; border-radius: 3px;
+    min-width: 32px; text-align: center;
   }
-  #demo-attention .ax-flow-svg .ax-flow-tok-bg.is-target {
-    fill: #b77214; stroke: #7c4d0a;
+  #demo-attn .att-flow__tok {
+    font-family: var(--nn-mono); font-size: 0.84rem; min-width: 70px; color: var(--nn-ink);
   }
-  #demo-attention .ax-flow-svg .ax-flow-tok.is-target text { fill: #fff; }
-  #demo-attention .ax-flow-svg .ax-flow-line {
-    stroke: #b77214; stroke-linecap: round; fill: none;
-  }
+  #demo-attn .att-flow__bar { flex: 1; display: flex; gap: 1px; height: 16px; }
+  #demo-attn .att-flow__seg { height: 100%; transition: opacity 120ms; }
 
-  #demo-attention .ax-head-info {
-    padding: 0.8rem 1rem; background: #fafaf7; border: 1px solid var(--nn-line);
-    border-left: 3px solid #b77214; border-radius: 3px;
-    display: flex; gap: 1rem; flex-wrap: wrap; align-items: baseline;
+  #demo-attn .att-diag {
+    margin-top: 0.6rem; padding-top: 0.55rem; border-top: 1px dashed var(--nn-line);
+    display: flex; gap: 0.5rem; align-items: baseline;
   }
-  #demo-attention .ax-head-info__diag { display: flex; gap: 0.5rem; align-items: baseline; }
-  #demo-attention .ax-diag__label {
-    font-family: var(--nn-mono); font-size: 0.72rem; letter-spacing: 0.08em;
+  #demo-attn .att-diag__label {
+    font-family: var(--nn-mono); font-size: 0.68rem; letter-spacing: 0.12em;
     text-transform: uppercase; color: var(--nn-muted);
   }
-  #demo-attention .ax-diag__val { font-family: var(--nn-mono); font-size: 0.95rem; color: #b77214; font-weight: 600; }
-  #demo-attention .ax-head-info__hint {
-    font-size: 0.82rem; color: var(--nn-muted); margin-left: auto;
+  #demo-attn .att-diag__value {
+    font-family: var(--nn-mono); font-size: 0.88rem; color: #b77214; font-weight: 600;
   }
 </style>
 
 <script>
 (function(){
-  const root = document.getElementById("demo-attention"); if (!root) return;
+  var root = document.getElementById("demo-attn"); if (!root) return;
 
-  const PRESETS = [
-    "When John and Mary went to the store, John gave a drink to",
-    "The red apple was on the table. She picked up the",
-    "2 + 2 = 4, 5 + 5 = 10, 3 + 3 =",
-    "A B C D E F G H A B C"
-  ];
+  var PROMPTS = {
+    ioi: ["When"," John"," and"," Mary"," went"," to"," the"," store",","," John"," gave"," a"," drink"," to"],
+    abab: ["A"," B"," A"," B"," A"," B"," A"],
+    paris: ["Paris"," is"," the"," capital"," of"," France"," ."]
+  };
 
-  const statusEl = root.querySelector("[data-ax-status]");
-  const bodyEl = root.querySelector("[data-ax-body]");
-  const layersEl = root.querySelector("[data-ax-layers]");
-  const headsEl = root.querySelector("[data-ax-heads]");
-  const hintEl = root.querySelector("[data-ax-hint]");
-  const matrixSvg = root.querySelector("[data-ax-matrix]");
-  const flowSvg = root.querySelector("[data-ax-flow]");
-  const diagEl = root.querySelector("[data-ax-diag]");
-
-  let state = { L: 0, H: 0, tokens: [], attn: null /* [L][H][T][T] */, target: -1 };
-  let tf = null, model = null, tokenizer = null;
-
-  function setStatus(msg, cls){
-    statusEl.textContent = msg;
-    statusEl.classList.remove("is-loading","is-ready","is-error");
-    if (cls) statusEl.classList.add(cls);
+  function softmaxRow(row){
+    var max = -Infinity, i;
+    for (i=0; i<row.length; i++) if (row[i] > max) max = row[i];
+    var s = 0;
+    for (i=0; i<row.length; i++){ row[i] = Math.exp(row[i] - max); s += row[i]; }
+    for (i=0; i<row.length; i++) row[i] /= s;
+    return row;
+  }
+  function makeMatrix(n, scoreFn){
+    var M = [];
+    for (var q=0; q<n; q++){
+      var row = new Array(n).fill(-1e9);
+      for (var k=0; k<=q; k++) row[k] = scoreFn(q, k);
+      M.push(softmaxRow(row));
+    }
+    return M;
   }
 
-  async function loadModel(){
-    if (model && tokenizer) return;
-    setStatus("Downloading distilGPT2 (~85 MB, cached after first load)…", "is-loading");
-    try {
-      tf = await import("https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.1");
-      tf.env.allowLocalModels = false;
-      tf.env.useBrowserCache = true;
-      tokenizer = await tf.AutoTokenizer.from_pretrained("Xenova/distilgpt2");
-      model = await tf.AutoModel.from_pretrained("Xenova/distilgpt2", { quantized: true });
-    } catch (e) {
-      setStatus("Model load failed: " + (e.message || e), "is-error");
-      throw e;
+  var PATTERNS = {
+    prev: function(tokens){
+      return makeMatrix(tokens.length, function(q,k){
+        if (q === 0) return 0;
+        if (k === q-1) return 4.5;
+        if (k === q)   return 0.5;
+        return -1.5 + (k/tokens.length)*0.3;
+      });
+    },
+    bos: function(tokens){
+      return makeMatrix(tokens.length, function(q,k){
+        if (k === 0) return 4.0;
+        if (k === q) return 0.5;
+        return -1 - (q-k)*0.05;
+      });
+    },
+    self: function(tokens){
+      return makeMatrix(tokens.length, function(q,k){
+        if (k === q) return 4.0;
+        return -2;
+      });
+    },
+    dup: function(tokens){
+      return makeMatrix(tokens.length, function(q,k){
+        if (k === q) return 0.2;
+        if (tokens[k] === tokens[q] && k < q) return 4.0;
+        return -1.5;
+      });
+    },
+    ind: function(tokens){
+      return makeMatrix(tokens.length, function(q,k){
+        if (q === 0 || k === 0) return k === q ? 0.5 : -2;
+        if (tokens[k-1] === tokens[q-1] && k < q) return 4.5;
+        if (k === q) return 0.3;
+        return -2;
+      });
+    },
+    name: function(tokens){
+      function isName(t){ var s = t.trim(); return s.length > 0 && /[A-Z]/.test(s[0]); }
+      return makeMatrix(tokens.length, function(q,k){
+        if (k === q) return 0.4;
+        if (isName(tokens[k]) && k < q && k > 0) return 4.0 - (q-k)*0.05;
+        if (k === 0) return 0.6;
+        return -1.5;
+      });
     }
+  };
+
+  var DIAGNOSES = {
+    prev: "previous-token",
+    bos: "BOS-sink (uninformative)",
+    self: "self-attending (near no-op)",
+    dup: "duplicate-token detector",
+    ind: "induction (pattern completion)",
+    name: "name-mover (copies earliest name)"
+  };
+
+  var svg = root.querySelector("[data-att-svg]");
+  var flowEl = root.querySelector("[data-att-flow]");
+  var diagEl = root.querySelector("[data-att-diag]");
+
+  var currentPrompt = "ioi";
+  var currentHead = "prev";
+  var matrix = null;
+  var tokens = null;
+
+  function escapeHtml(s){ return String(s).replace(/[&<>"']/g, function(c){ return ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"})[c]; }); }
+  function lerpHex(a,b,t){
+    var ar=parseInt(a.slice(1,3),16),ag=parseInt(a.slice(3,5),16),ab=parseInt(a.slice(5,7),16);
+    var br=parseInt(b.slice(1,3),16),bg=parseInt(b.slice(3,5),16),bb=parseInt(b.slice(5,7),16);
+    return "#"+[Math.round(ar+(br-ar)*t),Math.round(ag+(bg-ag)*t),Math.round(ab+(bb-ab)*t)].map(function(n){return n.toString(16).padStart(2,"0");}).join("");
   }
-
-  async function runAttention(text){
-    await loadModel();
-    setStatus(`Running forward pass on "${text.slice(0, 40)}${text.length > 40 ? "…" : ""}"…`, "is-loading");
-    await new Promise(r => setTimeout(r, 20));
-    const inputs = await tokenizer(text, { return_tensors: "np" });
-    const ids = Array.from(inputs.input_ids.data).map(Number);
-    const tokens = ids.map(id => tokenizer.decode([id]));
-
-    const outputs = await model(inputs, { output_attentions: true });
-    const attnTensors = outputs.attentions;
-    if (!attnTensors || !attnTensors.length){ setStatus("This model build didn't return attention weights.", "is-error"); return; }
-    const L = attnTensors.length;
-    const H = attnTensors[0].dims[1];
-    const T = ids.length;
-
-    // convert to nested array [L][H][T][T]
-    const attn = [];
-    for (let l = 0; l < L; l++){
-      const d = new Float32Array(attnTensors[l].data); // dims: [1, H, T, T]
-      const headArr = [];
-      for (let h = 0; h < H; h++){
-        const mat = [];
-        for (let q = 0; q < T; q++){
-          const row = new Float32Array(T);
-          for (let k = 0; k < T; k++){
-            row[k] = d[(h * T + q) * T + k];
-          }
-          mat.push(row);
-        }
-        headArr.push(mat);
-      }
-      attn.push(headArr);
-    }
-
-    state = { L, H, T, tokens, attn, target: T - 1 };
-    buildControls();
-    select(0, 0);
-    setStatus(`Ready · ${L} layers × ${H} heads × ${T} tokens.`, "is-ready");
-    bodyEl.hidden = false;
-  }
-
-  function buildControls(){
-    layersEl.innerHTML = "";
-    for (let l = 0; l < state.L; l++){
-      const b = document.createElement("button");
-      b.className = "ax-btn"; b.textContent = l;
-      b.addEventListener("click", () => select(l, state.H_idx || 0));
-      layersEl.appendChild(b);
-    }
-    headsEl.innerHTML = "";
-    for (let h = 0; h < state.H; h++){
-      const b = document.createElement("button");
-      b.className = "ax-btn"; b.textContent = h;
-      b.addEventListener("click", () => select(state.L_idx || 0, h));
-      headsEl.appendChild(b);
-    }
-  }
-
-  function select(l, h){
-    state.L_idx = l; state.H_idx = h;
-    layersEl.querySelectorAll(".ax-btn").forEach((b, i) => b.classList.toggle("is-active", i === l));
-    headsEl.querySelectorAll(".ax-btn").forEach((b, i) => b.classList.toggle("is-active", i === h));
-    hintEl.textContent = `Layer ${l} · Head ${h}`;
-    renderMatrix();
-    renderFlow();
-    diagnose();
+  function heat(p){
+    p = Math.min(1, Math.max(0, p));
+    if (p < 0.5) return lerpHex("#fff7e6","#fcd68b",p/0.5);
+    return lerpHex("#fcd68b","#7c4d0a",(p-0.5)/0.5);
   }
 
   function renderMatrix(){
-    const { attn, tokens, T, L_idx, H_idx } = state;
-    const mat = attn[L_idx][H_idx];
-    const pad = 70;
-    const cell = Math.max(14, Math.min(28, 420 / T));
-    const size = pad + cell * T;
-    matrixSvg.setAttribute("width", size);
-    matrixSvg.setAttribute("height", size);
-    matrixSvg.setAttribute("viewBox", `0 0 ${size} ${size}`);
-    let html = "";
-    // col labels
-    for (let j = 0; j < T; j++){
-      const x = pad + cell * j + cell / 2;
-      html += `<text x="${x}" y="${pad - 14}" text-anchor="start" transform="rotate(-55 ${x} ${pad-14})">${escapeHtml(tokens[j].trim() || "·").slice(0,7)}</text>`;
+    var n = tokens.length;
+    var SIZE = 380;
+    var pad = 56;
+    var cellSize = (SIZE - pad - 8) / n;
+    var html = "";
+    for (var k=0; k<n; k++){
+      var cx = pad + cellSize * k + cellSize / 2;
+      html += "<text class=\"label-col\" x=\""+cx+"\" y=\""+(pad-6)+"\" transform=\"rotate(-45 "+cx+" "+(pad-6)+")\">"+escapeHtml(tokens[k].trim() || "·")+"</text>";
     }
-    // row labels
-    for (let i = 0; i < T; i++){
-      const y = pad + cell * i + cell * 0.7;
-      html += `<text x="${pad - 6}" y="${y}" text-anchor="end">${escapeHtml(tokens[i].trim() || "·").slice(0,7)}</text>`;
+    for (var q=0; q<n; q++){
+      var cy = pad + cellSize * q + cellSize/2 + 3;
+      html += "<text class=\"label-row\" x=\""+(pad-4)+"\" y=\""+cy+"\">"+escapeHtml(tokens[q].trim() || "·")+"</text>";
     }
-    // cells
-    for (let i = 0; i < T; i++){
-      for (let j = 0; j < T; j++){
-        const w = mat[i][j];
-        const bg = heatColor(w);
-        const cls = i === state.target ? "is-target-row" : "";
-        html += `<rect class="${cls}" x="${pad + cell*j}" y="${pad + cell*i}" width="${cell}" height="${cell}" fill="${bg}" stroke="#e4e4ea" data-q="${i}" data-k="${j}"><title>from ${tokens[i]} → to ${tokens[j]}: ${w.toFixed(3)}</title></rect>`;
+    for (var qq=0; qq<n; qq++){
+      for (var kk=0; kk<=qq; kk++){
+        var x = pad + cellSize * kk;
+        var y = pad + cellSize * qq;
+        var v = matrix[qq][kk];
+        html += "<rect class=\"cell\" data-q=\""+qq+"\" data-k=\""+kk+"\" x=\""+x+"\" y=\""+y+"\" width=\""+cellSize+"\" height=\""+cellSize+"\" fill=\""+heat(v)+"\"><title>q="+escapeHtml(tokens[qq])+" k="+escapeHtml(tokens[kk])+" w="+(v*100).toFixed(1)+"%</title></rect>";
       }
     }
-    matrixSvg.innerHTML = html;
-    matrixSvg.querySelectorAll("rect[data-q]").forEach(r => {
-      r.addEventListener("click", () => { state.target = parseInt(r.dataset.q); renderMatrix(); renderFlow(); });
+    svg.setAttribute("viewBox", "0 0 "+SIZE+" "+SIZE);
+    svg.innerHTML = html;
+    svg.querySelectorAll(".cell").forEach(function(c){
+      c.addEventListener("click", function(){ setActiveQ(parseInt(c.dataset.q)); });
     });
   }
 
   function renderFlow(){
-    const { attn, tokens, T, L_idx, H_idx, target } = state;
-    const mat = attn[L_idx][H_idx];
-    // layout: tokens in a row, arcs from target to source weights
-    const w = 720, topY = 40, botY = 140;
-    const padX = 40, step = Math.max(34, (w - 2 * padX) / Math.max(1, T - 1));
-    const width = padX * 2 + step * (T - 1);
-    flowSvg.setAttribute("viewBox", `0 0 ${width} 190`);
-    flowSvg.setAttribute("preserveAspectRatio","xMinYMid meet");
-    let html = "";
-    // arcs: from target position (top) down to each source position (bottom)
-    if (target >= 0 && target < T){
-      const row = mat[target];
-      // normalize (row already sums to 1 thanks to softmax, but double-check)
-      let maxW = 0; for (let k = 0; k < T; k++) if (row[k] > maxW) maxW = row[k];
-      for (let k = 0; k < T; k++){
-        const weight = row[k];
-        if (weight < 0.015) continue;
-        const x1 = padX + step * target, y1 = topY + 12;
-        const x2 = padX + step * k, y2 = botY - 10;
-        const cy = (y1 + y2) / 2;
-        const alpha = Math.max(0.05, weight / maxW);
-        html += `<path class="ax-flow-line" d="M${x1},${y1} C${x1},${cy} ${x2},${cy} ${x2},${y2}" stroke-width="${1 + weight * 4}" opacity="${alpha}"/>`;
+    var html = "";
+    for (var q=0; q<tokens.length; q++){
+      var row = matrix[q];
+      var segs = "";
+      for (var k=0; k<tokens.length; k++){
+        var w = (k <= q) ? row[k] : 0;
+        var color = w > 0.001 ? heat(w) : "#f5f1e8";
+        var op = w > 0.001 ? 1 : 0.4;
+        segs += "<span class=\"att-flow__seg\" style=\"flex:1;background:"+color+";opacity:"+op+"\" title=\""+escapeHtml(tokens[k])+" "+(w*100).toFixed(1)+"%\"></span>";
       }
+      html += "<div class=\"att-flow__row\" data-q=\""+q+"\"><span class=\"att-flow__qbadge\">q"+q+"</span><span class=\"att-flow__tok\">"+escapeHtml(tokens[q].trim() || "·")+"</span><span class=\"att-flow__bar\">"+segs+"</span></div>";
     }
-    // top row: target selector
-    for (let i = 0; i < T; i++){
-      const x = padX + step * i;
-      const isT = i === target;
-      const tokW = Math.max(28, (tokens[i].trim().length || 1) * 7 + 8);
-      html += `<g class="ax-flow-tok ${isT ? "is-target" : ""}" data-tok="${i}">` +
-        `<rect class="ax-flow-tok-bg ${isT ? "is-target" : ""}" x="${x - tokW/2}" y="${topY - 8}" width="${tokW}" height="20" rx="3"/>` +
-        `<text x="${x}" y="${topY + 6}" text-anchor="middle">${escapeHtml(tokens[i].trim() || "·").slice(0,8)}</text>` +
-        `</g>`;
-    }
-    // bottom row: source positions
-    for (let i = 0; i < T; i++){
-      const x = padX + step * i;
-      const weight = target >= 0 ? mat[target][i] : 0;
-      const tokW = Math.max(28, (tokens[i].trim().length || 1) * 7 + 8);
-      html += `<g>` +
-        `<rect x="${x - tokW/2}" y="${botY - 6}" width="${tokW}" height="20" rx="3" fill="#fff" stroke="#d7d7dc"/>` +
-        `<text x="${x}" y="${botY + 8}" text-anchor="middle">${escapeHtml(tokens[i].trim() || "·").slice(0,8)}</text>` +
-        (weight > 0.05 ? `<text x="${x}" y="${botY + 28}" text-anchor="middle" fill="#b77214">${weight.toFixed(2)}</text>` : "") +
-        `</g>`;
-    }
-    // labels
-    html += `<text x="4" y="${topY + 6}" fill="#b77214" font-weight="600">target →</text>`;
-    html += `<text x="4" y="${botY + 8}" fill="#666">source →</text>`;
-    flowSvg.innerHTML = html;
-    flowSvg.querySelectorAll("g.ax-flow-tok").forEach(g => {
-      g.addEventListener("click", () => { state.target = parseInt(g.dataset.tok); renderMatrix(); renderFlow(); });
+    flowEl.innerHTML = html;
+    flowEl.querySelectorAll(".att-flow__row").forEach(function(r){
+      r.addEventListener("click", function(){ setActiveQ(parseInt(r.dataset.q)); });
     });
   }
 
-  function diagnose(){
-    const { attn, T, L_idx, H_idx } = state;
-    const mat = attn[L_idx][H_idx];
-    let prevMass = 0, selfMass = 0, bosMass = 0, avgRow = 0;
-    for (let i = 0; i < T; i++){
-      if (i - 1 >= 0) prevMass += mat[i][i-1];
-      selfMass += mat[i][i];
-      bosMass += mat[i][0];
-      let entropy = 0;
-      for (let j = 0; j <= i; j++){ const p = mat[i][j]; if (p > 0) entropy -= p * Math.log(p); }
-      avgRow += entropy;
-    }
-    prevMass /= Math.max(1, T-1);
-    selfMass /= T; bosMass /= T; avgRow /= T;
-    let label = "mixed";
-    if (prevMass > 0.5) label = "previous-token head";
-    else if (selfMass > 0.5) label = "self-attention (identity-like)";
-    else if (bosMass > 0.5) label = "BOS sink (attention-rest pattern)";
-    else if (avgRow > 1.7) label = "diffuse — looks at many positions";
-    diagEl.textContent = `${label} · prev=${prevMass.toFixed(2)} · self=${selfMass.toFixed(2)} · BOS=${bosMass.toFixed(2)}`;
+  function setActiveQ(q){
+    svg.querySelectorAll(".cell.is-active").forEach(function(c){ c.classList.remove("is-active"); });
+    svg.querySelectorAll(".cell[data-q=\""+q+"\"]").forEach(function(c){ c.classList.add("is-active"); });
+    flowEl.querySelectorAll(".att-flow__row").forEach(function(r){
+      r.classList.toggle("is-active", parseInt(r.dataset.q) === q);
+    });
   }
 
-  function heatColor(v){
-    const p = Math.min(1, Math.max(0, v));
-    if (p < 0.5){
-      const t = p / 0.5; return lerpHex("#fff7e6", "#fcd68b", t);
-    } else {
-      const t = (p - 0.5) / 0.5; return lerpHex("#fcd68b", "#b77214", t);
-    }
+  function update(){
+    tokens = PROMPTS[currentPrompt];
+    matrix = PATTERNS[currentHead](tokens);
+    renderMatrix();
+    renderFlow();
+    diagEl.textContent = DIAGNOSES[currentHead];
+    setActiveQ(tokens.length - 1);
   }
-  function lerpHex(a, b, t){
-    const ar=parseInt(a.slice(1,3),16),ag=parseInt(a.slice(3,5),16),ab=parseInt(a.slice(5,7),16);
-    const br=parseInt(b.slice(1,3),16),bg=parseInt(b.slice(3,5),16),bb=parseInt(b.slice(5,7),16);
-    return "#" + [Math.round(ar+(br-ar)*t),Math.round(ag+(bg-ag)*t),Math.round(ab+(bb-ab)*t)]
-      .map(n=>n.toString(16).padStart(2,"0")).join("");
-  }
-  function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c])); }
 
-  root.querySelectorAll("[data-ax-preset]").forEach(b => {
-    b.addEventListener("click", async () => {
-      root.querySelectorAll("[data-ax-preset]").forEach(x => x.classList.remove("is-active"));
+  root.querySelectorAll("[data-att-prompt]").forEach(function(b){
+    b.addEventListener("click", function(){
+      root.querySelectorAll("[data-att-prompt]").forEach(function(x){ x.classList.remove("is-active"); });
       b.classList.add("is-active");
-      try { await runAttention(PRESETS[parseInt(b.dataset.axPreset)]); }
-      catch(e){ setStatus("Forward pass failed: " + (e.message || e), "is-error"); }
+      currentPrompt = b.dataset.attPrompt;
+      update();
     });
   });
+  root.querySelectorAll("[data-att-head]").forEach(function(b){
+    b.addEventListener("click", function(){
+      root.querySelectorAll("[data-att-head]").forEach(function(x){ x.classList.remove("is-active"); });
+      b.classList.add("is-active");
+      currentHead = b.dataset.attHead;
+      update();
+    });
+  });
+
+  update();
 })();
 </script>

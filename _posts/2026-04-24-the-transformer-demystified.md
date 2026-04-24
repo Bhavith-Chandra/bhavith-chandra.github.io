@@ -25,7 +25,7 @@ Let's walk the floor.
 
 {% include demos/factory-floor.html %}
 
-Click a station. Press play. Watch the little token slide along the belt. That is — genuinely — the shape of what happens when you type a message to an LLM. All the rest is detail.
+Click a station. Press play. Watch the little token slide along the belt. That is, genuinely, the shape of what happens when you type a message to an LLM. All the rest is detail.
 
 ## The six stations, briefly
 
@@ -35,7 +35,7 @@ Click a station. Press play. Watch the little token slide along the belt. That i
 
 **3. Attention.** This is the one everyone talks about. At every position in the sentence, the model asks: *"which other positions should I pay attention to, and what information should I pull from them?"* The word `"it"` notices the noun three tokens back. The verb notices its subject. Nothing magical, just a weighted average steered by the vectors themselves.
 
-**4. MLP.** A per-position feed-forward network. Same-shape input, same-shape output, but in between it does non-linear processing. This is where a lot of the model's "knowledge" seems to live — facts, transformations, little lookup patterns.
+**4. MLP.** A per-position feed-forward network. Same-shape input, same-shape output, but in between it does non-linear processing. This is where a lot of the model's "knowledge" seems to live, facts, transformations, little lookup patterns.
 
 **5. Repeat.** Attention + MLP is one *block*. You stack a pile of these. GPT-2 small has 12. Llama 3 8B has 32. GPT-4 is thought to have something like 120. Every block reads from the conveyor belt and writes back to it.
 
@@ -64,11 +64,11 @@ Sounds like a tiny detail. It is the reason transformers work.
 - Each block only has to produce a small *correction* to the running total, which is way easier to train than "compute everything from scratch."
 - For us MI-folk, the residual stream gives us a single, canonical place to *read the model's mind* at any point in the computation. Layer 3? Just look at the belt after block 3.
 
-We're going to spend an entire post on the residual stream — it's that important — so I won't belabour it here. File it away: **the belt is the main character.**
+We're going to spend an entire post on the residual stream, it's that important, so I won't belabour it here. File it away: **the belt is the main character.**
 
 ## Why this thing beat everything else
 
-For a long time, the reigning architecture for language was the **recurrent neural network** (RNN) — a model that reads text one token at a time, maintaining a little hidden state as it goes. Like reading a book by passing a single post-it note from page to page and updating it. It works. Sort of. Two problems:
+For a long time, the reigning architecture for language was the **recurrent neural network** (RNN), a model that reads text one token at a time, maintaining a little hidden state as it goes. Like reading a book by passing a single post-it note from page to page and updating it. It works. Sort of. Two problems:
 
 1. **You can't parallelise it.** Token $t$ depends on token $t-1$'s hidden state. You have to process the sentence sequentially. On a GPU, that's a crime against nature.
 2. **The post-it note forgets.** Long-range dependencies fade. By the end of a paragraph the model has basically lost the beginning.
@@ -79,14 +79,14 @@ The paper was called, memorably, *"Attention Is All You Need,"* which turned out
 
 <aside class="callout callout--key">
   <div class="callout__label">Why this matters for MI</div>
-  <p>Every modern LLM you've heard of — GPT-4, Claude, Llama, Gemini — is a transformer. Different sizes, different training data, different tweaks. But the factory floor is the same six stations. Learn this once and you've got the scaffolding for every frontier model.</p>
+  <p>Every modern LLM you've heard of, GPT-4, Claude, Llama, Gemini, is a transformer. Different sizes, different training data, different tweaks. But the factory floor is the same six stations. Learn this once and you've got the scaffolding for every frontier model.</p>
 </aside>
 
 ## "Decoder-only," and why we only care about that flavour
 
 The original 2017 paper had an *encoder* (for reading the input) and a *decoder* (for writing the output). Machine-translation, that's what they were after.
 
-Then people noticed: if you just want to generate text, you don't need the encoder. Chop it off. Keep the decoder. Train it to predict the next token, given all previous tokens. That's a **decoder-only transformer** — GPT-2, GPT-3, Claude, Llama, all of them.
+Then people noticed: if you just want to generate text, you don't need the encoder. Chop it off. Keep the decoder. Train it to predict the next token, given all previous tokens. That's a **decoder-only transformer**, GPT-2, GPT-3, Claude, Llama, all of them.
 
 For this post and every post after, when I say "transformer," I mean decoder-only. Simpler. One stream of tokens in, one probability distribution out. The structure you clicked through above.
 
@@ -111,11 +111,11 @@ That's all it means. One token at a time, each conditioned on everything before 
 
 The next few posts walk through each station in detail:
 
-- **Tokens** — what they are, why they're not words, and why this causes subtle chaos.
-- **The residual stream** — the belt, in all its glory, plus the single most useful mental model for understanding an LLM.
-- **Attention** — how a position decides what to look at, and the QK/OV decomposition that turned MI into a real science.
-- **MLPs** — the feed-forward layers, and why we now think of them as *key-value memories*.
-- **The full forward pass** — everything wired up, end to end, with real numbers from a real model.
+- **Tokens**, what they are, why they're not words, and why this causes subtle chaos.
+- **The residual stream**, the belt, in all its glory, plus the single most useful mental model for understanding an LLM.
+- **Attention**, how a position decides what to look at, and the QK/OV decomposition that turned MI into a real science.
+- **MLPs**, the feed-forward layers, and why we now think of them as *key-value memories*.
+- **The full forward pass**, everything wired up, end to end, with real numbers from a real model.
 
 By the end of that run, you'll have the complete vocabulary to read any transformer interpretability paper. The next blog starts with tokens.
 

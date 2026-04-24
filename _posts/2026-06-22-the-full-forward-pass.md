@@ -11,7 +11,7 @@ math: true
 
 We've spent six posts taking a transformer apart into pieces. Now I want to put it back together and run something through it, end to end, with real numbers, in front of you.
 
-Because — and this is the bit that's hard to internalise from words alone — every piece we've talked about runs in *one shot*. Tokenize, embed, attention block 0, MLP block 0, attention block 1, ..., unembed. Single forward pass. A few milliseconds on a GPU. Out comes a probability distribution over 50,000 tokens. That's an inference. Repeat once for every word a chatbot generates.
+Because, and this is the bit that's hard to internalise from words alone, every piece we've talked about runs in *one shot*. Tokenize, embed, attention block 0, MLP block 0, attention block 1..., unembed. Single forward pass. A few milliseconds on a GPU. Out comes a probability distribution over 50,000 tokens. That's an inference. Repeat once for every word a chatbot generates.
 
 So this post is short. The demo is the point. Let's run the floor.
 
@@ -23,7 +23,7 @@ So this post is short. The demo is the point. Let's run the floor.
 
 Pick a preset. Press **Step forward**. Or smash the auto-play. Watch each stage. The little token strip up top is the residual stream, showing the logit-lens prediction at every position. It evolves as you step from embedding to block 0 to block 5. By the time you reach the unembed stage, the rightmost cell has converged on the model's actual answer.
 
-Try the "A B C D E F G A B C" preset for something interesting. You'll see how, in middle layers, the model picks up the *pattern* from the first half of the sequence and starts predicting that the next token will be "D" — pure in-context induction.
+Try the "A B C D E F G A B C" preset for something interesting. You'll see how, in middle layers, the model picks up the *pattern* from the first half of the sequence and starts predicting that the next token will be "D", pure in-context induction.
 
 ## The seven stages, narrated
 
@@ -35,7 +35,7 @@ For the canonical prompt *"The capital of France is"*:
 
 **3. Block 0 (attn + MLP).** The first attention pass starts mixing information across positions. "France" gets a peek at "of" and "capital". The MLP starts annotating each token with surface features (proper noun, geographic entity, etc.). Logit-lens predictions are still mostly just the input tokens; the model hasn't "decided" anything yet.
 
-**4. Blocks 1–4.** This is where the real semantic work happens. Names and geographic relations consolidate. Around block 3, the prediction at the final position starts looking distinctly French — country names, region names, "the". Block 4 starts pushing toward city names. By block 4 the top guess is often already "Paris", though with low confidence.
+**4. Blocks 1–4.** This is where the real semantic work happens. Names and geographic relations consolidate. Around block 3, the prediction at the final position starts looking distinctly French, country names, region names, "the". Block 4 starts pushing toward city names. By block 4 the top guess is often already "Paris", though with low confidence.
 
 **5. Block 5 (final).** The last block sharpens the answer. Confidence on " Paris" climbs. Other candidates (" the"," France"," French") get suppressed.
 
@@ -66,7 +66,7 @@ That is the full surface area of distilGPT2. Modern frontier models are hundreds
 
 <aside class="callout callout--key">
   <div class="callout__label">Why this matters for MI</div>
-  <p>The whole point of mechanistic interpretability is to take that surface area and label it. Every neuron, every head — what is it doing? What does it read from the residual stream? What does it write back? When we know that for every component, we can reconstruct the algorithm the model actually learned. We're a long way from solving that for frontier models, but we have the tools, and they get sharper every year.</p>
+  <p>The whole point of mechanistic interpretability is to take that surface area and label it. Every neuron, every head, what is it doing? What does it read from the residual stream? What does it write back? When we know that for every component, we can reconstruct the algorithm the model actually learned. We're a long way from solving that for frontier models, but we have the tools, and they get sharper every year.</p>
 </aside>
 
 ## The thing I want you to notice
@@ -81,7 +81,7 @@ Three observations that took me a while to internalise:
 
 **3. The model doesn't reason in steps the way we do.** It does not first identify "France", then look up "is a country", then look up "capitals of countries", then output "Paris". It does, in parallel and across layers, a fuzzy soup of all of these things. The logit lens shows you the average direction, but the underlying computation is a giant linear-algebra-and-gates blob. The reason it works is the same reason gradient descent works: enough small contributions in the right direction add up to the right answer.
 
-This last one is uncomfortable for anyone who wants neat causal stories. It's also why MI is hard. You can't ask "what happened at step 3?" because there is no step 3. You can ask "what did head 7 in layer 4 contribute?" — and that you can answer.
+This last one is uncomfortable for anyone who wants neat causal stories. It's also why MI is hard. You can't ask "what happened at step 3?" because there is no step 3. You can ask "what did head 7 in layer 4 contribute?", and that you can answer.
 
 ## What you now know
 
@@ -96,7 +96,7 @@ That's a real foundation. It's enough to start poking at small models in code. I
 
 ## Where this goes next
 
-Up next, the curriculum widens out. The next chapter is about **features and circuits** — taking the architectural picture you now have and using it to actually find concrete pieces of computation inside trained models. Sparse autoencoders, the IOI circuit in detail, polysemanticity solved (mostly), the hunt for "concepts" in feature space.
+Up next, the curriculum widens out. The next chapter is about **features and circuits**, taking the architectural picture you now have and using it to actually find concrete pieces of computation inside trained models. Sparse autoencoders, the IOI circuit in detail, polysemanticity solved (mostly), the hunt for "concepts" in feature space.
 
 But that's a different post. For now: you understand a transformer. The factory floor is no longer mysterious. It is, in fact, kind of boring. Six stations and a belt.
 
