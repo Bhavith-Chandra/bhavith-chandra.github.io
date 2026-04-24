@@ -1,16 +1,10 @@
 ---
 layout: post-article
 title: "What Is Mechanistic Interpretability?"
-date: 2026-04-24
+date: 2026-01-24
 permalink: /posts/what-is-mechanistic-interpretability/
 excerpt: "Two ways to understand a magic trick. Most AI research does one. Mechanistic interpretability does the other, and it's a completely different game."
-series: "Phase 1 · Foundations"
-series_index: 2
-series_index_prev: 1
-series_index_next: 3
-series_total: 31
 read_time_label: "16 min read"
-tags: [mechanistic-interpretability, foundations]
 ---
 
 Okay, quick thought experiment. Two ways to figure out a magic trick.

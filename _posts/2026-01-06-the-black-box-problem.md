@@ -1,15 +1,10 @@
 ---
 layout: post-article
 title: "The Black Box Problem"
-date: 2026-04-23
+date: 2026-01-06
 permalink: /posts/the-black-box-problem/
 excerpt: "An AI decides whether you get a loan. Another helps diagnose your cancer. The people who built them don't fully know how they work either. That's not a metaphor."
-series: "Phase 1 · Foundations"
-series_index: 1
-series_index_next: 2
-series_total: 31
 read_time_label: "14 min read"
-tags: [mechanistic-interpretability, foundations]
 ---
 
 Okay, this is the bit that keeps me up at night.

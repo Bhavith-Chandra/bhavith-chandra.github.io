@@ -1,16 +1,10 @@
 ---
 layout: post-article
 title: "Weights & Connections: Where Knowledge Actually Lives"
-date: 2026-04-27
+date: 2026-03-19
 permalink: /posts/weights-and-connections/
 excerpt: "Every fact, every grammar rule, every pattern a model ever learned is compressed into a pile of numbers. Nobody designed a single one of them."
-series: "Phase 2 · Building Blocks"
-series_index: 5
-series_index_prev: 4
-series_index_next: 6
-series_total: 31
 read_time_label: "10 min read"
-tags: [mechanistic-interpretability, building-blocks]
 ---
 
 Quick puzzle to kick us off. Say someone told you: *"Hide a trillion facts inside a pile of numbers. Go."* How would you do it?

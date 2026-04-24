@@ -1,16 +1,10 @@
 ---
 layout: post-article
 title: "Neurons & Activations: The On/Off Switch That Isn't"
-date: 2026-04-26
+date: 2026-03-01
 permalink: /posts/neurons-and-activations/
 excerpt: "Your brain has 86 billion neurons. GPT-4 has about 1.8 trillion. Same word, not remotely the same thing. And the AI version is stunningly simple."
-series: "Phase 2 · Building Blocks"
-series_index: 4
-series_index_prev: 3
-series_index_next: 5
-series_total: 31
 read_time_label: "9 min read"
-tags: [mechanistic-interpretability, building-blocks]
 ---
 
 Your brain: 86 billion neurons. GPT-4: about 1.8 trillion "neurons".

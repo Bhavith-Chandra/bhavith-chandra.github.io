@@ -1,16 +1,10 @@
 ---
 layout: post-article
 title: "Layers: What Each Floor of the Building Does"
-date: 2026-04-28
+date: 2026-04-06
 permalink: /posts/layers-what-each-one-does/
 excerpt: "Layer 1 sees edges. Layer 5 sees this specific person. Same pixels, different lens at every level. That's why deep learning is deep."
-series: "Phase 2 · Building Blocks"
-series_index: 6
-series_index_prev: 5
-series_index_next: 7
-series_total: 31
 read_time_label: "11 min read"
-tags: [mechanistic-interpretability, building-blocks]
 ---
 
 Picture this: you show a trained network a photo of a face.

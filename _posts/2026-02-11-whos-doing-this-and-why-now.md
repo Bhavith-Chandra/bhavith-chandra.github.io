@@ -1,16 +1,10 @@
 ---
 layout: post-article
 title: "Who's Doing This, and Why Now?"
-date: 2026-04-25
+date: 2026-02-11
 permalink: /posts/whos-doing-this-and-why-now/
 excerpt: "A quick tour of the labs, the people, and the 8-year sprint that took mechanistic interpretability from a weird hobby to a central safety bet."
-series: "Phase 1 · Foundations"
-series_index: 3
-series_index_prev: 2
-series_index_next: 4
-series_total: 31
 read_time_label: "12 min read"
-tags: [mechanistic-interpretability, foundations]
 ---
 
 Here's a fun piece of history.

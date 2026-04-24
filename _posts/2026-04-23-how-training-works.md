@@ -1,15 +1,10 @@
 ---
 layout: post-article
 title: "How Training Works: The Ball Rolling Downhill"
-date: 2026-04-29
+date: 2026-04-23
 permalink: /posts/how-training-works/
 excerpt: "Every weight started life as a random number. All the grammar, all the facts, learned by being wrong billions of times. This has a name, and it's the closest thing AI has to a creation story."
-series: "Phase 2 · Building Blocks"
-series_index: 7
-series_index_prev: 6
-series_total: 31
 read_time_label: "12 min read"
-tags: [mechanistic-interpretability, building-blocks]
 ---
 
 Okay, final post of Phase 2. Let me pull on one thread I keep teasing.

@@ -11,12 +11,6 @@ layout: default
 <main id="main" role="main" class="blog-article-main">
   <article class="blog-article">
     <header class="blog-article__hero">
-      <div class="blog-article__meta">
-        {% if page.series %}<span class="blog-article__tag">{{ page.series }}</span>{% endif %}
-        {% if page.series_index and page.series_total %}
-          <span class="blog-article__series">Post {{ page.series_index }} / {{ page.series_total }}</span>
-        {% endif %}
-      </div>
       <h1 class="blog-article__title">{{ page.title }}</h1>
       <div class="blog-article__byline">
         <time datetime="{{ page.date | date_to_xmlschema }}">{{ page.date | date: "%b %-d, %Y" }}</time>
@@ -28,7 +22,30 @@ layout: default
       {{ content }}
     </div>
 
-    {% include post-series-nav.html %}
+    <nav class="post-nav" aria-label="Post navigation">
+      {% if page.previous %}
+        <a class="post-nav__link post-nav__link--prev" href="{{ page.previous.url | relative_url }}">
+          <div class="post-nav__dir">← Older</div>
+          <div class="post-nav__title">{{ page.previous.title }}</div>
+        </a>
+      {% else %}
+        <span class="post-nav__link post-nav__link--prev post-nav__link--disabled">
+          <div class="post-nav__dir">← Older</div>
+          <div class="post-nav__title">First post</div>
+        </span>
+      {% endif %}
+      {% if page.next %}
+        <a class="post-nav__link post-nav__link--next" href="{{ page.next.url | relative_url }}">
+          <div class="post-nav__dir">Newer →</div>
+          <div class="post-nav__title">{{ page.next.title }}</div>
+        </a>
+      {% else %}
+        <span class="post-nav__link post-nav__link--next post-nav__link--disabled">
+          <div class="post-nav__dir">Newer →</div>
+          <div class="post-nav__title">Latest</div>
+        </span>
+      {% endif %}
+    </nav>
   </article>
 </main>
 
