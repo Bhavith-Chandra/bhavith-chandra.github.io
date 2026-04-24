@@ -1,0 +1,44 @@
+{% if page.series_index and page.series_total %}
+{% assign all_posts = site.posts | sort: "series_index" %}
+{% assign prev = nil %}
+{% assign next = nil %}
+{% for p in all_posts %}
+  {% if p.series_index %}
+    {% if p.series_index == page.series_index_prev %}{% assign prev = p %}{% endif %}
+    {% if p.series_index == page.series_index_next %}{% assign next = p %}{% endif %}
+  {% endif %}
+{% endfor %}
+{% assign pct = page.series_index | times: 100 | divided_by: page.series_total %}
+
+<div class="series-nav">
+  <div class="series-nav__progress">
+    <span>{{ page.series }} · Post {{ page.series_index }} / {{ page.series_total }}</span>
+    <span class="series-nav__bar"><span class="series-nav__bar-fill" style="width: {{ pct }}%"></span></span>
+    <span>{{ pct }}%</span>
+  </div>
+  <div class="series-nav__links">
+    {% if prev %}
+      <a class="series-nav__link series-nav__link--prev" href="{{ prev.url | relative_url }}">
+        <div class="series-nav__dir">← Previous</div>
+        <div class="series-nav__title">{{ prev.title }}</div>
+      </a>
+    {% else %}
+      <span class="series-nav__link series-nav__link--disabled">
+        <div class="series-nav__dir">← Previous</div>
+        <div class="series-nav__title">Start of series</div>
+      </span>
+    {% endif %}
+    {% if next %}
+      <a class="series-nav__link series-nav__link--next" href="{{ next.url | relative_url }}">
+        <div class="series-nav__dir">Next →</div>
+        <div class="series-nav__title">{{ next.title }}</div>
+      </a>
+    {% else %}
+      <span class="series-nav__link series-nav__link--next series-nav__link--disabled">
+        <div class="series-nav__dir">Next →</div>
+        <div class="series-nav__title">Coming soon</div>
+      </span>
+    {% endif %}
+  </div>
+</div>
+{% endif %}

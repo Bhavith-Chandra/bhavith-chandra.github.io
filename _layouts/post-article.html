@@ -1,0 +1,66 @@
+---
+layout: default
+---
+
+{% include base_path %}
+
+<link rel="stylesheet" href="{{ '/assets/css/blog-article.css' | relative_url }}">
+
+<div class="reading-progress" aria-hidden="true"><span class="reading-progress__fill" data-reading-fill></span></div>
+
+<main id="main" role="main" class="blog-article-main">
+  <article class="blog-article">
+    <header class="blog-article__hero">
+      <div class="blog-article__meta">
+        {% if page.series %}<span class="blog-article__tag">{{ page.series }}</span>{% endif %}
+        {% if page.series_index and page.series_total %}
+          <span class="blog-article__series">Post {{ page.series_index }} / {{ page.series_total }}</span>
+        {% endif %}
+      </div>
+      <h1 class="blog-article__title">{{ page.title }}</h1>
+      <div class="blog-article__byline">
+        <time datetime="{{ page.date | date_to_xmlschema }}">{{ page.date | date: "%b %-d, %Y" }}</time>
+        {% if page.read_time_label %}<span aria-hidden="true"> · </span><span>{{ page.read_time_label }}</span>{% endif %}
+      </div>
+    </header>
+
+    <div class="blog-article__body">
+      {{ content }}
+    </div>
+
+    {% include post-series-nav.html %}
+  </article>
+</main>
+
+<script>
+(function() {
+  // Reading progress
+  const fill = document.querySelector("[data-reading-fill]");
+  const article = document.querySelector(".blog-article");
+  if (fill && article) {
+    const update = () => {
+      const rect = article.getBoundingClientRect();
+      const total = rect.height - window.innerHeight;
+      const scrolled = Math.min(Math.max(-rect.top, 0), total);
+      const pct = total > 0 ? (scrolled / total) * 100 : 0;
+      fill.style.width = pct.toFixed(1) + "%";
+    };
+    window.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+    update();
+  }
+  // Heading anchors
+  document.querySelectorAll(".blog-article__body h2, .blog-article__body h3").forEach(h => {
+    if (!h.id) {
+      const id = h.textContent.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+      h.id = id;
+    }
+    const a = document.createElement("a");
+    a.href = "#" + h.id;
+    a.className = "anchor";
+    a.setAttribute("aria-label", "link to this section");
+    a.textContent = "#";
+    h.appendChild(a);
+  });
+})();
+</script>

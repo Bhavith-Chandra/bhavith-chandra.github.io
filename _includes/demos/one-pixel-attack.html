@@ -1,0 +1,272 @@
+<div class="idemo" id="demo-onepixel">
+  <div class="idemo__card">
+    <div class="idemo__head"><span class="idemo__title">Interactive · The one-pixel attack</span></div>
+    <div class="idemo__body">
+
+      <p class="opa-lead">Here's a tiny image a model classifies as a <strong>Stop Sign</strong>. Click any single cell and pick a colour. Watch what happens to the prediction.</p>
+
+      <div class="opa-row">
+        <div class="opa-grid-wrap">
+          <div class="opa-grid" data-opa-grid aria-label="12×12 pixel image"></div>
+          <div class="opa-palette" data-opa-palette>
+            <button class="opa-swatch" data-color="#c42f2f" title="red" style="background:#c42f2f"></button>
+            <button class="opa-swatch" data-color="#ffffff" title="white" style="background:#ffffff"></button>
+            <button class="opa-swatch" data-color="#000000" title="black" style="background:#000000"></button>
+            <button class="opa-swatch" data-color="#3573d9" title="blue" style="background:#3573d9"></button>
+            <button class="opa-swatch" data-color="#e5b93a" title="yellow" style="background:#e5b93a"></button>
+            <button class="opa-swatch" data-color="#2a9e4e" title="green" style="background:#2a9e4e"></button>
+            <button class="opa-reset" data-opa-reset>reset</button>
+          </div>
+        </div>
+
+        <div class="opa-output">
+          <div class="opa-output__label">Model prediction</div>
+          <div class="opa-output__label-current" data-opa-label>Stop Sign</div>
+          <div class="opa-conf">
+            <div class="opa-conf__row">
+              <span class="opa-conf__name">Stop Sign</span>
+              <div class="opa-conf__track"><span class="opa-conf__fill" data-opa-cfill-0 style="width:98%"></span></div>
+              <span class="opa-conf__pct" data-opa-cpct-0>98%</span>
+            </div>
+            <div class="opa-conf__row">
+              <span class="opa-conf__name">Speed 30</span>
+              <div class="opa-conf__track"><span class="opa-conf__fill opa-conf__fill--warn" data-opa-cfill-1 style="width:1.2%"></span></div>
+              <span class="opa-conf__pct" data-opa-cpct-1>1.2%</span>
+            </div>
+            <div class="opa-conf__row">
+              <span class="opa-conf__name">Yield</span>
+              <div class="opa-conf__track"><span class="opa-conf__fill opa-conf__fill--amber" data-opa-cfill-2 style="width:0.8%"></span></div>
+              <span class="opa-conf__pct" data-opa-cpct-2>0.8%</span>
+            </div>
+          </div>
+          <p class="opa-note" data-opa-note>Only <strong>one</strong> pixel has changed. A human wouldn't even notice. The model flips between categories anyway.</p>
+        </div>
+      </div>
+
+    </div>
+    <details>
+      <summary>How this demo works</summary>
+      <p>A 12×12 grid stands in for a low-res image. Each time you recolour a cell, a small "adversarial score" is computed: pixels near the edges and corners, and unusual colours, push confidence toward <em>Speed 30</em> or <em>Yield</em>. The rules are hard-coded, but the behaviour mirrors a real finding: "<em>One pixel attack for fooling deep neural networks</em>" (Su et al., 2019), where a single pixel flip can collapse a 99 %-confident classifier to a totally different label.</p>
+    </details>
+  </div>
+</div>
+
+<style>
+  #demo-onepixel .opa-lead { margin: 0 0 1.1rem !important; font-size: 0.98rem !important; color: var(--nn-body) !important; line-height: 1.6 !important; }
+  #demo-onepixel .opa-row { display: grid; grid-template-columns: auto 1fr; gap: 1.4rem; align-items: start; }
+  #demo-onepixel .opa-grid-wrap { display: flex; flex-direction: column; gap: 0.6rem; }
+  #demo-onepixel .opa-grid {
+    display: grid; grid-template-columns: repeat(12, 22px); grid-template-rows: repeat(12, 22px);
+    gap: 1px; padding: 3px; background: var(--nn-line); border-radius: 4px;
+  }
+  #demo-onepixel .opa-cell {
+    width: 22px; height: 22px; border: none; cursor: pointer; transition: transform 120ms, box-shadow 120ms;
+  }
+  #demo-onepixel .opa-cell:hover { transform: scale(1.08); box-shadow: 0 0 0 2px var(--nn-accent); z-index: 2; position: relative; }
+  #demo-onepixel .opa-cell.is-changed { box-shadow: 0 0 0 2px var(--nn-accent-dark), 0 0 10px var(--nn-accent-glow); z-index: 3; position: relative; }
+
+  #demo-onepixel .opa-palette {
+    display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap;
+  }
+  #demo-onepixel .opa-swatch {
+    width: 28px; height: 28px; border: 2px solid #ffffff; box-shadow: 0 0 0 1px var(--nn-line);
+    cursor: pointer; border-radius: 3px; transition: box-shadow 150ms, transform 120ms;
+  }
+  #demo-onepixel .opa-swatch:hover { transform: scale(1.1); }
+  #demo-onepixel .opa-swatch.is-selected { box-shadow: 0 0 0 2px var(--nn-accent); transform: scale(1.08); }
+  #demo-onepixel .opa-reset {
+    padding: 0.35rem 0.7rem; background: transparent; color: var(--nn-muted);
+    border: 1px solid var(--nn-line); border-radius: 3px; cursor: pointer;
+    font-family: var(--nn-mono); font-size: 0.72rem; letter-spacing: 0.08em;
+    text-transform: uppercase; margin-left: auto;
+  }
+  #demo-onepixel .opa-reset:hover { color: var(--nn-accent); border-color: var(--nn-accent); }
+
+  #demo-onepixel .opa-output {
+    background: #fafafc; border: 1px solid var(--nn-line); border-radius: 6px; padding: 1rem 1.1rem;
+  }
+  #demo-onepixel .opa-output__label {
+    font-family: var(--nn-mono); font-size: 0.68rem; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--nn-muted); margin-bottom: 0.3rem;
+  }
+  #demo-onepixel .opa-output__label-current {
+    font-family: var(--nn-serif); font-size: 1.35rem; font-weight: 700;
+    color: var(--nn-accent-dark); margin-bottom: 0.9rem; transition: color 300ms;
+  }
+  #demo-onepixel .opa-output__label-current[data-flipped="1"] { color: var(--nn-accent-warn); }
+  #demo-onepixel .opa-output__label-current[data-flipped="2"] { color: var(--nn-accent-amber); }
+
+  #demo-onepixel .opa-conf__row {
+    display: grid; grid-template-columns: 80px 1fr 44px; gap: 0.5rem;
+    align-items: center; margin: 0.3rem 0;
+  }
+  #demo-onepixel .opa-conf__name {
+    font-family: var(--nn-mono); font-size: 0.78rem; color: var(--nn-ink);
+  }
+  #demo-onepixel .opa-conf__track { height: 6px; background: var(--nn-line); border-radius: 3px; overflow: hidden; }
+  #demo-onepixel .opa-conf__fill {
+    display: block; height: 100%; background: var(--nn-accent);
+    transition: width 450ms cubic-bezier(0.2, 0.7, 0.3, 1); width: 0%;
+  }
+  #demo-onepixel .opa-conf__fill--warn { background: var(--nn-accent-warn); }
+  #demo-onepixel .opa-conf__fill--amber { background: var(--nn-accent-amber); }
+  #demo-onepixel .opa-conf__pct {
+    font-family: var(--nn-mono); font-size: 0.76rem; color: var(--nn-muted); text-align: right;
+  }
+
+  #demo-onepixel .opa-note {
+    margin: 1rem 0 0 !important; font-size: 0.88rem !important;
+    color: var(--nn-muted) !important; line-height: 1.55 !important;
+  }
+
+  @media (max-width: 640px) {
+    #demo-onepixel .opa-row { grid-template-columns: 1fr; }
+    #demo-onepixel .opa-grid { grid-template-columns: repeat(12, 18px); grid-template-rows: repeat(12, 18px); }
+    #demo-onepixel .opa-cell { width: 18px; height: 18px; }
+  }
+</style>
+
+<script>
+(function() {
+  const root = document.getElementById("demo-onepixel");
+  if (!root) return;
+
+  const gridEl = root.querySelector("[data-opa-grid]");
+  const paletteEl = root.querySelector("[data-opa-palette]");
+  const labelEl = root.querySelector("[data-opa-label]");
+  const resetBtn = root.querySelector("[data-opa-reset]");
+  const noteEl = root.querySelector("[data-opa-note]");
+
+  const SIZE = 12;
+  // Shape a stop-sign-ish octagon: red octagon with white interior letters suggestion.
+  const RED = "#c42f2f", WHITE = "#ffffff", BG = "#eceef2";
+  function baseColor(r, c) {
+    // octagon: distance from center with cut corners
+    const cx = (SIZE - 1) / 2, cy = (SIZE - 1) / 2;
+    const dx = Math.abs(c - cx), dy = Math.abs(r - cy);
+    const inOct = (dx <= 5 && dy <= 5 && (dx + dy) <= 7.5);
+    if (!inOct) return BG;
+    // inner white for "S T O P" suggestion: row 4-7 column 4-7
+    if (r >= 4 && r <= 7 && c >= 3 && c <= 8) return WHITE;
+    return RED;
+  }
+
+  // State
+  const state = [];
+  for (let r = 0; r < SIZE; r++) {
+    state[r] = [];
+    for (let c = 0; c < SIZE; c++) state[r][c] = baseColor(r, c);
+  }
+
+  let selectedColor = "#3573d9";
+  let changedCell = null; // {r,c,color}
+
+  // Build grid
+  const cells = [];
+  for (let r = 0; r < SIZE; r++) {
+    for (let c = 0; c < SIZE; c++) {
+      const btn = document.createElement("button");
+      btn.className = "opa-cell";
+      btn.dataset.r = r;
+      btn.dataset.c = c;
+      btn.style.background = state[r][c];
+      btn.setAttribute("aria-label", "pixel " + r + "," + c);
+      btn.addEventListener("click", () => changeCell(r, c));
+      gridEl.appendChild(btn);
+      cells.push(btn);
+    }
+  }
+
+  // Palette
+  const swatches = Array.from(paletteEl.querySelectorAll(".opa-swatch"));
+  function selectSwatch(color) {
+    selectedColor = color;
+    swatches.forEach(s => s.classList.toggle("is-selected", s.dataset.color === color));
+  }
+  swatches.forEach(s => s.addEventListener("click", () => selectSwatch(s.dataset.color)));
+  selectSwatch("#3573d9");
+
+  resetBtn.addEventListener("click", resetAll);
+
+  function cellEl(r, c) { return cells[r * SIZE + c]; }
+
+  function changeCell(r, c) {
+    // Revert previous changed cell
+    if (changedCell) {
+      const prev = cellEl(changedCell.r, changedCell.c);
+      prev.style.background = baseColor(changedCell.r, changedCell.c);
+      prev.classList.remove("is-changed");
+    }
+    if (state[r][c] === selectedColor) { changedCell = null; updatePrediction(); return; }
+    changedCell = { r, c, color: selectedColor };
+    const el = cellEl(r, c);
+    el.style.background = selectedColor;
+    el.classList.add("is-changed");
+    updatePrediction();
+  }
+
+  function resetAll() {
+    if (changedCell) {
+      const prev = cellEl(changedCell.r, changedCell.c);
+      prev.style.background = baseColor(changedCell.r, changedCell.c);
+      prev.classList.remove("is-changed");
+      changedCell = null;
+    }
+    updatePrediction();
+  }
+
+  // Hard-coded "adversarial score", illustrative of the real finding
+  function scores() {
+    let stop = 98, speed = 1.2, yieldS = 0.8;
+    if (changedCell) {
+      const { r, c, color } = changedCell;
+      const cx = 5.5, cy = 5.5;
+      const dist = Math.hypot(r - cx, c - cy);
+      const edginess = Math.max(0, dist - 3); // further from center => more adversarial
+      // Color-specific pressure
+      const colorPress = {
+        "#3573d9": [-40, 55, -5],   // blue → push toward Speed
+        "#e5b93a": [-30, 10, 40],   // yellow → push toward Yield
+        "#2a9e4e": [-25, 10, 30],   // green → push toward Yield
+        "#ffffff": [-18, 12, 8],    // white in red zone confuses
+        "#000000": [-22, 16, 8],
+        "#c42f2f": [2, -1, -1],     // keeping it red barely matters
+      }[color] || [-15, 10, 5];
+      const mult = 0.6 + edginess * 0.35;
+      stop   += colorPress[0] * mult;
+      speed  += colorPress[1] * mult;
+      yieldS += colorPress[2] * mult;
+    }
+    stop = Math.max(0.5, Math.min(99, stop));
+    speed = Math.max(0.5, Math.min(99, speed));
+    yieldS = Math.max(0.5, Math.min(99, yieldS));
+    const t = stop + speed + yieldS;
+    return { stop: stop / t * 100, speed: speed / t * 100, yield: yieldS / t * 100 };
+  }
+
+  function updatePrediction() {
+    const s = scores();
+    const vals = [s.stop, s.speed, s.yield];
+    const names = ["Stop Sign", "Speed 30", "Yield"];
+    vals.forEach((v, i) => {
+      root.querySelector("[data-opa-cfill-" + i + "]").style.width = v.toFixed(1) + "%";
+      root.querySelector("[data-opa-cpct-" + i + "]").textContent = v.toFixed(1) + "%";
+    });
+    // Winner
+    const maxIdx = vals.indexOf(Math.max(...vals));
+    labelEl.textContent = names[maxIdx];
+    labelEl.dataset.flipped = maxIdx;
+    if (maxIdx === 0) {
+      noteEl.innerHTML = changedCell
+        ? "The model is still confident this is a Stop Sign. Try a bigger change, move toward the edge, or pick a more unusual colour."
+        : "Baseline prediction. 98% confident this is a Stop Sign. Click a pixel to perturb it.";
+    } else if (maxIdx === 1) {
+      noteEl.innerHTML = "⚠️ <strong>Prediction flipped to Speed 30</strong> from a single pixel. A human driver would still obviously see a stop sign. The model has no such robustness.";
+    } else {
+      noteEl.innerHTML = "⚠️ <strong>Prediction flipped to Yield.</strong> Same image to you and me; entirely different sign to the network.";
+    }
+  }
+
+  updatePrediction();
+})();
+</script>

@@ -1,0 +1,258 @@
+<div class="idemo" id="demo-bvm">
+  <div class="idemo__card">
+    <div class="idemo__head"><span class="idemo__title">Interactive · Behavioral vs Mechanistic</span></div>
+    <div class="idemo__body">
+
+      <div class="bvm-controls">
+        <span class="bvm-controls__label">Sentence:</span>
+        <button class="bvm-tab" data-s="geo" aria-pressed="true">The bank was steep and slippery.</button>
+        <button class="bvm-tab" data-s="fin" aria-pressed="false">The bank closed my account.</button>
+      </div>
+
+      <div class="bvm-grid">
+        <div class="bvm-panel">
+          <div class="bvm-panel__head">Behavioral · old way</div>
+          <div class="bvm-panel__body">
+            <div class="bvm-sentence" data-panel="behavioral"></div>
+            <div class="bvm-bar">
+              <div class="bvm-bar__label">Sentiment</div>
+              <div class="bvm-bar__track"><span class="bvm-bar__fill" data-b-sentiment></span></div>
+              <div class="bvm-bar__value" data-b-sentiment-value>Neutral</div>
+            </div>
+            <p class="bvm-note">We can see <em>which</em> words mattered. We don't know <strong>why</strong>, or what "bank" even meant to the model.</p>
+          </div>
+        </div>
+
+        <div class="bvm-panel bvm-panel--mech">
+          <div class="bvm-panel__head">Mechanistic · new way</div>
+          <div class="bvm-panel__body">
+            <div class="bvm-sentence" data-panel="mech"></div>
+            <div class="bvm-compete">
+              <div class="bvm-compete__label">Feature competition on <code>bank</code></div>
+              <div class="bvm-compete__row">
+                <span class="bvm-compete__name">riverbank</span>
+                <div class="bvm-compete__track"><span class="bvm-compete__fill" data-f-geo></span></div>
+                <span class="bvm-compete__pct" data-p-geo>0%</span>
+              </div>
+              <div class="bvm-compete__row">
+                <span class="bvm-compete__name">financial</span>
+                <div class="bvm-compete__track"><span class="bvm-compete__fill bvm-compete__fill--amber" data-f-fin></span></div>
+                <span class="bvm-compete__pct" data-p-fin>0%</span>
+              </div>
+            </div>
+            <div class="bvm-circuit" data-circuit>
+              <div class="bvm-circuit__step"><b>1.</b> Token <code>bank</code> is polysemous, two candidate senses.</div>
+              <div class="bvm-circuit__step"><b>2.</b> Attention heads scan nearby context.</div>
+              <div class="bvm-circuit__step" data-step-3><b>3.</b> Finds signal words.</div>
+              <div class="bvm-circuit__step" data-step-4><b>4.</b> Winning sense routes forward through the network.</div>
+            </div>
+            <p class="bvm-note">We can see the model <em>choosing between two meanings</em> based on surrounding context. That's mechanistic.</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <details>
+      <summary>How this demo works</summary>
+      <p>The behavioral panel highlights tokens using hard-coded saliency weights, mimicking what a tool like LIME or SHAP outputs. The mechanistic panel runs a scripted <em>feature competition</em> between two pre-built "senses" of <code>bank</code>; the winner is determined by which context words appear (geographic vs financial lexicon). Real circuits in GPT-2 behave remarkably like this, see the IOI paper (Wang et al. 2022) for the actual version.</p>
+    </details>
+  </div>
+</div>
+
+<style>
+  #demo-bvm .bvm-controls { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-bottom: 1.3rem; }
+  #demo-bvm .bvm-controls__label {
+    font-family: var(--nn-mono); font-size: 0.72rem; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--nn-muted); margin-right: 0.3rem;
+  }
+  #demo-bvm .bvm-tab {
+    padding: 0.5rem 0.85rem; background: #f8f8fa; color: var(--nn-ink);
+    border: 1px solid var(--nn-line); border-radius: 3px; font-family: var(--nn-mono);
+    font-size: 0.82rem; cursor: pointer; transition: border-color 150ms, color 150ms, background 150ms;
+  }
+  #demo-bvm .bvm-tab:hover { border-color: var(--nn-accent); }
+  #demo-bvm .bvm-tab[aria-pressed="true"] {
+    border-color: var(--nn-accent); color: var(--nn-accent-dark);
+    background: var(--nn-accent-soft);
+  }
+
+  #demo-bvm .bvm-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  #demo-bvm .bvm-panel {
+    background: #ffffff; border: 1px solid var(--nn-line); border-radius: 6px; overflow: hidden;
+  }
+  #demo-bvm .bvm-panel__head {
+    padding: 0.55rem 0.9rem; background: #f5f5f8; border-bottom: 1px solid var(--nn-line);
+    font-family: var(--nn-mono); font-size: 0.72rem; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--nn-muted);
+  }
+  #demo-bvm .bvm-panel--mech .bvm-panel__head { color: var(--nn-accent-dark); }
+  #demo-bvm .bvm-panel__body { padding: 1.1rem 1rem; }
+
+  #demo-bvm .bvm-sentence {
+    font-family: var(--nn-mono); font-size: 0.95rem; line-height: 2; margin-bottom: 1.1rem;
+    padding: 0.65rem 0.8rem; background: #fafafc; border: 1px solid var(--nn-line); border-radius: 4px;
+  }
+  #demo-bvm .bvm-word {
+    padding: 0.08em 0.28em; margin: 0 0.1em; border-radius: 3px;
+    transition: background 260ms, color 260ms, box-shadow 260ms;
+  }
+  #demo-bvm .bvm-word--focus {
+    color: var(--nn-accent-dark); border-bottom: 1px dashed var(--nn-accent);
+  }
+
+  #demo-bvm .bvm-bar {
+    display: grid; grid-template-columns: auto 1fr auto; gap: 0.6rem;
+    align-items: center; margin-bottom: 0.9rem;
+  }
+  #demo-bvm .bvm-bar__label {
+    font-family: var(--nn-mono); font-size: 0.68rem; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--nn-muted);
+  }
+  #demo-bvm .bvm-bar__track {
+    height: 6px; background: var(--nn-line); border-radius: 3px; overflow: hidden; position: relative;
+  }
+  #demo-bvm .bvm-bar__fill {
+    display: block; height: 100%; background: var(--nn-accent-amber);
+    transition: width 400ms; width: 50%;
+  }
+  #demo-bvm .bvm-bar__value {
+    font-family: var(--nn-mono); font-size: 0.82rem; color: var(--nn-ink);
+    min-width: 60px; text-align: right;
+  }
+
+  #demo-bvm .bvm-note { font-size: 0.88rem !important; color: var(--nn-muted) !important; margin: 0.8rem 0 0 !important; line-height: 1.6 !important; }
+
+  #demo-bvm .bvm-compete { margin-bottom: 1rem; }
+  #demo-bvm .bvm-compete__label {
+    font-family: var(--nn-mono); font-size: 0.72rem; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--nn-muted); margin-bottom: 0.5rem;
+  }
+  #demo-bvm .bvm-compete__row {
+    display: grid; grid-template-columns: 80px 1fr 44px; gap: 0.6rem;
+    align-items: center; margin: 0.3rem 0;
+  }
+  #demo-bvm .bvm-compete__name { font-family: var(--nn-mono); font-size: 0.8rem; color: var(--nn-ink); }
+  #demo-bvm .bvm-compete__track {
+    height: 8px; background: var(--nn-line); border-radius: 4px; overflow: hidden;
+  }
+  #demo-bvm .bvm-compete__fill {
+    display: block; height: 100%; background: var(--nn-accent); width: 0%;
+    transition: width 700ms cubic-bezier(0.2, 0.7, 0.3, 1);
+    box-shadow: 0 0 8px var(--nn-accent-glow);
+  }
+  #demo-bvm .bvm-compete__fill--amber {
+    background: var(--nn-accent-amber); box-shadow: 0 0 6px rgba(201, 140, 58, 0.35);
+  }
+  #demo-bvm .bvm-compete__pct {
+    font-family: var(--nn-mono); font-size: 0.78rem; color: var(--nn-muted); text-align: right;
+  }
+
+  #demo-bvm .bvm-circuit {
+    margin: 0.5rem 0 0.2rem; padding: 0.65rem 0.8rem;
+    background: #fafafc; border: 1px solid var(--nn-line); border-radius: 4px;
+  }
+  #demo-bvm .bvm-circuit__step {
+    font-family: var(--nn-mono); font-size: 0.78rem; color: var(--nn-muted);
+    padding: 0.22rem 0; opacity: 0; transform: translateY(4px);
+    transition: opacity 350ms, transform 350ms;
+  }
+  #demo-bvm .bvm-circuit__step.is-on { opacity: 1; transform: translateY(0); }
+  #demo-bvm .bvm-circuit__step b { color: var(--nn-accent-dark); margin-right: 0.3rem; }
+
+  @media (max-width: 640px) {
+    #demo-bvm .bvm-grid { grid-template-columns: 1fr; }
+  }
+</style>
+
+<script>
+(function() {
+  const root = document.getElementById("demo-bvm");
+  if (!root) return;
+
+  const DATA = {
+    geo: {
+      sentence: ["The","bank","was","steep","and","slippery","."],
+      saliency: { "bank": 0.55, "steep": 0.85, "slippery": 0.80 },
+      sentiment: { pct: 48, label: "Neutral" },
+      winner: "geo",
+      scores: { geo: 82, fin: 18 },
+      step3: "3. Finds <b>steep</b>, <b>slippery</b>, geographic signal.",
+      step4: '4. <b>riverbank</b> sense wins, routes forward.',
+    },
+    fin: {
+      sentence: ["The","bank","closed","my","account","."],
+      saliency: { "bank": 0.70, "closed": 0.60, "account": 0.92 },
+      sentiment: { pct: 32, label: "Slightly neg" },
+      winner: "fin",
+      scores: { geo: 14, fin: 86 },
+      step3: "3. Finds <b>closed</b>, <b>account</b>, financial signal.",
+      step4: '4. <b>financial</b> sense wins, routes forward.',
+    }
+  };
+
+  const tabs = root.querySelectorAll(".bvm-tab");
+  const bSentEl = root.querySelector('[data-panel="behavioral"]');
+  const mSentEl = root.querySelector('[data-panel="mech"]');
+  const sentFill = root.querySelector("[data-b-sentiment]");
+  const sentValue = root.querySelector("[data-b-sentiment-value]");
+  const fGeo = root.querySelector("[data-f-geo]");
+  const fFin = root.querySelector("[data-f-fin]");
+  const pGeo = root.querySelector("[data-p-geo]");
+  const pFin = root.querySelector("[data-p-fin]");
+  const step3 = root.querySelector("[data-step-3]");
+  const step4 = root.querySelector("[data-step-4]");
+  const steps = root.querySelectorAll(".bvm-circuit__step");
+
+  function renderSentence(el, words, saliency, opts) {
+    opts = opts || {};
+    el.innerHTML = "";
+    words.forEach(w => {
+      const span = document.createElement("span");
+      span.className = "bvm-word";
+      const l = w.toLowerCase().replace(/[^a-z]/g, "");
+      const s = saliency[l] || 0;
+      if (opts.highlight && s > 0) {
+        span.style.background = "rgba(201, 140, 58, " + (s * 0.35).toFixed(2) + ")";
+        span.style.color = "#3e2a12";
+      }
+      if (opts.focus === l) span.classList.add("bvm-word--focus");
+      span.textContent = w + (w === "." || w === "," ? "" : " ");
+      el.appendChild(span);
+    });
+  }
+
+  function apply(key) {
+    const d = DATA[key];
+    tabs.forEach(t => t.setAttribute("aria-pressed", t.dataset.s === key ? "true" : "false"));
+
+    renderSentence(bSentEl, d.sentence, d.saliency, { highlight: true });
+    sentFill.style.width = d.sentiment.pct + "%";
+    if (d.sentiment.pct < 40) sentFill.style.background = "var(--nn-accent-warn)";
+    else if (d.sentiment.pct > 60) sentFill.style.background = "var(--nn-accent)";
+    else sentFill.style.background = "var(--nn-accent-amber)";
+    sentValue.textContent = d.sentiment.label;
+
+    renderSentence(mSentEl, d.sentence, {}, { focus: "bank" });
+    steps.forEach(s => s.classList.remove("is-on"));
+    fGeo.style.width = "0%"; fFin.style.width = "0%"; pGeo.textContent = "0%"; pFin.textContent = "0%";
+
+    setTimeout(() => steps[0].classList.add("is-on"), 50);
+    setTimeout(() => steps[1].classList.add("is-on"), 400);
+    setTimeout(() => {
+      step3.innerHTML = d.step3;
+      step3.classList.add("is-on");
+      fGeo.style.width = d.scores.geo + "%";
+      fFin.style.width = d.scores.fin + "%";
+      pGeo.textContent = d.scores.geo + "%";
+      pFin.textContent = d.scores.fin + "%";
+    }, 800);
+    setTimeout(() => {
+      step4.innerHTML = d.step4;
+      step4.classList.add("is-on");
+    }, 1550);
+  }
+
+  tabs.forEach(t => t.addEventListener("click", () => apply(t.dataset.s)));
+  apply("geo");
+})();
+</script>

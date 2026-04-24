@@ -1,0 +1,249 @@
+<div class="idemo" id="demo-blackbox">
+  <div class="idemo__card">
+    <div class="idemo__head"><span class="idemo__title">Interactive · Peek inside the black box</span></div>
+    <div class="idemo__body">
+
+      <div class="bb-row">
+        <input type="text" class="bb-input" value="I love this movie" maxlength="80" aria-label="Input sentence">
+        <div class="bb-arrow">→</div>
+        <div class="bb-boxwrap">
+          <div class="bb-box" data-step="0">
+            <canvas class="bb-noise" aria-hidden="true"></canvas>
+            <div class="bb-box__label">black box</div>
+          </div>
+        </div>
+        <div class="bb-arrow">→</div>
+        <div class="bb-output"><span class="bb-output__label">Output</span><span class="bb-output__value" data-out>Positive</span></div>
+      </div>
+
+      <div class="bb-stage" data-stage="0">
+        <div class="bb-stage-0">
+          <p class="bb-hint">You put a sentence in. You get a label out. The model is "sure." But what happened in the middle?</p>
+          <button class="btn-primary" data-action="open">What happened inside?</button>
+        </div>
+
+        <div class="bb-stage-1" hidden>
+          <p class="bb-hint"><strong>117 million numbers, all doing math.</strong> This is literally what's inside. Multiplications, additions, thousands of them, for every single word you type. There are no labels. Nobody wrote these rules, the model found them by looking at examples.</p>
+          <p class="bb-hint bb-hint--muted">This is not an explanation. It is the opposite of one.</p>
+          <button class="btn-primary" data-action="decompose">What we WISH we could see →</button>
+        </div>
+
+        <div class="bb-stage-2" hidden>
+          <p class="bb-hint">If the black box were <em>transparent</em>, it would look like this, each word labelled with what role it played, and how sure the model was.</p>
+          <div class="bb-tokens" data-tokens></div>
+          <p class="bb-hint bb-hint--muted">That is the goal of mechanistic interpretability: turn the black box into a glass box. We're nowhere near this clean in real models, but that's the direction.</p>
+          <button class="btn-secondary" data-action="reset">Try another sentence</button>
+        </div>
+      </div>
+
+    </div>
+    <details>
+      <summary>How this demo works</summary>
+      <p>The floating numbers are 55 animated random floats rendered to a Canvas at ~60fps with <code>requestAnimationFrame</code>. They represent <em>actual weights/activations</em>, that's genuinely what flows through a neural network, just with far more digits.</p>
+      <p>The "decomposed" view is illustrative: words are classified with a small hard-coded sentiment lexicon (positive / negative / neutral / amplifier). Real mechanistic interpretability recovers such features from a trained model rather than handing them over, see post 2.</p>
+    </details>
+  </div>
+</div>
+
+<style>
+  #demo-blackbox .bb-row { display: grid; grid-template-columns: 1fr auto auto auto auto; gap: 0.7rem; align-items: center; margin-bottom: 1.4rem; }
+  #demo-blackbox .bb-input {
+    padding: 0.65rem 0.85rem; background: #f8f8fa; color: var(--nn-ink);
+    border: 1px solid var(--nn-line); border-radius: 4px; font-family: var(--nn-mono);
+    font-size: 0.92rem; outline: none; width: 100%; transition: border-color 150ms, background 150ms;
+  }
+  #demo-blackbox .bb-input:focus { border-color: var(--nn-accent); background: #ffffff; }
+  #demo-blackbox .bb-arrow { color: var(--nn-soft); font-size: 1.15rem; font-family: var(--nn-mono); }
+  #demo-blackbox .bb-boxwrap { display: flex; }
+  #demo-blackbox .bb-box {
+    position: relative; width: 120px; height: 78px; background: #1a1d24;
+    border: 1px solid #1a1d24; border-radius: 4px; overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+    transition: border-color 240ms, box-shadow 240ms;
+  }
+  #demo-blackbox .bb-box__label {
+    position: relative; z-index: 2; font-family: var(--nn-mono); font-size: 0.68rem;
+    letter-spacing: 0.18em; text-transform: uppercase; color: #6e7380;
+  }
+  #demo-blackbox .bb-box[data-step="1"] .bb-box__label,
+  #demo-blackbox .bb-box[data-step="2"] .bb-box__label { opacity: 0; }
+  #demo-blackbox .bb-box[data-step="2"] {
+    border-color: var(--nn-accent);
+    box-shadow: 0 0 0 4px var(--nn-accent-soft);
+  }
+  #demo-blackbox .bb-noise { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; transition: opacity 300ms; }
+  #demo-blackbox .bb-box[data-step="1"] .bb-noise,
+  #demo-blackbox .bb-box[data-step="2"] .bb-noise { opacity: 1; }
+
+  #demo-blackbox .bb-output {
+    display: flex; flex-direction: column; padding: 0.45rem 0.8rem; background: #ffffff;
+    border: 1px solid var(--nn-line); border-radius: 4px; min-width: 94px;
+  }
+  #demo-blackbox .bb-output__label {
+    font-family: var(--nn-mono); font-size: 0.64rem; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--nn-muted);
+  }
+  #demo-blackbox .bb-output__value {
+    font-family: var(--nn-serif); font-weight: 700; color: var(--nn-accent); font-size: 1.08rem;
+  }
+  #demo-blackbox .bb-output__value[data-sentiment="negative"] { color: var(--nn-accent-warn); }
+  #demo-blackbox .bb-output__value[data-sentiment="neutral"] { color: var(--nn-accent-amber); }
+
+  #demo-blackbox .bb-hint {
+    font-size: 0.98rem !important; color: var(--nn-body); margin: 0.4rem 0 1rem !important;
+    line-height: 1.65 !important;
+  }
+  #demo-blackbox .bb-hint--muted { color: var(--nn-muted) !important; font-size: 0.9rem !important; }
+
+  #demo-blackbox .bb-tokens { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 1.2rem 0 1.6rem; }
+  #demo-blackbox .bb-token {
+    display: inline-flex; flex-direction: column; gap: 0.14rem; padding: 0.5rem 0.78rem;
+    background: #f8f8fa; border: 1px solid var(--nn-line); border-radius: 4px;
+    font-family: var(--nn-mono); font-size: 0.82rem;
+  }
+  #demo-blackbox .bb-token__word { font-family: var(--nn-serif); font-weight: 600; color: var(--nn-ink); font-size: 0.98rem; }
+  #demo-blackbox .bb-token__role { font-size: 0.64rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--nn-muted); }
+  #demo-blackbox .bb-token[data-role="positive"] { border-color: var(--nn-accent); box-shadow: inset 0 -3px 0 var(--nn-accent); }
+  #demo-blackbox .bb-token[data-role="positive"] .bb-token__role { color: var(--nn-accent-dark); }
+  #demo-blackbox .bb-token[data-role="negative"] { border-color: var(--nn-accent-warn); box-shadow: inset 0 -3px 0 var(--nn-accent-warn); }
+  #demo-blackbox .bb-token[data-role="negative"] .bb-token__role { color: var(--nn-accent-warn); }
+  #demo-blackbox .bb-token[data-role="amplifier"] { border-color: var(--nn-accent-amber); box-shadow: inset 0 -3px 0 var(--nn-accent-amber); }
+  #demo-blackbox .bb-token[data-role="amplifier"] .bb-token__role { color: var(--nn-accent-amber); }
+  #demo-blackbox .bb-token[data-role="neutral"] { opacity: 0.7; }
+
+  @media (max-width: 640px) {
+    #demo-blackbox .bb-row { grid-template-columns: 1fr; gap: 0.5rem; }
+    #demo-blackbox .bb-arrow { display: none; }
+    #demo-blackbox .bb-boxwrap { justify-content: center; }
+  }
+</style>
+
+<script>
+(function() {
+  const root = document.getElementById("demo-blackbox");
+  if (!root) return;
+  const canvas = root.querySelector(".bb-noise");
+  const box = root.querySelector(".bb-box");
+  const stages = root.querySelectorAll(".bb-stage > div");
+  const input = root.querySelector(".bb-input");
+  const outputEl = root.querySelector("[data-out]");
+  const tokensEl = root.querySelector("[data-tokens]");
+
+  const LEX = {
+    positive: ["love","great","amazing","awesome","best","beautiful","happy","wonderful","brilliant","perfect","good","enjoy","enjoyed","like","liked","fantastic","excellent","superb","masterpiece","fun","delightful"],
+    negative: ["hate","hated","bad","worst","terrible","awful","boring","disappointing","horrible","waste","dull","bland","mediocre","poor","ugly","broken","stupid","annoying","dislike"],
+    amplifier: ["really","very","extremely","so","totally","absolutely","incredibly","quite","rather","deeply"],
+  };
+
+  function classifyWord(w) {
+    const l = w.toLowerCase().replace(/[^a-z]/g, "");
+    if (LEX.positive.includes(l)) return "positive";
+    if (LEX.negative.includes(l)) return "negative";
+    if (LEX.amplifier.includes(l)) return "amplifier";
+    return "neutral";
+  }
+
+  function scoreSentence(sentence) {
+    const tokens = sentence.split(/\s+/).filter(Boolean);
+    let score = 0;
+    let weight = 1;
+    tokens.forEach(w => {
+      const r = classifyWord(w);
+      if (r === "amplifier") weight = 1.6;
+      else if (r === "positive") { score += 1 * weight; weight = 1; }
+      else if (r === "negative") { score -= 1 * weight; weight = 1; }
+    });
+    if (score > 0.3) return "Positive";
+    if (score < -0.3) return "Negative";
+    return "Neutral";
+  }
+
+  function renderOutput() {
+    const s = scoreSentence(input.value);
+    outputEl.textContent = s;
+    outputEl.dataset.sentiment = s.toLowerCase();
+  }
+
+  function renderTokens() {
+    tokensEl.innerHTML = "";
+    const tokens = input.value.split(/\s+/).filter(Boolean);
+    tokens.forEach(w => {
+      const role = classifyWord(w);
+      const el = document.createElement("div");
+      el.className = "bb-token";
+      el.dataset.role = role;
+      el.innerHTML =
+        '<span class="bb-token__word">' + w.replace(/</g, "&lt;") + '</span>' +
+        '<span class="bb-token__role">' + (role === "neutral" ? "low info" : role) + '</span>';
+      tokensEl.appendChild(el);
+    });
+  }
+
+  input.addEventListener("input", () => { renderOutput(); renderTokens(); });
+  renderOutput();
+
+  // Canvas floating-numbers animation (teal-on-dark to read over the black box)
+  const ctx = canvas.getContext("2d");
+  let nums = [];
+  let running = false;
+  let raf = null;
+
+  function resize() {
+    const r = box.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = r.width * dpr;
+    canvas.height = r.height * dpr;
+    canvas.style.width = r.width + "px";
+    canvas.style.height = r.height + "px";
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  function seed() {
+    const r = box.getBoundingClientRect();
+    nums = [];
+    for (let i = 0; i < 55; i++) {
+      nums.push({
+        x: Math.random() * r.width,
+        y: Math.random() * r.height,
+        v: 0.2 + Math.random() * 1.1,
+        n: (Math.random() * 2 - 1).toFixed(3),
+        o: 0.3 + Math.random() * 0.6,
+        t: Math.floor(Math.random() * 90),
+      });
+    }
+  }
+  function frame() {
+    if (!running) return;
+    const r = box.getBoundingClientRect();
+    ctx.clearRect(0, 0, r.width, r.height);
+    ctx.font = "10px 'SF Mono', 'JetBrains Mono', monospace";
+    nums.forEach(n => {
+      n.y += n.v;
+      n.t--;
+      if (n.t <= 0) { n.n = (Math.random() * 2 - 1).toFixed(3); n.t = 30 + Math.floor(Math.random() * 90); }
+      if (n.y > r.height + 10) { n.y = -10; n.x = Math.random() * r.width; }
+      ctx.fillStyle = "rgba(120, 170, 220, " + n.o + ")";
+      ctx.fillText(n.n, n.x, n.y);
+    });
+    raf = requestAnimationFrame(frame);
+  }
+  function start() { if (running) return; resize(); seed(); running = true; frame(); }
+  function stop() { running = false; if (raf) cancelAnimationFrame(raf); }
+
+  function setStage(i) {
+    box.dataset.step = i === 0 ? "0" : (i === 1 ? "1" : "2");
+    stages.forEach((el, idx) => { el.hidden = idx !== i; });
+    if (i >= 1) start(); else stop();
+  }
+
+  root.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-action]");
+    if (!btn) return;
+    const a = btn.dataset.action;
+    if (a === "open") setStage(1);
+    else if (a === "decompose") { setStage(2); renderTokens(); }
+    else if (a === "reset") { setStage(0); input.focus(); input.select(); }
+  });
+
+  window.addEventListener("resize", () => { if (running) { resize(); seed(); } });
+})();
+</script>

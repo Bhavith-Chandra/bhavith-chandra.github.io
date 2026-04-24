@@ -1,0 +1,184 @@
+<div class="idemo" id="demo-researchers">
+  <div class="idemo__card">
+    <div class="idemo__head"><span class="idemo__title">Interactive · Who to follow</span></div>
+    <div class="idemo__body">
+
+      <p class="rg-lead">The people and teams whose work you'll actually read if you go deep. Hover (or tap) for their core contribution and what to read first.</p>
+
+      <div class="rg-grid" data-rg-grid></div>
+
+      <p class="rg-foot">Not an exhaustive list, mechanistic interpretability is small enough that most active researchers publish on <a href="https://www.alignmentforum.org/" target="_blank" rel="noopener">the Alignment Forum</a> or <a href="https://transformer-circuits.pub/" target="_blank" rel="noopener">transformer-circuits.pub</a>. Read 10 posts there and you'll know half the field.</p>
+    </div>
+    <details>
+      <summary>How this demo works</summary>
+      <p>Hard-coded profile data. Each tile is a CSS card; the hover reveals the "read first" link via a transition. If you have a person to add, edit <code>_includes/demos/researcher-grid.html</code>.</p>
+    </details>
+  </div>
+</div>
+
+<style>
+  #demo-researchers .rg-lead { margin: 0 0 1.2rem !important; color: var(--nn-body) !important; font-size: 0.98rem !important; line-height: 1.6 !important; }
+  #demo-researchers .rg-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 0.8rem;
+  }
+
+  #demo-researchers .rg-card {
+    display: flex; flex-direction: column; gap: 0.5rem;
+    padding: 1rem 1.1rem; background: #ffffff; border: 1px solid var(--nn-line); border-radius: 6px;
+    text-decoration: none !important; color: inherit !important;
+    border-left: 3px solid var(--nn-line) !important;
+    transition: border-left-color 220ms, transform 220ms, box-shadow 220ms;
+    position: relative; overflow: hidden;
+  }
+  #demo-researchers .rg-card:hover {
+    border-left-color: var(--nn-accent) !important; transform: translateY(-2px);
+    box-shadow: 0 5px 18px rgba(0, 0, 0, 0.07);
+  }
+  #demo-researchers .rg-card[data-kind="lab"] { border-left-color: var(--nn-accent-amber) !important; }
+  #demo-researchers .rg-card[data-kind="lab"]:hover { border-left-color: var(--nn-accent-dark) !important; }
+
+  #demo-researchers .rg-avatar {
+    width: 44px; height: 44px; border-radius: 50%; background: var(--nn-accent-soft);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--nn-serif); font-weight: 700; color: var(--nn-accent-dark);
+    font-size: 1.1rem; letter-spacing: -0.02em;
+    flex-shrink: 0;
+  }
+  #demo-researchers .rg-card[data-kind="lab"] .rg-avatar {
+    background: rgba(201, 140, 58, 0.12); color: var(--nn-accent-amber); border-radius: 6px;
+    font-family: var(--nn-mono); font-size: 0.82rem;
+  }
+
+  #demo-researchers .rg-top { display: flex; align-items: center; gap: 0.7rem; }
+  #demo-researchers .rg-name {
+    font-family: var(--nn-serif); font-size: 1.05rem; font-weight: 700; color: var(--nn-ink); line-height: 1.2;
+  }
+  #demo-researchers .rg-affil {
+    font-family: var(--nn-mono); font-size: 0.72rem; letter-spacing: 0.06em;
+    color: var(--nn-muted); margin-top: 0.1rem;
+  }
+  #demo-researchers .rg-blurb {
+    font-size: 0.88rem; color: var(--nn-body); line-height: 1.55; margin: 0;
+  }
+  #demo-researchers .rg-link {
+    margin-top: auto; padding-top: 0.3rem;
+    font-family: var(--nn-mono); font-size: 0.75rem; color: var(--nn-accent);
+    border-top: 1px solid var(--nn-line); padding-top: 0.6rem;
+    display: flex; justify-content: space-between; align-items: center;
+    letter-spacing: 0.04em;
+  }
+  #demo-researchers .rg-link::after { content: "↗"; opacity: 0.5; transition: transform 200ms, opacity 200ms; }
+  #demo-researchers .rg-card:hover .rg-link::after { transform: translate(3px, -2px); opacity: 1; }
+
+  #demo-researchers .rg-foot {
+    margin: 1.2rem 0 0 !important; font-size: 0.85rem !important;
+    color: var(--nn-muted) !important; line-height: 1.55 !important;
+  }
+
+  @media (max-width: 520px) {
+    #demo-researchers .rg-grid { grid-template-columns: 1fr; }
+  }
+</style>
+
+<script>
+(function() {
+  const root = document.getElementById("demo-researchers");
+  if (!root) return;
+
+  const PEOPLE = [
+    {
+      kind: "person", name: "Chris Olah", avatar: "CO", affil: "Anthropic · co-founder",
+      blurb: "Started the circuits research agenda. The most-cited mechanistic-interpretability researcher; shaped how the field communicates (visual, deeply explained, open).",
+      read: "Zoom In: An Introduction to Circuits",
+      link: "https://distill.pub/2020/circuits/zoom-in/",
+    },
+    {
+      kind: "person", name: "Neel Nanda", avatar: "NN", affil: "Google DeepMind",
+      blurb: "Produces the most accessible MI tutorials and research explainers. Author of TransformerLens, the library most researchers actually use.",
+      read: "200 Concrete Open Problems in MI",
+      link: "https://www.alignmentforum.org/posts/LbrPTJ4fmABEdEnLf/200-concrete-open-problems-in-mechanistic-interpretability",
+    },
+    {
+      kind: "person", name: "Nelson Elhage", avatar: "NE", affil: "Anthropic (alum)",
+      blurb: "Lead author of 'A Mathematical Framework for Transformer Circuits', the theoretical backbone of modern transformer interpretability.",
+      read: "A Mathematical Framework for Transformer Circuits",
+      link: "https://transformer-circuits.pub/2021/framework/index.html",
+    },
+    {
+      kind: "person", name: "Catherine Olsson", avatar: "CO", affil: "Anthropic",
+      blurb: "Co-discovered induction heads, the first fully characterised circuit in a real language model. A proof that MI could work on transformers at all.",
+      read: "In-context Learning and Induction Heads",
+      link: "https://transformer-circuits.pub/2022/in-context-learning-and-induction-heads/index.html",
+    },
+    {
+      kind: "person", name: "Kevin Wang et al.", avatar: "IOI", affil: "Redwood Research",
+      blurb: "Reverse-engineered the IOI circuit in GPT-2, the canonical example of a fully-understood real behaviour in a real model.",
+      read: "Interpretability in the Wild (IOI)",
+      link: "https://arxiv.org/abs/2211.00593",
+    },
+    {
+      kind: "person", name: "Trenton Bricken et al.", avatar: "SAE", affil: "Anthropic",
+      blurb: "Cracked the superposition problem in 1-layer models using sparse autoencoders. Suddenly you could read thousands of features directly off the model.",
+      read: "Towards Monosemanticity",
+      link: "https://transformer-circuits.pub/2023/monosemantic-features/index.html",
+    },
+    {
+      kind: "person", name: "Adly Templeton et al.", avatar: "AT", affil: "Anthropic",
+      blurb: "Scaled sparse-autoencoder decomposition up to Claude 3 Sonnet. Showed MI works on frontier production models, not just toys.",
+      read: "Scaling Monosemanticity",
+      link: "https://transformer-circuits.pub/2024/scaling-monosemanticity/index.html",
+    },
+    {
+      kind: "person", name: "Jacob Steinhardt", avatar: "JS", affil: "UC Berkeley",
+      blurb: "Runs an academic group focused on emergent capabilities and training dynamics. Takes a more ML-theory-flavoured angle into interpretability.",
+      read: "Forecasting ML Benchmarks",
+      link: "https://bounded-regret.ghost.io/",
+    },
+    {
+      kind: "person", name: "David Bau", avatar: "DB", affil: "Northeastern",
+      blurb: "Does causal-tracing and model-editing work (ROME, MEMIT), surgically changing specific facts inside language models without retraining.",
+      read: "Locating and Editing Factual Associations in GPT",
+      link: "https://rome.baulab.info/",
+    },
+    {
+      kind: "lab", name: "Anthropic. Interp Team", avatar: "⬡", affil: "industry · closed-ish",
+      blurb: "The dominant team right now. Publishes on transformer-circuits.pub. SAE work, Claude-scale circuits, safety-motivated.",
+      read: "transformer-circuits.pub",
+      link: "https://transformer-circuits.pub/",
+    },
+    {
+      kind: "lab", name: "DeepMind. Mech Interp", avatar: "△", affil: "industry",
+      blurb: "Neel Nanda's team. Strong on training dynamics, grokking, and educational output. More open about code and methods.",
+      read: "Their blog",
+      link: "https://deepmind.google/discover/",
+    },
+    {
+      kind: "lab", name: "EleutherAI", avatar: "✦", affil: "community",
+      blurb: "Open research collective. Lots of independent-researcher interp work happens here. Low barrier to contribution.",
+      read: "EleutherAI interp channel",
+      link: "https://www.eleuther.ai/",
+    },
+  ];
+
+  const grid = root.querySelector("[data-rg-grid]");
+
+  PEOPLE.forEach(p => {
+    const a = document.createElement("a");
+    a.className = "rg-card";
+    a.href = p.link;
+    a.target = "_blank";
+    a.rel = "noopener";
+    a.dataset.kind = p.kind;
+    a.innerHTML =
+      '<div class="rg-top">' +
+        '<div class="rg-avatar">' + p.avatar + '</div>' +
+        '<div><div class="rg-name">' + p.name + '</div>' +
+          '<div class="rg-affil">' + p.affil + '</div></div>' +
+      '</div>' +
+      '<p class="rg-blurb">' + p.blurb + '</p>' +
+      '<div class="rg-link"><span>Read first · ' + p.read + '</span></div>';
+    grid.appendChild(a);
+  });
+})();
+</script>

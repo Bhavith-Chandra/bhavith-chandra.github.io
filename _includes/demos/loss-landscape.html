@@ -1,0 +1,407 @@
+<div class="idemo" id="demo-loss">
+  <div class="idemo__card">
+    <div class="idemo__head"><span class="idemo__title">Interactive · The loss landscape</span></div>
+    <div class="idemo__body">
+
+      <p class="loss-lead">Every point on this map is a setting of the model's weights. The colour is the loss, how wrong the model is. Gradient descent is a ball rolling downhill. Try it with different learning rates.</p>
+
+      <div class="loss-stage">
+        <canvas class="loss-canvas" width="400" height="400" aria-label="Loss landscape with a ball"></canvas>
+        <canvas class="loss-chart" width="400" height="120" aria-label="Training loss over steps"></canvas>
+      </div>
+
+      <div class="loss-ctrls">
+        <div class="loss-ctrls__row">
+          <label class="loss-ctrl">
+            <span class="loss-ctrl__name">Learning rate</span>
+            <input type="range" min="0.01" max="1.5" step="0.01" value="0.12" data-loss-lr>
+            <span class="loss-ctrl__val" data-loss-lrv>0.12</span>
+          </label>
+          <label class="loss-ctrl">
+            <span class="loss-ctrl__name">Speed</span>
+            <input type="range" min="1" max="10" step="1" value="3" data-loss-speed>
+          </label>
+        </div>
+        <div class="loss-ctrls__row">
+          <button class="btn-primary" data-loss-action="play">▶ Run</button>
+          <button class="btn-secondary" data-loss-action="step">Step</button>
+          <button class="btn-secondary" data-loss-action="reset">Reset</button>
+          <span class="loss-status" data-loss-status>paused</span>
+        </div>
+      </div>
+
+      <div class="loss-toggles" data-loss-toggles>
+        <label class="loss-toggle"><input type="checkbox" data-loss-show="arrows" checked> gradient arrows</label>
+        <label class="loss-toggle"><input type="checkbox" data-loss-show="contours" checked> contour lines</label>
+        <label class="loss-toggle"><input type="checkbox" data-loss-show="trail" checked> path trail</label>
+      </div>
+
+      <div class="loss-legend">
+        <div><span class="loss-swatch" style="background:#2a1954"></span> low loss · good</div>
+        <div><span class="loss-swatch" style="background:#2a6fb8"></span> medium</div>
+        <div><span class="loss-swatch" style="background:#c98c3a"></span> high</div>
+        <div><span class="loss-swatch" style="background:#c04550"></span> very high · bad</div>
+        <div><span class="loss-swatch" style="background:#00c89b; border-color:#00c89b"></span> ball · current weights</div>
+      </div>
+
+      <p class="loss-try">Try: <b>LR ≈ 0.08</b> for smooth descent · <b>LR &gt; 1.2</b> for chaos · reset a few times to find the local minimum trap on the upper left.</p>
+    </div>
+    <details>
+      <summary>How this demo works</summary>
+      <p>The surface is a sum of Gaussian bumps and wells, a crude 2D stand-in for the millions-of-dimensions loss surface of a real model. At each step we estimate the gradient with a finite-difference (<code>[f(x+ε) − f(x)] / ε</code>), then apply <code>x ← x − lr · ∇f</code>. That's the literal equation of gradient descent. The chart below tracks loss vs step count, the curve you actually see in training runs.</p>
+    </details>
+  </div>
+</div>
+
+<style>
+  #demo-loss .loss-lead { margin: 0 0 1rem !important; font-size: 0.98rem !important; color: var(--nn-body) !important; line-height: 1.6 !important; }
+
+  #demo-loss .loss-stage { display: grid; grid-template-columns: 400px 1fr; gap: 0.8rem; align-items: start; }
+  @media (max-width: 780px) { #demo-loss .loss-stage { grid-template-columns: 1fr; } }
+  #demo-loss .loss-canvas { width: 100%; max-width: 400px; height: auto; display: block; background: #fafafc; border: 1px solid var(--nn-line); border-radius: 6px; }
+  #demo-loss .loss-chart { width: 100%; max-width: 400px; height: auto; display: block; background: #fff; border: 1px solid var(--nn-line); border-radius: 6px; }
+
+  #demo-loss .loss-ctrls { display: flex; flex-direction: column; gap: 0.6rem; margin-top: 0.9rem; }
+  #demo-loss .loss-ctrls__row { display: flex; gap: 0.8rem; flex-wrap: wrap; align-items: center; }
+  #demo-loss .loss-ctrl { display: flex; align-items: center; gap: 0.6rem; flex: 1 1 200px; min-width: 200px; padding: 0.4rem 0.75rem; background: #fff; border: 1px solid var(--nn-line); border-radius: 4px; }
+  #demo-loss .loss-ctrl__name { font-family: var(--nn-mono); font-size: 0.72rem; letter-spacing: 0.08em; color: var(--nn-muted); }
+  #demo-loss .loss-ctrl input[type=range] { flex: 1; -webkit-appearance: none; height: 4px; background: var(--nn-line); border-radius: 2px; outline: none; }
+  #demo-loss .loss-ctrl input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%;
+    background: var(--nn-accent); border: 2px solid #fff; box-shadow: 0 0 0 1px var(--nn-accent); cursor: pointer;
+  }
+  #demo-loss .loss-ctrl__val { font-family: var(--nn-mono); font-size: 0.82rem; color: var(--nn-accent-dark); min-width: 40px; text-align: right; }
+  #demo-loss .loss-status { margin-left: auto; font-family: var(--nn-mono); font-size: 0.75rem; letter-spacing: 0.08em; color: var(--nn-muted); text-transform: uppercase; }
+
+  #demo-loss .loss-legend { display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 0.9rem; font-family: var(--nn-mono); font-size: 0.76rem; color: var(--nn-muted); }
+  #demo-loss .loss-swatch { display: inline-block; width: 14px; height: 14px; border-radius: 2px; vertical-align: middle; margin-right: 0.4rem; border: 1px solid rgba(0, 0, 0, 0.1); }
+
+  #demo-loss .loss-try { margin-top: 0.8rem !important; font-size: 0.88rem !important; color: var(--nn-muted) !important; line-height: 1.55 !important; }
+  #demo-loss .loss-try b { color: var(--nn-accent-dark); }
+
+  #demo-loss .loss-toggles { display: flex; flex-wrap: wrap; gap: 0.9rem; margin-top: 0.7rem; font-family: var(--nn-mono); font-size: 0.78rem; color: var(--nn-muted); }
+  #demo-loss .loss-toggle { display: inline-flex; align-items: center; gap: 0.35rem; cursor: pointer; user-select: none; }
+  #demo-loss .loss-toggle input { accent-color: var(--nn-accent); width: 14px; height: 14px; cursor: pointer; }
+</style>
+
+<script>
+(function() {
+  const root = document.getElementById("demo-loss");
+  if (!root) return;
+
+  const canvas = root.querySelector(".loss-canvas");
+  const chart = root.querySelector(".loss-chart");
+  const ctx = canvas.getContext("2d");
+  const cctx = chart.getContext("2d");
+
+  const W = 400, H = 400;
+  const CW = 400, CH = 120;
+  const XMIN = -3, XMAX = 3, YMIN = -3, YMAX = 3;
+
+  // Loss landscape, sum of Gaussians (negative = valley). Designed with
+  // - shallow valley around (-1.4, -1.4)
+  // - deep valley around (1.2, 1.4) ← the "global" minimum
+  function loss(x, y) {
+    const wells = [
+      { cx: -1.4, cy: -1.4, amp: 2.4, s: 0.9 },
+      { cx: 1.2,  cy: 1.4,  amp: 4.2, s: 0.7 },
+      { cx: 0.1,  cy: -1.2, amp: 1.4, s: 1.1 },
+    ];
+    const hills = [
+      { cx: -0.3, cy: 1.1, amp: 1.8, s: 0.9 },
+      { cx: 2.2,  cy: -1.8, amp: 1.3, s: 1.1 },
+    ];
+    let z = 4; // baseline
+    wells.forEach(w => { z -= w.amp * Math.exp(-((x - w.cx) ** 2 + (y - w.cy) ** 2) / w.s); });
+    hills.forEach(h => { z += h.amp * Math.exp(-((x - h.cx) ** 2 + (y - h.cy) ** 2) / h.s); });
+    return z;
+  }
+
+  function gradient(x, y) {
+    const eps = 0.001;
+    return [
+      (loss(x + eps, y) - loss(x - eps, y)) / (2 * eps),
+      (loss(x, y + eps) - loss(x, y - eps)) / (2 * eps),
+    ];
+  }
+
+  // Precompute loss field + find min/max for colour scaling
+  let lossMin = Infinity, lossMax = -Infinity;
+  const field = new Float32Array(W * H);
+  for (let py = 0; py < H; py++) {
+    const y = YMIN + (YMAX - YMIN) * (py / H);
+    for (let px = 0; px < W; px++) {
+      const x = XMIN + (XMAX - XMIN) * (px / W);
+      const v = loss(x, y);
+      field[py * W + px] = v;
+      if (v < lossMin) lossMin = v;
+      if (v > lossMax) lossMax = v;
+    }
+  }
+
+  // Colour map: dark-purple (low) → blue → amber → red
+  function colour(v) {
+    const t = Math.max(0, Math.min(1, (v - lossMin) / (lossMax - lossMin)));
+    // interpolate along 4 stops
+    const stops = [
+      [0.00, [42, 25, 84]],    // deep purple
+      [0.35, [42, 111, 184]],  // blue
+      [0.70, [201, 140, 58]],  // amber
+      [1.00, [192, 69, 80]],   // red
+    ];
+    for (let i = 0; i < stops.length - 1; i++) {
+      if (t >= stops[i][0] && t <= stops[i + 1][0]) {
+        const u = (t - stops[i][0]) / (stops[i + 1][0] - stops[i][0]);
+        const a = stops[i][1], b = stops[i + 1][1];
+        return [
+          Math.round(a[0] + (b[0] - a[0]) * u),
+          Math.round(a[1] + (b[1] - a[1]) * u),
+          Math.round(a[2] + (b[2] - a[2]) * u),
+        ];
+      }
+    }
+    return stops[stops.length - 1][1];
+  }
+
+  const bg = ctx.createImageData(W, H);
+  for (let i = 0; i < W * H; i++) {
+    const [r, g, b] = colour(field[i]);
+    const j = i * 4;
+    bg.data[j] = r; bg.data[j + 1] = g; bg.data[j + 2] = b; bg.data[j + 3] = 255;
+  }
+
+  // Ball state
+  const state = {
+    x: -2, y: -2,
+    lr: 0.12,
+    speed: 3,
+    playing: false,
+    trail: [],
+    step: 0,
+    lossHistory: [],
+    show: { arrows: true, contours: true, trail: true },
+  };
+
+  // Precompute gradient field on a sparse grid for arrow rendering
+  const GRID = 20;
+  const gradField = [];
+  for (let gy = 0; gy < GRID; gy++) {
+    for (let gx = 0; gx < GRID; gx++) {
+      const x = XMIN + (XMAX - XMIN) * ((gx + 0.5) / GRID);
+      const y = YMIN + (YMAX - YMIN) * ((gy + 0.5) / GRID);
+      const g = gradient(x, y);
+      gradField.push({ x, y, gx: g[0], gy: g[1] });
+    }
+  }
+
+  function toPx(x, y) {
+    return [
+      ((x - XMIN) / (XMAX - XMIN)) * W,
+      ((y - YMIN) / (YMAX - YMIN)) * H
+    ];
+  }
+
+  function drawArrow(x1, y1, x2, y2, color, width) {
+    ctx.strokeStyle = color; ctx.fillStyle = color;
+    ctx.lineWidth = width || 1;
+    ctx.lineCap = "round";
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+    // Arrowhead
+    const ang = Math.atan2(y2 - y1, x2 - x1);
+    const head = Math.max(3.5, width * 2.2);
+    ctx.beginPath();
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - head * Math.cos(ang - 0.45), y2 - head * Math.sin(ang - 0.45));
+    ctx.lineTo(x2 - head * Math.cos(ang + 0.45), y2 - head * Math.sin(ang + 0.45));
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  function drawLandscape() {
+    ctx.putImageData(bg, 0, 0);
+
+    // Contour lines
+    if (state.show.contours) {
+      ctx.fillStyle = "rgba(255, 255, 255, 0.22)";
+      const thresholds = [];
+      for (let v = Math.ceil(lossMin * 2) / 2; v < lossMax; v += 0.5) thresholds.push(v);
+      thresholds.forEach(th => {
+        ctx.beginPath();
+        for (let py = 0; py < H - 1; py += 2) {
+          for (let px = 0; px < W - 1; px += 2) {
+            const a = field[py * W + px];
+            const b = field[py * W + (px + 1)];
+            if ((a >= th && b < th) || (a < th && b >= th)) {
+              ctx.rect(px, py, 1, 1);
+            }
+          }
+        }
+        ctx.fill();
+      });
+    }
+
+    // Gradient quiver, show the negative-gradient direction (downhill)
+    if (state.show.arrows) {
+      const cellW = W / GRID, cellH = H / GRID;
+      gradField.forEach(p => {
+        // Negative gradient = downhill
+        const dx = -p.gx, dy = -p.gy;
+        const mag = Math.hypot(dx, dy);
+        if (mag < 0.01) return;
+        // Scale arrow, longer where gradient is stronger, capped at cell size
+        const scale = Math.min(cellW * 0.48, mag * 18);
+        const ux = dx / mag, uy = dy / mag;
+        const [px, py] = toPx(p.x, p.y);
+        const ex = px + ux * scale;
+        const ey = py + uy * scale;
+        const alpha = 0.25 + Math.min(1, mag / 2) * 0.55;
+        drawArrow(px, py, ex, ey, "rgba(255, 255, 255, " + alpha.toFixed(2) + ")", 1);
+      });
+    }
+
+    // Trail
+    if (state.show.trail && state.trail.length > 1) {
+      ctx.strokeStyle = "rgba(0, 229, 200, 0.85)";
+      ctx.lineWidth = 2.2;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      state.trail.forEach(([x, y], i) => {
+        const [px, py] = toPx(x, y);
+        if (i === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      });
+      ctx.stroke();
+      // Fading dots along the trail
+      state.trail.forEach(([x, y], i) => {
+        const [px, py] = toPx(x, y);
+        const t = i / state.trail.length;
+        ctx.fillStyle = "rgba(0, 229, 200, " + (0.15 + t * 0.35).toFixed(2) + ")";
+        ctx.beginPath(); ctx.arc(px, py, 1.4, 0, Math.PI * 2); ctx.fill();
+      });
+    }
+
+    // Live gradient vector at ball position, the direction the ball is about to move
+    const [bx, by] = toPx(state.x, state.y);
+    const g = gradient(state.x, state.y);
+    const gmag = Math.hypot(g[0], g[1]);
+    if (gmag > 0.01) {
+      const ux = -g[0] / gmag, uy = -g[1] / gmag;
+      const len = Math.min(55, 14 + gmag * 16);
+      drawArrow(bx, by, bx + ux * len, by + uy * len, "#ffd84a", 2.5);
+    }
+
+    // Ball, pulse outline
+    ctx.beginPath(); ctx.arc(bx, by, 14, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(0, 200, 155, 0.18)"; ctx.fill();
+    ctx.beginPath(); ctx.arc(bx, by, 9, 0, Math.PI * 2);
+    ctx.fillStyle = "#00c89b"; ctx.fill();
+    ctx.strokeStyle = "#fff"; ctx.lineWidth = 2.2; ctx.stroke();
+  }
+
+  function drawChart() {
+    cctx.clearRect(0, 0, CW, CH);
+    cctx.fillStyle = "#fafafc";
+    cctx.fillRect(0, 0, CW, CH);
+    // Axes
+    cctx.strokeStyle = "#d7d7dc"; cctx.lineWidth = 1;
+    cctx.beginPath(); cctx.moveTo(36, 10); cctx.lineTo(36, CH - 24); cctx.lineTo(CW - 8, CH - 24); cctx.stroke();
+    // Labels
+    cctx.fillStyle = "#6b6b70"; cctx.font = "10px 'SF Mono', monospace";
+    cctx.fillText("loss", 4, 14);
+    cctx.fillText("step " + state.step, CW - 60, CH - 8);
+    if (state.lossHistory.length === 0) return;
+    const minL = Math.min(...state.lossHistory);
+    const maxL = Math.max(...state.lossHistory);
+    const pad = (maxL - minL) * 0.1 || 1;
+    const lo = minL - pad, hi = maxL + pad;
+    const xPad = 36, xRight = CW - 8, yTop = 10, yBottom = CH - 24;
+    cctx.fillText(hi.toFixed(1), 4, yTop + 4);
+    cctx.fillText(lo.toFixed(1), 4, yBottom);
+    // Line
+    cctx.strokeStyle = "#2a6fb8"; cctx.lineWidth = 1.8;
+    cctx.beginPath();
+    state.lossHistory.forEach((v, i) => {
+      const px = xPad + (xRight - xPad) * (i / Math.max(1, state.lossHistory.length - 1));
+      const py = yBottom - (yBottom - yTop) * ((v - lo) / (hi - lo));
+      if (i === 0) cctx.moveTo(px, py); else cctx.lineTo(px, py);
+    });
+    cctx.stroke();
+    // Current point
+    const last = state.lossHistory.length - 1;
+    const px = xPad + (xRight - xPad) * (last / Math.max(1, state.lossHistory.length - 1));
+    const py = yBottom - (yBottom - yTop) * ((state.lossHistory[last] - lo) / (hi - lo));
+    cctx.fillStyle = "#00c89b"; cctx.beginPath(); cctx.arc(px, py, 3, 0, Math.PI * 2); cctx.fill();
+  }
+
+  const statusEl = root.querySelector("[data-loss-status]");
+  function setStatus(s) { statusEl.textContent = s; }
+
+  function step() {
+    const [gx, gy] = gradient(state.x, state.y);
+    let nx = state.x - state.lr * gx;
+    let ny = state.y - state.lr * gy;
+    // clamp
+    nx = Math.max(XMIN + 0.05, Math.min(XMAX - 0.05, nx));
+    ny = Math.max(YMIN + 0.05, Math.min(YMAX - 0.05, ny));
+    state.trail.push([state.x, state.y]);
+    if (state.trail.length > 200) state.trail.shift();
+    state.x = nx; state.y = ny; state.step++;
+    state.lossHistory.push(loss(state.x, state.y));
+    if (state.lossHistory.length > 200) state.lossHistory.shift();
+  }
+
+  function frame() {
+    if (!state.playing) return;
+    for (let i = 0; i < state.speed; i++) step();
+    drawLandscape(); drawChart();
+    // Detect convergence
+    if (state.lossHistory.length > 30) {
+      const recent = state.lossHistory.slice(-15);
+      const delta = Math.max(...recent) - Math.min(...recent);
+      if (delta < 0.005) {
+        const l = loss(state.x, state.y);
+        setStatus("converged · loss=" + l.toFixed(3));
+        state.playing = false;
+        return;
+      }
+    }
+    if (state.step > 500) { state.playing = false; setStatus("stopped · 500 steps"); return; }
+    setStatus("running · step " + state.step);
+    requestAnimationFrame(frame);
+  }
+
+  function reset() {
+    const starts = [[-2.2, -2.1], [2.0, -2.4], [-2.4, 2.0], [0.2, 2.4], [-1.8, 0.5]];
+    const [sx, sy] = starts[Math.floor(Math.random() * starts.length)];
+    state.x = sx; state.y = sy;
+    state.trail = []; state.step = 0; state.lossHistory = [loss(sx, sy)];
+    state.playing = false;
+    drawLandscape(); drawChart();
+    setStatus("ready · click ▶ Run");
+  }
+
+  root.querySelectorAll("[data-loss-lr]").forEach(el => el.addEventListener("input", e => {
+    state.lr = +e.target.value;
+    root.querySelector("[data-loss-lrv]").textContent = state.lr.toFixed(2);
+  }));
+  root.querySelectorAll("[data-loss-speed]").forEach(el => el.addEventListener("input", e => {
+    state.speed = +e.target.value;
+  }));
+  root.querySelector("[data-loss-action='play']").addEventListener("click", () => {
+    if (state.playing) { state.playing = false; setStatus("paused · step " + state.step); return; }
+    state.playing = true; setStatus("running"); requestAnimationFrame(frame);
+  });
+  root.querySelector("[data-loss-action='step']").addEventListener("click", () => {
+    step(); drawLandscape(); drawChart(); setStatus("stepped · " + state.step);
+  });
+  root.querySelector("[data-loss-action='reset']").addEventListener("click", reset);
+
+  // Toggles
+  root.querySelectorAll("[data-loss-show]").forEach(cb => cb.addEventListener("change", e => {
+    state.show[e.target.dataset.lossShow] = e.target.checked;
+    drawLandscape();
+  }));
+
+  reset();
+})();
+</script>

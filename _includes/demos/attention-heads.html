@@ -1,0 +1,216 @@
+<div class="idemo" id="demo-attn">
+  <div class="idemo__card">
+    <div class="idemo__head"><span class="idemo__title">Interactive · Attention heads</span></div>
+    <div class="idemo__body">
+
+      <p class="attn-lead">Transformers don't read a sentence left-to-right. Every token <em>looks at</em> every other token, through dozens of <strong>attention heads</strong>. Each head learned a different job. Click a head.</p>
+
+      <div class="attn-heads" data-attn-heads>
+        <button class="attn-head is-active" data-attn-id="prev"><span class="attn-head__n">H1</span><span class="attn-head__desc">Previous token</span></button>
+        <button class="attn-head" data-attn-id="name-copy"><span class="attn-head__n">H2</span><span class="attn-head__desc">Name copy</span></button>
+        <button class="attn-head" data-attn-id="subject"><span class="attn-head__n">H3</span><span class="attn-head__desc">Subject tracking</span></button>
+        <button class="attn-head" data-attn-id="induction"><span class="attn-head__n">H4</span><span class="attn-head__desc">Induction head</span></button>
+        <button class="attn-head" data-attn-id="punct"><span class="attn-head__n">H5</span><span class="attn-head__desc">Sentence break</span></button>
+      </div>
+
+      <div class="attn-stage">
+        <svg class="attn-svg" viewBox="0 0 720 220" role="img" aria-label="Attention pattern visualization">
+          <g class="attn-arcs"></g>
+          <g class="attn-tokens"></g>
+        </svg>
+      </div>
+
+      <div class="attn-explain" data-attn-explain></div>
+    </div>
+    <details>
+      <summary>How this demo works</summary>
+      <p>Five heads are curated based on real patterns discovered in GPT-2. Each head has a hand-specified attention matrix: rows are <em>query</em> tokens (doing the looking), columns are <em>key</em> tokens (being looked at). Arc width = attention weight. <em>Induction heads</em> were the first fully characterized circuit in a transformer, see Olsson et al. 2022, "In-context Learning and Induction Heads."</p>
+    </details>
+  </div>
+</div>
+
+<style>
+  #demo-attn .attn-lead { margin: 0 0 1.1rem !important; color: var(--nn-body) !important; font-size: 0.98rem !important; line-height: 1.6 !important; }
+
+  #demo-attn .attn-heads { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1rem; }
+  #demo-attn .attn-head {
+    display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.45rem 0.7rem;
+    background: #ffffff; border: 1px solid var(--nn-line); border-radius: 3px;
+    cursor: pointer; font-family: var(--nn-mono); font-size: 0.8rem;
+    color: var(--nn-muted); transition: border-color 150ms, color 150ms, background 150ms;
+  }
+  #demo-attn .attn-head:hover { border-color: var(--nn-accent); }
+  #demo-attn .attn-head.is-active {
+    border-color: var(--nn-accent); color: var(--nn-accent-dark);
+    background: var(--nn-accent-soft);
+  }
+  #demo-attn .attn-head__n {
+    background: var(--nn-accent); color: #fff; padding: 0.12rem 0.4rem; border-radius: 2px;
+    font-weight: 600; font-size: 0.74rem;
+  }
+  #demo-attn .attn-head:not(.is-active) .attn-head__n { background: var(--nn-line); color: var(--nn-muted); }
+
+  #demo-attn .attn-stage {
+    background: #fafafc; border: 1px solid var(--nn-line); border-radius: 6px;
+    padding: 0.9rem 0.6rem 0.4rem; margin-bottom: 1rem;
+  }
+  #demo-attn .attn-svg { width: 100%; height: auto; display: block; }
+  #demo-attn .attn-token {
+    font-family: var(--nn-mono); font-size: 13px; fill: var(--nn-ink);
+    cursor: default;
+  }
+  #demo-attn .attn-token-bg { fill: #ffffff; stroke: var(--nn-line); stroke-width: 1; }
+  #demo-attn .attn-token-bg.is-query { fill: var(--nn-accent-soft); stroke: var(--nn-accent); }
+  #demo-attn .attn-arc { fill: none; stroke: var(--nn-accent); stroke-linecap: round; opacity: 0; transition: opacity 320ms, stroke-width 320ms; }
+  #demo-attn .attn-arc.is-on { opacity: 1; }
+
+  #demo-attn .attn-explain {
+    padding: 0.85rem 1rem; background: #ffffff; border: 1px solid var(--nn-line);
+    border-left: 3px solid var(--nn-accent); border-radius: 4px;
+    font-size: 0.9rem; color: var(--nn-body); line-height: 1.6;
+  }
+  #demo-attn .attn-explain strong { color: var(--nn-accent-dark); }
+
+  @media (max-width: 640px) {
+    #demo-attn .attn-token { font-size: 10px; }
+  }
+</style>
+
+<script>
+(function() {
+  const root = document.getElementById("demo-attn");
+  if (!root) return;
+
+  const svg = root.querySelector(".attn-svg");
+  const arcsG = svg.querySelector(".attn-arcs");
+  const tokensG = svg.querySelector(".attn-tokens");
+  const explain = root.querySelector("[data-attn-explain]");
+  const SVGNS = "http://www.w3.org/2000/svg";
+
+  const TOKENS = ["When", "John", "and", "Mary", "went", "to", "the", "store,", "John", "gave", "Mary", "a", "book."];
+
+  // Precomputed attention patterns for each head.
+  // Each entry: queryIndex → array of {key: keyIndex, w: weight 0–1}
+  // Sparse, only the strong attention edges.
+  const PATTERNS = {
+    prev: {
+      title: "Previous-token head",
+      rationale: "Almost every token attends to the one immediately before it. This is the simplest possible attention pattern, and it appears in nearly every transformer.",
+      matrix: Array.from({ length: TOKENS.length }, (_, q) => q > 0 ? [{ key: q - 1, w: 0.92 }] : [])
+    },
+    "name-copy": {
+      title: "Name-copy head",
+      rationale: "<strong>\"John gave Mary\"</strong>, the model must recall that \"John\" appeared before. This head lets query tokens attend back to an earlier occurrence of the same name. Foundational to the IOI circuit (Wang et al. 2022).",
+      matrix: {
+        8: [{ key: 1, w: 0.86 }],   // "John" at 8 → "John" at 1
+        10: [{ key: 3, w: 0.88 }],  // "Mary" at 10 → "Mary" at 3
+      }
+    },
+    subject: {
+      title: "Subject tracking",
+      rationale: "Pronouns and verbs attend back to the <strong>subject</strong> of the clause. Here, verbs ('went', 'gave') look at the grammatical subject.",
+      matrix: {
+        4: [{ key: 1, w: 0.78 }, { key: 3, w: 0.55 }],    // "went" → John, Mary
+        9: [{ key: 8, w: 0.82 }],                          // "gave" → "John" (new subject)
+      }
+    },
+    induction: {
+      title: "Induction head, the in-context copier",
+      rationale: "If the sequence contains the pattern <em>A B … A ?</em>, induction heads attend to <em>B</em>. This is how models learn from their own context mid-sentence. <strong>The first transformer circuit ever fully understood.</strong>",
+      matrix: {
+        12: [{ key: 11, w: 0.64 }],                        // "book." → "a"
+        10: [{ key: 3, w: 0.82 }, { key: 4, w: 0.41 }],    // "Mary" → prior "Mary" and "went"
+      }
+    },
+    punct: {
+      title: "Sentence-break head",
+      rationale: "Fires strongly at punctuation and clause boundaries. Lets the model reset its context for the next clause.",
+      matrix: {
+        7: [{ key: 7, w: 0.94 }],                          // "store," self
+        12: [{ key: 7, w: 0.57 }, { key: 12, w: 0.72 }],
+      }
+    }
+  };
+
+  // Build tokens
+  const TOTAL_W = 720;
+  const X_MARGIN = 24;
+  const Y_TOKENS = 180;
+  const spacing = (TOTAL_W - X_MARGIN * 2) / TOKENS.length;
+
+  const tokPositions = [];
+
+  TOKENS.forEach((t, i) => {
+    const x = X_MARGIN + spacing * (i + 0.5);
+    tokPositions.push({ x, y: Y_TOKENS, tok: t });
+
+    const g = document.createElementNS(SVGNS, "g");
+    const rect = document.createElementNS(SVGNS, "rect");
+    const approxW = Math.max(30, t.length * 8);
+    rect.setAttribute("x", x - approxW / 2);
+    rect.setAttribute("y", Y_TOKENS - 16);
+    rect.setAttribute("width", approxW);
+    rect.setAttribute("height", 22);
+    rect.setAttribute("rx", 3);
+    rect.classList.add("attn-token-bg");
+    rect.dataset.i = i;
+    g.appendChild(rect);
+
+    const tx = document.createElementNS(SVGNS, "text");
+    tx.setAttribute("x", x);
+    tx.setAttribute("y", Y_TOKENS - 1);
+    tx.setAttribute("text-anchor", "middle");
+    tx.classList.add("attn-token");
+    tx.textContent = t;
+    g.appendChild(tx);
+
+    tokensG.appendChild(g);
+  });
+
+  function clearArcs() {
+    while (arcsG.firstChild) arcsG.removeChild(arcsG.firstChild);
+    tokensG.querySelectorAll(".attn-token-bg").forEach(r => r.classList.remove("is-query"));
+  }
+
+  function drawArc(qIdx, kIdx, weight) {
+    const q = tokPositions[qIdx], k = tokPositions[kIdx];
+    const dx = k.x - q.x;
+    // Arc goes upward (negative y)
+    const midX = (q.x + k.x) / 2;
+    const span = Math.abs(dx);
+    const arcHeight = Math.max(30, Math.min(140, span * 0.55));
+    const midY = Y_TOKENS - 16 - arcHeight;
+
+    const path = document.createElementNS(SVGNS, "path");
+    const d = "M " + q.x + "," + (Y_TOKENS - 16) +
+              " Q " + midX + "," + midY + " " + k.x + "," + (Y_TOKENS - 16);
+    path.setAttribute("d", d);
+    path.setAttribute("stroke-width", (0.8 + weight * 4.5).toFixed(1));
+    path.classList.add("attn-arc");
+    arcsG.appendChild(path);
+
+    // Highlight query token
+    const qRect = tokensG.querySelector('.attn-token-bg[data-i="' + qIdx + '"]');
+    if (qRect) qRect.classList.add("is-query");
+
+    setTimeout(() => path.classList.add("is-on"), 30 + Math.random() * 80);
+  }
+
+  function applyHead(id) {
+    const p = PATTERNS[id];
+    clearArcs();
+    // matrix can be array (indexed by q) or object
+    const mat = p.matrix;
+    if (Array.isArray(mat)) {
+      mat.forEach((kw, q) => kw.forEach(({ key, w }) => drawArc(q, key, w)));
+    } else {
+      Object.keys(mat).forEach(q => mat[q].forEach(({ key, w }) => drawArc(+q, key, w)));
+    }
+    explain.innerHTML = "<strong>" + p.title + "</strong>. " + p.rationale;
+    root.querySelectorAll("[data-attn-id]").forEach(b => b.classList.toggle("is-active", b.dataset.attnId === id));
+  }
+
+  root.querySelectorAll("[data-attn-id]").forEach(b => b.addEventListener("click", () => applyHead(b.dataset.attnId)));
+  applyHead("prev");
+})();
+</script>

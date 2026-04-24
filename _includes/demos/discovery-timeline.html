@@ -1,0 +1,221 @@
+<div class="idemo" id="demo-timeline">
+  <div class="idemo__card">
+    <div class="idemo__head"><span class="idemo__title">Interactive · Timeline of discoveries</span></div>
+    <div class="idemo__body">
+
+      <div class="tl-wrap">
+        <ol class="tl">
+          <!-- Nodes injected by JS -->
+        </ol>
+        <aside class="tl-panel" aria-live="polite">
+          <div class="tl-panel__empty">Select a milestone from the timeline →</div>
+        </aside>
+      </div>
+
+    </div>
+    <details>
+      <summary>How this demo works</summary>
+      <p>Nine events are stored as a JS array. Clicking a node renders the detail panel and updates the active state. No framework, just <code>document.createElement</code> and a template literal. On mobile the panel stacks under the timeline.</p>
+    </details>
+  </div>
+</div>
+
+<style>
+  #demo-timeline .tl-wrap { display: grid; grid-template-columns: 260px 1fr; gap: 1.4rem; }
+  #demo-timeline .tl { list-style: none; padding: 0; margin: 0; position: relative; }
+  #demo-timeline .tl::before {
+    content: ""; position: absolute; left: 10px; top: 6px; bottom: 6px; width: 2px;
+    background: linear-gradient(180deg, var(--nn-accent), var(--nn-line));
+  }
+  #demo-timeline .tl-item { position: relative; padding: 0 0 1rem 2.2rem; cursor: pointer; }
+  #demo-timeline .tl-item::before {
+    content: ""; position: absolute; left: 4px; top: 4px; width: 14px; height: 14px;
+    border-radius: 50%; background: #ffffff; border: 2px solid var(--nn-line);
+    transition: border-color 200ms, box-shadow 200ms, background 200ms;
+  }
+  #demo-timeline .tl-item:hover::before { border-color: var(--nn-accent); }
+  #demo-timeline .tl-item.is-active::before {
+    border-color: var(--nn-accent); background: var(--nn-accent);
+    box-shadow: 0 0 0 4px var(--nn-accent-soft);
+  }
+  #demo-timeline .tl-year {
+    font-family: var(--nn-mono); font-size: 0.72rem; letter-spacing: 0.1em; color: var(--nn-muted);
+  }
+  #demo-timeline .tl-title {
+    font-family: var(--nn-serif); font-size: 0.98rem; font-weight: 600;
+    color: var(--nn-ink); line-height: 1.25;
+  }
+  #demo-timeline .tl-item.is-active .tl-title { color: var(--nn-accent-dark); }
+
+  #demo-timeline .tl-panel {
+    background: #ffffff; border: 1px solid var(--nn-line); border-radius: 6px;
+    padding: 1.3rem 1.3rem; min-height: 320px; position: relative;
+  }
+  #demo-timeline .tl-panel__empty {
+    font-family: var(--nn-mono); font-size: 0.82rem; letter-spacing: 0.08em;
+    color: var(--nn-soft); padding: 1rem 0;
+  }
+  #demo-timeline .tl-panel__year {
+    font-family: var(--nn-mono); font-size: 0.74rem; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--nn-accent-dark); margin-bottom: 0.35rem;
+  }
+  #demo-timeline .tl-panel__title {
+    font-family: var(--nn-serif); font-size: 1.35rem; font-weight: 700;
+    color: var(--nn-ink); margin: 0 0 0.7rem; line-height: 1.2;
+  }
+  #demo-timeline .tl-panel__body p {
+    font-size: 0.95rem !important; color: var(--nn-body); margin: 0.5rem 0 !important;
+    line-height: 1.65 !important;
+  }
+  #demo-timeline .tl-panel__meta {
+    display: flex; align-items: center; gap: 1rem; margin-top: 0.9rem;
+    padding-top: 0.85rem; border-top: 1px solid var(--nn-line);
+    flex-wrap: wrap;
+  }
+  #demo-timeline .tl-panel__importance { display: flex; gap: 3px; }
+  #demo-timeline .tl-panel__importance span {
+    width: 10px; height: 10px; border-radius: 50%; background: var(--nn-line);
+  }
+  #demo-timeline .tl-panel__importance span.on {
+    background: var(--nn-accent); box-shadow: 0 0 4px var(--nn-accent-glow);
+  }
+  #demo-timeline .tl-panel__link {
+    font-family: var(--nn-mono); font-size: 0.78rem;
+    color: var(--nn-accent-dark) !important; text-decoration: underline !important;
+    text-underline-offset: 2px !important;
+  }
+  #demo-timeline .tl-panel__link:hover { color: var(--nn-accent) !important; }
+  #demo-timeline .tl-panel__fade { animation: tl-fade 260ms; }
+  @keyframes tl-fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+  @media (max-width: 640px) {
+    #demo-timeline .tl-wrap { grid-template-columns: 1fr; }
+    #demo-timeline .tl-panel { min-height: 0; }
+  }
+</style>
+
+<script>
+(function() {
+  const root = document.getElementById("demo-timeline");
+  if (!root) return;
+
+  const EVENTS = [
+    {
+      year: "2017",
+      title: "Distill.pub launches",
+      summary: "Chris Olah and others start publishing interactive neural network research. The idea: make research visual and accessible.",
+      why: "This aesthetic directly shapes how MI communicates its findings. The field's obsession with good visualization traces back here.",
+      paper: "Feature Visualization. Olah et al., 2017",
+      link: "https://distill.pub/2017/feature-visualization/",
+      importance: 3,
+    },
+    {
+      year: "2019",
+      title: "Circuits begin",
+      summary: "Olah starts finding specific, interpretable circuits in vision models, neurons that detect curves, then shapes, then faces.",
+      why: "First concrete evidence that networks contain intelligible sub-structures. Each circuit connects to the next, like biology.",
+      paper: "Activation Atlas. Carter et al., 2019",
+      link: "https://distill.pub/2019/activation-atlas/",
+      importance: 4,
+    },
+    {
+      year: "2020",
+      title: "The circuits framework",
+      summary: "A formal proposal: describe neural networks as collections of circuits, the way we describe brains.",
+      why: "The founding document of modern mechanistic interpretability. Defines the research program.",
+      paper: "Zoom In: An Introduction to Circuits. Olah et al., 2020",
+      link: "https://distill.pub/2020/circuits/zoom-in/",
+      importance: 5,
+    },
+    {
+      year: "2021",
+      title: "Transformers get the treatment",
+      summary: "A mathematical framework for what transformers are doing in terms of interpretable operations.",
+      why: "First time someone formally described GPT-style models as circuits. Enables every later result.",
+      paper: "A Mathematical Framework for Transformer Circuits. Elhage et al., 2021",
+      link: "https://transformer-circuits.pub/2021/framework/index.html",
+      importance: 5,
+    },
+    {
+      year: "2022",
+      title: "Induction heads",
+      summary: "A specific two-head circuit that handles in-context learning is identified and fully characterized.",
+      why: "First circuit fully understood in a real language model. Proof of concept that full MI is possible.",
+      paper: "In-context Learning and Induction Heads. Olsson et al., 2022",
+      link: "https://transformer-circuits.pub/2022/in-context-learning-and-induction-heads/index.html",
+      importance: 4,
+    },
+    {
+      year: "2022",
+      title: "The IOI circuit",
+      summary: "Wang et al, reverse-engineer exactly how GPT-2 completes \"John gave Mary the book. Mary gave it back to ___\"",
+      why: "An entire real behavior, in a real model, fully understood at the circuit level. Landmark.",
+      paper: "Interpretability in the Wild. Wang et al., 2022",
+      link: "https://arxiv.org/abs/2211.00593",
+      importance: 5,
+    },
+    {
+      year: "2022",
+      title: "Grokking",
+      summary: "Nanda et al, discover models can suddenly \"get\" modular arithmetic after thousands of steps of apparent non-progress.",
+      why: "The circuit that forms is described completely. A window into how learning actually happens inside.",
+      paper: "Progress measures for grokking. Nanda et al., 2023",
+      link: "https://arxiv.org/abs/2301.05217",
+      importance: 4,
+    },
+    {
+      year: "2023",
+      title: "Towards Monosemanticity",
+      summary: "Anthropic trains sparse autoencoders on a 1-layer model, separating polysemantic neurons into 512 clean features.",
+      why: "Breakthrough on superposition, suddenly you can read features directly off a model. Enables scaling.",
+      paper: "Towards Monosemanticity. Bricken et al., 2023",
+      link: "https://transformer-circuits.pub/2023/monosemantic-features/index.html",
+      importance: 5,
+    },
+    {
+      year: "2024",
+      title: "Scaling Monosemanticity",
+      summary: "The same approach applied to Claude Sonnet. Millions of features extracted. Some are haunting.",
+      why: "Shows MI now works on frontier production models. Safety-relevant findings start to appear.",
+      paper: "Scaling Monosemanticity. Templeton et al., 2024",
+      link: "https://transformer-circuits.pub/2024/scaling-monosemanticity/index.html",
+      importance: 5,
+    },
+  ];
+
+  const list = root.querySelector(".tl");
+  const panel = root.querySelector(".tl-panel");
+
+  EVENTS.forEach((e, i) => {
+    const li = document.createElement("li");
+    li.className = "tl-item";
+    li.innerHTML = '<div class="tl-year">' + e.year + '</div><div class="tl-title">' + e.title + '</div>';
+    li.addEventListener("click", () => select(i));
+    li.addEventListener("keydown", (ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); select(i); } });
+    li.setAttribute("tabindex", "0");
+    li.setAttribute("role", "button");
+    list.appendChild(li);
+  });
+
+  function select(i) {
+    const e = EVENTS[i];
+    list.querySelectorAll(".tl-item").forEach((el, idx) => el.classList.toggle("is-active", idx === i));
+    const dots = "<span class=on></span>".repeat(e.importance) + "<span></span>".repeat(5 - e.importance);
+    panel.innerHTML =
+      '<div class="tl-panel__fade">' +
+        '<div class="tl-panel__year">' + e.year + '</div>' +
+        '<h3 class="tl-panel__title">' + e.title + '</h3>' +
+        '<div class="tl-panel__body">' +
+          '<p>' + e.summary + '</p>' +
+          '<p><strong>Why it mattered.</strong> ' + e.why + '</p>' +
+        '</div>' +
+        '<div class="tl-panel__meta">' +
+          '<span class="tl-panel__importance" title="Importance">' + dots + '</span>' +
+          '<a class="tl-panel__link" href="' + e.link + '" target="_blank" rel="noopener">' + e.paper + ' ↗</a>' +
+        '</div>' +
+      '</div>';
+  }
+
+  select(0);
+})();
+</script>

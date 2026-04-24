@@ -1,0 +1,400 @@
+<div class="idemo" id="demo-weights">
+  <div class="idemo__card">
+    <div class="idemo__head"><span class="idemo__title">Interactive · The weight editor</span></div>
+    <div class="idemo__body">
+
+      <p class="we-lead">Here's a tiny network, two inputs, three hidden neurons, one output (positive / negative sentiment). <strong>Click any connection</strong> to change its weight and watch the prediction move.</p>
+
+      <div class="we-presets">
+        <span class="we-presets__label">Preset:</span>
+        <button class="we-preset is-active" data-we-preset="trained">Trained (works)</button>
+        <button class="we-preset" data-we-preset="random">Untrained</button>
+        <button class="we-preset" data-we-preset="broken">Broken</button>
+      </div>
+
+      <div class="we-net">
+        <svg class="we-svg" viewBox="0 0 520 260" aria-label="Network diagram">
+          <g class="we-conns"></g>
+          <g class="we-nodes"></g>
+          <g class="we-labels"></g>
+        </svg>
+
+        <div class="we-popup" data-we-popup hidden>
+          <div class="we-popup__title">Weight <code data-we-popup-name>w</code></div>
+          <input type="range" min="-2" max="2" step="0.01" value="0" data-we-popup-range>
+          <div class="we-popup__val"><span data-we-popup-val>0.00</span></div>
+          <button class="we-popup__close" data-we-popup-close>done</button>
+        </div>
+      </div>
+
+      <div class="we-inputs">
+        <label class="we-input">
+          <span class="we-input__name">word positivity <code>x₁</code></span>
+          <input type="range" min="0" max="1" step="0.01" value="0.9" data-we-x="0">
+          <span data-we-xv="0">0.90</span>
+        </label>
+        <label class="we-input">
+          <span class="we-input__name">exclamation <code>x₂</code></span>
+          <input type="range" min="0" max="1" step="0.01" value="0.3" data-we-x="1">
+          <span data-we-xv="1">0.30</span>
+        </label>
+      </div>
+
+      <div class="we-verify">
+        <div class="we-verify__label">Test sentences</div>
+        <ul class="we-verify__list" data-we-tests></ul>
+      </div>
+
+    </div>
+    <details>
+      <summary>How this demo works</summary>
+      <p>Two layers: input (2) → hidden (3, ReLU) → output (1, sigmoid). Matrix math in plain JS. Line colour is cyan for positive weights, red for negative; thickness scales with magnitude. The five test sentences are hardcoded; the ✓/✗ indicator checks the model's prediction against the known label with each weight change, so you can watch the trained model break the moment you misalign a weight.</p>
+    </details>
+  </div>
+</div>
+
+<style>
+  #demo-weights .we-lead { margin: 0 0 1rem !important; font-size: 0.98rem !important; color: var(--nn-body) !important; line-height: 1.6 !important; }
+
+  #demo-weights .we-presets { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; margin-bottom: 0.9rem; }
+  #demo-weights .we-presets__label { font-family: var(--nn-mono); font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--nn-muted); margin-right: 0.3rem; }
+  #demo-weights .we-preset {
+    padding: 0.4rem 0.75rem; background: #fff; border: 1px solid var(--nn-line); border-radius: 3px;
+    font-family: var(--nn-mono); font-size: 0.78rem; color: var(--nn-muted); cursor: pointer;
+  }
+  #demo-weights .we-preset:hover { color: var(--nn-accent-dark); border-color: var(--nn-accent); }
+  #demo-weights .we-preset.is-active { background: var(--nn-accent-soft); border-color: var(--nn-accent); color: var(--nn-accent-dark); }
+
+  #demo-weights .we-net { position: relative; background: #fafafc; border: 1px solid var(--nn-line); border-radius: 6px; padding: 0.7rem; }
+  #demo-weights .we-svg { width: 100%; height: auto; display: block; }
+  #demo-weights .we-conn {
+    stroke-linecap: round; cursor: pointer;
+    transition: stroke-width 200ms, stroke-opacity 200ms;
+  }
+  #demo-weights .we-conn:hover { stroke-opacity: 1 !important; }
+  #demo-weights .we-conn-hit { stroke: transparent; stroke-width: 14; cursor: pointer; }
+  #demo-weights .we-node { fill: #fff; stroke: var(--nn-line); stroke-width: 1.8; transition: fill 260ms, stroke 260ms; }
+  #demo-weights .we-node.is-output-pos { stroke: var(--nn-accent); fill: rgba(42, 111, 184, 0.2); }
+  #demo-weights .we-node.is-output-neg { stroke: var(--nn-accent-warn); fill: rgba(192, 69, 80, 0.15); }
+  #demo-weights .we-node-lbl { font-family: var(--nn-mono); font-size: 10px; fill: var(--nn-muted); pointer-events: none; }
+  #demo-weights .we-node-out-lbl { font-family: var(--nn-serif); font-size: 13px; font-weight: 700; fill: var(--nn-ink); pointer-events: none; }
+  #demo-weights .we-weight-lbl { font-family: var(--nn-mono); font-size: 9px; fill: var(--nn-muted); pointer-events: none; }
+
+  #demo-weights .we-popup {
+    position: absolute; background: #fff; border: 1px solid var(--nn-accent);
+    border-radius: 5px; padding: 0.6rem 0.8rem; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+    z-index: 5; min-width: 180px;
+  }
+  #demo-weights .we-popup__title { font-family: var(--nn-mono); font-size: 0.74rem; color: var(--nn-muted); margin-bottom: 0.4rem; }
+  #demo-weights .we-popup__title code { background: transparent; border: none; padding: 0; color: var(--nn-accent-dark); }
+  #demo-weights .we-popup input[type=range] { width: 100%; -webkit-appearance: none; height: 4px; background: var(--nn-line); border-radius: 2px; outline: none; }
+  #demo-weights .we-popup input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%;
+    background: var(--nn-accent); border: 2px solid #fff; box-shadow: 0 0 0 1px var(--nn-accent); cursor: pointer;
+  }
+  #demo-weights .we-popup__val { margin-top: 0.3rem; font-family: var(--nn-mono); font-size: 0.82rem; color: var(--nn-accent-dark); text-align: right; }
+  #demo-weights .we-popup__close { margin-top: 0.35rem; padding: 0.25rem 0.6rem; font-family: var(--nn-mono); font-size: 0.7rem; background: var(--nn-accent); color: #fff; border: none; border-radius: 2px; cursor: pointer; width: 100%; }
+
+  #demo-weights .we-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; margin-top: 0.9rem; }
+  @media (max-width: 540px) { #demo-weights .we-inputs { grid-template-columns: 1fr; } }
+  #demo-weights .we-input {
+    display: grid; grid-template-columns: 1fr 1.4fr auto; gap: 0.6rem; align-items: center;
+    padding: 0.5rem 0.75rem; background: #fff; border: 1px solid var(--nn-line); border-radius: 4px;
+    font-family: var(--nn-mono); font-size: 0.82rem;
+  }
+  #demo-weights .we-input__name code { color: var(--nn-accent-dark); background: transparent; border: none; padding: 0; }
+  #demo-weights .we-input input[type=range] { -webkit-appearance: none; height: 4px; background: var(--nn-line); border-radius: 2px; outline: none; }
+  #demo-weights .we-input input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 12px; height: 12px; border-radius: 50%;
+    background: var(--nn-accent); border: 2px solid #fff; box-shadow: 0 0 0 1px var(--nn-accent); cursor: pointer;
+  }
+
+  #demo-weights .we-verify { margin-top: 0.9rem; padding: 0.8rem 1rem; background: #fff; border: 1px solid var(--nn-line); border-radius: 5px; }
+  #demo-weights .we-verify__label { font-family: var(--nn-mono); font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--nn-muted); margin-bottom: 0.4rem; }
+  #demo-weights .we-verify__list { list-style: none !important; margin: 0 !important; padding: 0 !important; }
+  #demo-weights .we-verify__list li {
+    display: grid; grid-template-columns: auto 1fr auto; gap: 0.6rem; align-items: center;
+    padding: 0.3rem 0; border-bottom: 1px dashed var(--nn-line); margin: 0 !important;
+    font-family: var(--nn-mono); font-size: 0.82rem; color: var(--nn-body);
+    text-align: left !important;
+  }
+  #demo-weights .we-verify__list li:last-child { border-bottom: none; }
+  #demo-weights .we-mark { width: 18px; text-align: center; font-weight: 700; }
+  #demo-weights .we-mark.ok { color: var(--nn-accent); }
+  #demo-weights .we-mark.bad { color: var(--nn-accent-warn); }
+  #demo-weights .we-tag { font-size: 0.7rem; letter-spacing: 0.06em; padding: 0.1rem 0.4rem; border-radius: 2px; background: var(--nn-line); color: var(--nn-muted); }
+  #demo-weights .we-tag--pos { background: var(--nn-accent-soft); color: var(--nn-accent-dark); }
+  #demo-weights .we-tag--neg { background: rgba(192, 69, 80, 0.14); color: var(--nn-accent-warn); }
+</style>
+
+<script>
+(function() {
+  const root = document.getElementById("demo-weights");
+  if (!root) return;
+
+  // Architecture: 2 inputs → 3 hidden (ReLU) → 1 output (sigmoid)
+  // Weights: W1 (3x2) = 6 weights from input→hidden
+  //          W2 (1x3) = 3 weights from hidden→output
+  // Plus biases: b1[3], b2[1]
+  // For simplicity we expose w1_ij and w2_j and ignore biases visually (they're fixed).
+
+  const PRESETS = {
+    trained: {
+      // Positive on positivity, small on exclamation, output leans cyan if sum is high
+      w1: [[1.6, 0.2], [0.4, 1.3], [-1.2, -0.3]],
+      w2: [1.4, 0.8, -1.1],
+      b1: [0, 0, 0.2], b2: [0],
+      desc: "Weights that correctly classify most examples. Look at the colours, most go cyan (positive) because positive inputs should boost 'positive'."
+    },
+    random: {
+      w1: [[0.05, -0.04], [0.02, 0.08], [-0.06, 0.03]],
+      w2: [0.02, -0.05, 0.04],
+      b1: [0, 0, 0], b2: [0],
+      desc: "Tiny random weights. Model has no opinion, always ~50%. This is what weights look like before training."
+    },
+    broken: {
+      w1: [[-1.5, 0.2], [-1.2, 0.3], [-1.4, 0.1]],
+      w2: [-1.6, -1.2, -1.4],
+      b1: [0, 0, 0], b2: [2],
+      desc: "Deliberately miswired. Positive inputs now push the model toward 'negative'. The test sentences all fail."
+    }
+  };
+
+  const TESTS = [
+    { name: "\"I loved it!\"",       x: [0.95, 0.9], label: "pos" },
+    { name: "\"Pretty good.\"",      x: [0.75, 0.2], label: "pos" },
+    { name: "\"Meh.\"",              x: [0.45, 0.1], label: "neg" },
+    { name: "\"Awful, dull.\"",      x: [0.10, 0.1], label: "neg" },
+    { name: "\"Mediocre but fine.\"",x: [0.55, 0.3], label: "pos" },
+  ];
+
+  const state = {
+    w1: null, w2: null, b1: null, b2: null,
+    x: [0.9, 0.3],
+    editing: null, // { layer: 1|2, i, j }
+  };
+
+  function clonePreset(p) {
+    return {
+      w1: p.w1.map(r => r.slice()),
+      w2: p.w2.slice(),
+      b1: p.b1.slice(),
+      b2: p.b2.slice(),
+    };
+  }
+  function applyPreset(name) {
+    const p = clonePreset(PRESETS[name]);
+    state.w1 = p.w1; state.w2 = p.w2; state.b1 = p.b1; state.b2 = p.b2;
+    root.querySelectorAll("[data-we-preset]").forEach(b => b.classList.toggle("is-active", b.dataset.wePreset === name));
+    renderAll();
+  }
+
+  // Geometry
+  const SVGNS = "http://www.w3.org/2000/svg";
+  const svg = root.querySelector(".we-svg");
+  const connsG = svg.querySelector(".we-conns");
+  const nodesG = svg.querySelector(".we-nodes");
+  const labelsG = svg.querySelector(".we-labels");
+
+  const INPUT_X = 80, HIDDEN_X = 260, OUT_X = 440;
+  const INPUT_YS = [90, 180];
+  const HIDDEN_YS = [55, 130, 205];
+  const OUT_Y = 130;
+
+  // Draw nodes
+  function drawCircle(cx, cy, r, cls, dataKey) {
+    const c = document.createElementNS(SVGNS, "circle");
+    c.setAttribute("cx", cx); c.setAttribute("cy", cy); c.setAttribute("r", r);
+    c.setAttribute("class", "we-node " + (cls || ""));
+    if (dataKey) c.setAttribute("data-we-node", dataKey);
+    nodesG.appendChild(c);
+    return c;
+  }
+  function drawText(x, y, txt, cls) {
+    const t = document.createElementNS(SVGNS, "text");
+    t.setAttribute("x", x); t.setAttribute("y", y); t.setAttribute("text-anchor", "middle");
+    t.setAttribute("class", cls);
+    t.textContent = txt;
+    labelsG.appendChild(t);
+    return t;
+  }
+
+  // Inputs
+  INPUT_YS.forEach((y, i) => {
+    drawCircle(INPUT_X, y, 18, "", "in" + i);
+    drawText(INPUT_X, y + 4, "x" + (i + 1), "we-node-lbl");
+  });
+  // Hidden
+  HIDDEN_YS.forEach((y, j) => {
+    drawCircle(HIDDEN_X, y, 18, "", "h" + j);
+    drawText(HIDDEN_X, y + 4, "h" + (j + 1), "we-node-lbl");
+  });
+  // Output
+  const outNode = drawCircle(OUT_X, OUT_Y, 24, "", "out");
+  const outLbl = drawText(OUT_X, OUT_Y + 4, ",", "we-node-out-lbl");
+
+  // Layer labels
+  drawText(INPUT_X, 245, "inputs", "we-node-lbl");
+  drawText(HIDDEN_X, 245, "hidden (ReLU)", "we-node-lbl");
+  drawText(OUT_X, 245, "output (σ)", "we-node-lbl");
+
+  // Build connections: input → hidden
+  const connElems = [];
+  HIDDEN_YS.forEach((hy, j) => {
+    INPUT_YS.forEach((iy, i) => {
+      // Visible line
+      const line = document.createElementNS(SVGNS, "line");
+      line.setAttribute("x1", INPUT_X + 18); line.setAttribute("y1", iy);
+      line.setAttribute("x2", HIDDEN_X - 18); line.setAttribute("y2", hy);
+      line.setAttribute("class", "we-conn");
+      connsG.appendChild(line);
+      // Hit area (thicker invisible)
+      const hit = document.createElementNS(SVGNS, "line");
+      hit.setAttribute("x1", INPUT_X + 18); hit.setAttribute("y1", iy);
+      hit.setAttribute("x2", HIDDEN_X - 18); hit.setAttribute("y2", hy);
+      hit.setAttribute("class", "we-conn-hit");
+      hit.addEventListener("click", () => openPopup(1, j, i));
+      connsG.appendChild(hit);
+      // Weight label
+      const mx = (INPUT_X + HIDDEN_X) / 2;
+      const my = (iy + hy) / 2 - 4;
+      const lbl = document.createElementNS(SVGNS, "text");
+      lbl.setAttribute("x", mx); lbl.setAttribute("y", my); lbl.setAttribute("text-anchor", "middle");
+      lbl.setAttribute("class", "we-weight-lbl");
+      labelsG.appendChild(lbl);
+
+      connElems.push({ layer: 1, j, i, line, hit, lbl });
+    });
+  });
+  // hidden → output
+  HIDDEN_YS.forEach((hy, j) => {
+    const line = document.createElementNS(SVGNS, "line");
+    line.setAttribute("x1", HIDDEN_X + 18); line.setAttribute("y1", hy);
+    line.setAttribute("x2", OUT_X - 24); line.setAttribute("y2", OUT_Y);
+    line.setAttribute("class", "we-conn");
+    connsG.appendChild(line);
+    const hit = document.createElementNS(SVGNS, "line");
+    hit.setAttribute("x1", HIDDEN_X + 18); hit.setAttribute("y1", hy);
+    hit.setAttribute("x2", OUT_X - 24); hit.setAttribute("y2", OUT_Y);
+    hit.setAttribute("class", "we-conn-hit");
+    hit.addEventListener("click", () => openPopup(2, 0, j));
+    connsG.appendChild(hit);
+    const mx = (HIDDEN_X + OUT_X) / 2;
+    const my = (hy + OUT_Y) / 2 - 4;
+    const lbl = document.createElementNS(SVGNS, "text");
+    lbl.setAttribute("x", mx); lbl.setAttribute("y", my); lbl.setAttribute("text-anchor", "middle");
+    lbl.setAttribute("class", "we-weight-lbl");
+    labelsG.appendChild(lbl);
+
+    connElems.push({ layer: 2, j: 0, i: j, line, hit, lbl });
+  });
+
+  function relu(x) { return Math.max(0, x); }
+  function sigmoid(x) { return 1 / (1 + Math.exp(-x)); }
+
+  function forward(xIn, w1, w2, b1, b2) {
+    // hidden_j = relu( sum_i w1[j][i]*x[i] + b1[j] )
+    const h = [0, 1, 2].map(j => relu(xIn[0] * w1[j][0] + xIn[1] * w1[j][1] + b1[j]));
+    const o = sigmoid(h[0] * w2[0] + h[1] * w2[1] + h[2] * w2[2] + b2[0]);
+    return { h, o };
+  }
+
+  function renderConns() {
+    connElems.forEach(e => {
+      const w = e.layer === 1 ? state.w1[e.j][e.i] : state.w2[e.i];
+      const thick = 0.6 + Math.min(2, Math.abs(w)) * 2.5;
+      const color = w >= 0 ? "#2a6fb8" : "#c04550";
+      e.line.setAttribute("stroke", color);
+      e.line.setAttribute("stroke-width", thick.toFixed(2));
+      e.line.setAttribute("stroke-opacity", (0.25 + Math.min(1, Math.abs(w)) * 0.55).toFixed(2));
+      e.lbl.textContent = (w >= 0 ? "+" : "") + w.toFixed(2);
+    });
+  }
+
+  function renderOutput() {
+    const { o } = forward(state.x, state.w1, state.w2, state.b1, state.b2);
+    outLbl.textContent = Math.round(o * 100) + "%";
+    outNode.classList.toggle("is-output-pos", o >= 0.5);
+    outNode.classList.toggle("is-output-neg", o < 0.5);
+  }
+
+  function renderInputs() {
+    [0, 1].forEach(i => {
+      const n = svg.querySelector('[data-we-node="in' + i + '"]');
+      n.setAttribute("fill", "rgba(42, 111, 184, " + (0.12 + state.x[i] * 0.7).toFixed(2) + ")");
+    });
+    // Hidden activations
+    const { h } = forward(state.x, state.w1, state.w2, state.b1, state.b2);
+    [0, 1, 2].forEach(j => {
+      const n = svg.querySelector('[data-we-node="h' + j + '"]');
+      const a = Math.min(1, h[j] / 2);
+      n.setAttribute("fill", h[j] > 0.01 ? "rgba(42, 111, 184, " + (0.12 + a * 0.7).toFixed(2) + ")" : "#fff");
+    });
+  }
+
+  function renderTests() {
+    const ul = root.querySelector("[data-we-tests]");
+    ul.innerHTML = "";
+    TESTS.forEach(t => {
+      const { o } = forward(t.x, state.w1, state.w2, state.b1, state.b2);
+      const predicted = o >= 0.5 ? "pos" : "neg";
+      const ok = predicted === t.label;
+      const li = document.createElement("li");
+      li.innerHTML =
+        '<span class="we-mark ' + (ok ? "ok" : "bad") + '">' + (ok ? "✓" : "✗") + '</span>' +
+        '<span>' + t.name + '</span>' +
+        '<span class="we-tag we-tag--' + predicted + '">' + predicted + ' ' + Math.round(o * 100) + '%</span>';
+      ul.appendChild(li);
+    });
+  }
+
+  function renderAll() {
+    [0, 1].forEach(i => root.querySelector('[data-we-xv="' + i + '"]').textContent = state.x[i].toFixed(2));
+    renderConns();
+    renderInputs();
+    renderOutput();
+    renderTests();
+  }
+
+  // Popup editing
+  function openPopup(layer, j, i) {
+    state.editing = { layer, j, i };
+    const w = layer === 1 ? state.w1[j][i] : state.w2[i];
+    const popup = root.querySelector("[data-we-popup]");
+    popup.hidden = false;
+    const elem = layer === 1
+      ? connElems.find(e => e.layer === 1 && e.j === j && e.i === i)
+      : connElems.find(e => e.layer === 2 && e.i === i);
+    const rect = elem.line.getBoundingClientRect();
+    const container = root.querySelector(".we-net").getBoundingClientRect();
+    popup.style.left = (rect.left + rect.width / 2 - container.left - 95) + "px";
+    popup.style.top  = (rect.top + rect.height / 2 - container.top + 8) + "px";
+    popup.querySelector("[data-we-popup-name]").textContent = layer === 1 ? ("w1[" + (j + 1) + "]" + "[" + (i + 1) + "]") : ("w2[" + (i + 1) + "]");
+    const range = popup.querySelector("[data-we-popup-range]");
+    range.value = w;
+    popup.querySelector("[data-we-popup-val]").textContent = (w >= 0 ? "+" : "") + w.toFixed(2);
+    range.oninput = () => {
+      const v = +range.value;
+      if (state.editing.layer === 1) state.w1[state.editing.j][state.editing.i] = v;
+      else state.w2[state.editing.i] = v;
+      popup.querySelector("[data-we-popup-val]").textContent = (v >= 0 ? "+" : "") + v.toFixed(2);
+      renderAll();
+    };
+  }
+  root.querySelector("[data-we-popup-close]").addEventListener("click", () => {
+    root.querySelector("[data-we-popup]").hidden = true;
+    state.editing = null;
+  });
+
+  // Input sliders
+  root.querySelectorAll("[data-we-x]").forEach(el => el.addEventListener("input", e => {
+    state.x[+el.dataset.weX] = +e.target.value;
+    renderAll();
+  }));
+
+  // Preset buttons
+  root.querySelectorAll("[data-we-preset]").forEach(btn => btn.addEventListener("click", () => applyPreset(btn.dataset.wePreset)));
+
+  applyPreset("trained");
+})();
+</script>

@@ -1,0 +1,252 @@
+<div class="idemo" id="demo-nnflow">
+  <div class="idemo__card">
+    <div class="idemo__head"><span class="idemo__title">Interactive · Signal flow through a neural network</span></div>
+    <div class="idemo__body">
+
+      <p class="nnf-lead">Press <strong>Run</strong>. Watch one input travel through the network. Every dot is a neuron. Every line is a weight, a single number the model learned.</p>
+
+      <div class="nnf-stage">
+        <svg class="nnf-svg" viewBox="0 0 680 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Neural network signal flow">
+          <!-- layer backgrounds -->
+          <rect x="20" y="20" width="120" height="280" rx="6" class="nnf-layerbg"/>
+          <rect x="180" y="20" width="120" height="280" rx="6" class="nnf-layerbg"/>
+          <rect x="340" y="20" width="120" height="280" rx="6" class="nnf-layerbg"/>
+          <rect x="500" y="20" width="160" height="280" rx="6" class="nnf-layerbg"/>
+
+          <!-- layer labels -->
+          <text x="80"  y="294" class="nnf-layerlbl" text-anchor="middle">input</text>
+          <text x="240" y="294" class="nnf-layerlbl" text-anchor="middle">hidden · 1</text>
+          <text x="400" y="294" class="nnf-layerlbl" text-anchor="middle">hidden · 2</text>
+          <text x="580" y="294" class="nnf-layerlbl" text-anchor="middle">output</text>
+
+          <g class="nnf-edges"></g>
+          <g class="nnf-nodes"></g>
+          <g class="nnf-labels"></g>
+        </svg>
+
+        <div class="nnf-controls">
+          <button class="btn-primary" data-nnf-action="play">▶ Run</button>
+          <button class="btn-secondary" data-nnf-action="step">Step</button>
+          <span class="nnf-status" data-nnf-status>idle</span>
+        </div>
+      </div>
+
+      <div class="nnf-notes">
+        <div class="nnf-note">
+          <div class="nnf-note__label">What you're seeing</div>
+          <p>The input layer holds <em>pixels / words / features</em>. Each hidden-layer neuron receives a weighted sum from the previous layer and squashes it. After two transformations, the output layer picks a label.</p>
+        </div>
+        <div class="nnf-note">
+          <div class="nnf-note__label">The uncomfortable part</div>
+          <p>All those weights on the lines? Nobody wrote them. They were found by training, by nudging numbers until the model got enough examples right. That's why we can't just "read" what the model is doing.</p>
+        </div>
+      </div>
+    </div>
+    <details>
+      <summary>How this demo works</summary>
+      <p>The network is drawn as an SVG with 4 input, 6 + 6 hidden, 3 output neurons. Edges are randomised weights (thickness + opacity scale with magnitude). Pressing <code>Run</code> sends a staged wave of activation: each hidden neuron's sum is computed, clamped through a <code>tanh</code>, and rendered as fill intensity. Same idea as a real feedforward pass, just drawn slowly so you can see it.</p>
+    </details>
+  </div>
+</div>
+
+<style>
+  #demo-nnflow .nnf-lead { margin: 0 0 1.1rem !important; color: var(--nn-body) !important; font-size: 0.98rem !important; line-height: 1.6 !important; }
+  #demo-nnflow .nnf-stage { position: relative; }
+  #demo-nnflow .nnf-svg { width: 100%; height: auto; display: block; border: 1px solid var(--nn-line); border-radius: 6px; background: #fafafc; }
+  #demo-nnflow .nnf-layerbg { fill: #ffffff; stroke: var(--nn-line); stroke-width: 1; }
+  #demo-nnflow .nnf-layerlbl { font-family: var(--nn-mono); font-size: 10px; fill: var(--nn-muted); letter-spacing: 0.12em; text-transform: uppercase; }
+  #demo-nnflow .nnf-edge { stroke: #c8d2de; stroke-linecap: round; transition: stroke 160ms, opacity 160ms; }
+  #demo-nnflow .nnf-edge.is-firing { stroke: var(--nn-accent); }
+  #demo-nnflow .nnf-node { fill: #ffffff; stroke: var(--nn-line); stroke-width: 1.4; transition: fill 260ms, stroke 260ms, r 260ms; }
+  #demo-nnflow .nnf-node.is-input { fill: var(--nn-accent); stroke: var(--nn-accent-dark); }
+  #demo-nnflow .nnf-node.is-active { stroke: var(--nn-accent); }
+  #demo-nnflow .nnf-nodelbl { font-family: var(--nn-mono); font-size: 9px; fill: var(--nn-muted); }
+
+  #demo-nnflow .nnf-controls {
+    display: flex; align-items: center; gap: 0.8rem; margin-top: 1rem;
+  }
+  #demo-nnflow .nnf-status {
+    font-family: var(--nn-mono); font-size: 0.78rem; letter-spacing: 0.08em;
+    color: var(--nn-muted); text-transform: uppercase;
+  }
+
+  #demo-nnflow .nnf-notes { display: grid; grid-template-columns: 1fr 1fr; gap: 0.9rem; margin-top: 1.1rem; }
+  #demo-nnflow .nnf-note {
+    padding: 0.85rem 1rem; background: #fafafc; border: 1px solid var(--nn-line);
+    border-left: 3px solid var(--nn-accent); border-radius: 4px;
+  }
+  #demo-nnflow .nnf-note__label {
+    font-family: var(--nn-mono); font-size: 0.68rem; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--nn-accent-dark); margin-bottom: 0.35rem;
+  }
+  #demo-nnflow .nnf-note p { margin: 0 !important; font-size: 0.9rem !important; color: var(--nn-body) !important; line-height: 1.55 !important; }
+
+  @media (max-width: 640px) {
+    #demo-nnflow .nnf-notes { grid-template-columns: 1fr; }
+  }
+</style>
+
+<script>
+(function() {
+  const root = document.getElementById("demo-nnflow");
+  if (!root) return;
+
+  const svg = root.querySelector(".nnf-svg");
+  const edgesG = svg.querySelector(".nnf-edges");
+  const nodesG = svg.querySelector(".nnf-nodes");
+  const statusEl = root.querySelector("[data-nnf-status]");
+
+  const SVGNS = "http://www.w3.org/2000/svg";
+  const LAYERS = [4, 6, 6, 3];
+  const XS = [80, 240, 400, 580];
+  const labels = ["cat", "dog", "car", "tree"];
+
+  // Build node geometry
+  const nodes = [];
+  LAYERS.forEach((count, li) => {
+    const spacing = 240 / (count + 1);
+    for (let i = 0; i < count; i++) {
+      const y = 40 + spacing * (i + 1);
+      nodes.push({ layer: li, i, x: XS[li], y, activation: 0, el: null });
+    }
+  });
+
+  // Build edges between consecutive layers with random weights
+  const edges = [];
+  function rand(a, b) { return a + Math.random() * (b - a); }
+  for (let li = 0; li < LAYERS.length - 1; li++) {
+    const src = nodes.filter(n => n.layer === li);
+    const dst = nodes.filter(n => n.layer === li + 1);
+    src.forEach(s => {
+      dst.forEach(d => {
+        const w = rand(-1, 1);
+        edges.push({ src: s, dst: d, w, el: null });
+      });
+    });
+  }
+
+  // Render edges
+  edges.forEach(e => {
+    const line = document.createElementNS(SVGNS, "line");
+    line.setAttribute("x1", e.src.x);
+    line.setAttribute("y1", e.src.y);
+    line.setAttribute("x2", e.dst.x);
+    line.setAttribute("y2", e.dst.y);
+    line.setAttribute("stroke-width", (0.4 + Math.abs(e.w) * 1.6).toFixed(2));
+    line.setAttribute("stroke-opacity", (0.25 + Math.abs(e.w) * 0.5).toFixed(2));
+    line.classList.add("nnf-edge");
+    edgesG.appendChild(line);
+    e.el = line;
+  });
+
+  // Render nodes + output labels
+  nodes.forEach(n => {
+    const c = document.createElementNS(SVGNS, "circle");
+    c.setAttribute("cx", n.x);
+    c.setAttribute("cy", n.y);
+    c.setAttribute("r", n.layer === 0 ? 10 : n.layer === LAYERS.length - 1 ? 13 : 9);
+    c.classList.add("nnf-node");
+    if (n.layer === 0) c.classList.add("is-input");
+    nodesG.appendChild(c);
+    n.el = c;
+
+    if (n.layer === LAYERS.length - 1) {
+      const t = document.createElementNS(SVGNS, "text");
+      t.setAttribute("x", n.x + 22);
+      t.setAttribute("y", n.y + 4);
+      t.classList.add("nnf-nodelbl");
+      t.textContent = labels[n.i] || "";
+      nodesG.appendChild(t);
+    }
+  });
+
+  // Forward pass: compute activations stagewise
+  function pickInput() {
+    // Randomize input activations
+    nodes.filter(n => n.layer === 0).forEach(n => { n.activation = rand(0.2, 1.0); });
+  }
+  function tanh(x) { return Math.tanh(x); }
+  function computeLayer(li) {
+    nodes.filter(n => n.layer === li).forEach(n => {
+      let sum = 0;
+      edges.forEach(e => { if (e.dst === n) sum += e.src.activation * e.w; });
+      n.activation = tanh(sum);
+    });
+  }
+  function renderActivations() {
+    nodes.forEach(n => {
+      const a = Math.abs(n.activation);
+      const alpha = 0.12 + a * 0.85;
+      if (n.layer > 0) n.el.setAttribute("fill", "rgba(42, 111, 184, " + alpha.toFixed(2) + ")");
+      else n.el.setAttribute("fill-opacity", (0.3 + a * 0.7).toFixed(2));
+    });
+    // softmax-ish highlight on final layer
+    const outs = nodes.filter(n => n.layer === LAYERS.length - 1);
+    const maxOut = Math.max(...outs.map(o => o.activation));
+    outs.forEach(o => {
+      o.el.classList.toggle("is-active", o.activation === maxOut);
+      o.el.setAttribute("r", o.activation === maxOut ? 16 : 13);
+    });
+  }
+
+  function fireEdges(li) {
+    edges.forEach(e => {
+      if (e.src.layer === li) {
+        setTimeout(() => e.el.classList.add("is-firing"), Math.random() * 150);
+        setTimeout(() => e.el.classList.remove("is-firing"), 550 + Math.random() * 150);
+      }
+    });
+  }
+
+  let stage = 0;
+  let playing = false;
+
+  async function play() {
+    if (playing) return;
+    playing = true;
+    statusEl.textContent = "input received";
+    pickInput(); renderActivations();
+    await new Promise(r => setTimeout(r, 650));
+
+    statusEl.textContent = "layer 1 computing…";
+    fireEdges(0);
+    await new Promise(r => setTimeout(r, 650));
+    computeLayer(1); renderActivations();
+
+    statusEl.textContent = "layer 2 computing…";
+    fireEdges(1);
+    await new Promise(r => setTimeout(r, 650));
+    computeLayer(2); renderActivations();
+
+    statusEl.textContent = "output: selecting label";
+    fireEdges(2);
+    await new Promise(r => setTimeout(r, 650));
+    computeLayer(3); renderActivations();
+
+    const winner = nodes.filter(n => n.layer === 3).reduce((a, b) => b.activation > a.activation ? b : a);
+    statusEl.textContent = "prediction: " + labels[winner.i];
+    playing = false;
+  }
+
+  function step() {
+    if (playing) return;
+    if (stage === 0) { pickInput(); renderActivations(); statusEl.textContent = "input received"; stage = 1; return; }
+    if (stage <= 3) { fireEdges(stage - 1); computeLayer(stage); renderActivations(); statusEl.textContent = "layer " + stage; stage++; return; }
+    const winner = nodes.filter(n => n.layer === 3).reduce((a, b) => b.activation > a.activation ? b : a);
+    statusEl.textContent = "prediction: " + labels[winner.i];
+    stage = 0;
+  }
+
+  root.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-nnf-action]");
+    if (!btn) return;
+    if (btn.dataset.nnfAction === "play") { stage = 0; play(); }
+    if (btn.dataset.nnfAction === "step") step();
+  });
+
+  // Initial random state (low activation) so the page isn't all-white
+  pickInput();
+  computeLayer(1); computeLayer(2); computeLayer(3);
+  renderActivations();
+})();
+</script>

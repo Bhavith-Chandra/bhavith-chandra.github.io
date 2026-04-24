@@ -1,0 +1,456 @@
+<div class="idemo" id="demo-layers">
+  <div class="idemo__card">
+    <div class="idemo__head"><span class="idemo__title">Interactive · Layer-by-layer vision explorer</span></div>
+    <div class="idemo__body">
+
+      <p class="lyr-lead">Slide through the layers of a small vision model. At the bottom you see pixels. At the top you see categories. In between, the network turns the first into the second.</p>
+
+      <div class="lyr-imgs" data-lyr-imgs>
+        <button class="lyr-img is-active" data-lyr-img="cat">🐱 cat</button>
+        <button class="lyr-img" data-lyr-img="car">🚗 car</button>
+        <button class="lyr-img" data-lyr-img="face">🙂 face</button>
+        <button class="lyr-img" data-lyr-img="banana">🍌 banana</button>
+        <button class="lyr-img" data-lyr-img="plane">✈️ plane</button>
+        <button class="lyr-img" data-lyr-img="street">🏙️ street</button>
+      </div>
+
+      <div class="lyr-stage">
+        <div class="lyr-panel">
+          <canvas class="lyr-canvas" width="256" height="256" aria-label="Layer visualization"></canvas>
+          <div class="lyr-panel__label" data-lyr-label>Layer 0 · raw pixels</div>
+        </div>
+
+        <div class="lyr-info">
+          <div class="lyr-info__depth" data-lyr-depth>Depth: 0 / 12</div>
+          <div class="lyr-info__title" data-lyr-title>Raw pixels</div>
+          <div class="lyr-info__desc" data-lyr-desc>This is the image coming in. Each pixel is three numbers (R, G, B). The network hasn't done anything yet.</div>
+
+          <div class="lyr-info__pred" data-lyr-pred-wrap hidden>
+            <div class="lyr-info__pred-label">Top predictions</div>
+            <div class="lyr-preds" data-lyr-preds></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="lyr-ctrl">
+        <span class="lyr-ctrl__name">Layer</span>
+        <input type="range" min="0" max="12" step="1" value="0" data-lyr-slider>
+        <div class="lyr-ticks">
+          <span>0 · pixels</span><span>3 · edges</span><span>6 · textures</span><span>9 · parts</span><span>12 · label</span>
+        </div>
+      </div>
+    </div>
+    <details>
+      <summary>How this demo works</summary>
+      <p>A real pretrained model is too heavy to ship inline, so this is an <em>illustrative pipeline</em>: Layer 0 draws the image on a canvas; Layer 1–2 apply Sobel edge detection; Layer 3–5 show animated feature-map tiles; Layer 6–8 draw a class-activation-style heatmap overlay; Layer 9–11 blur toward "concept space"; Layer 12 shows the final class distribution. The <em>progression</em> mirrors what happens in a real ConvNet (see Zeiler &amp; Fergus 2013, Olah et al. 2017). Swap the image, the predictions change accordingly.</p>
+    </details>
+  </div>
+</div>
+
+<style>
+  #demo-layers .lyr-lead { margin: 0 0 1rem !important; font-size: 0.98rem !important; color: var(--nn-body) !important; line-height: 1.6 !important; }
+
+  #demo-layers .lyr-imgs { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-bottom: 1rem; }
+  #demo-layers .lyr-img {
+    padding: 0.42rem 0.8rem; background: #fff; border: 1px solid var(--nn-line); border-radius: 3px;
+    font-family: var(--nn-mono); font-size: 0.82rem; cursor: pointer; color: var(--nn-ink);
+    transition: border-color 150ms, background 150ms;
+  }
+  #demo-layers .lyr-img:hover { border-color: var(--nn-accent); }
+  #demo-layers .lyr-img.is-active { background: var(--nn-accent-soft); border-color: var(--nn-accent); color: var(--nn-accent-dark); }
+
+  #demo-layers .lyr-stage {
+    display: grid; grid-template-columns: 280px 1fr; gap: 1rem; margin-bottom: 1rem;
+  }
+  @media (max-width: 720px) { #demo-layers .lyr-stage { grid-template-columns: 1fr; } }
+
+  #demo-layers .lyr-panel {
+    background: #fafafc; border: 1px solid var(--nn-line); border-radius: 6px; padding: 0.6rem; display: flex; flex-direction: column; gap: 0.5rem;
+  }
+  #demo-layers .lyr-canvas { width: 100%; height: auto; border-radius: 3px; background: #fff; border: 1px solid var(--nn-line); image-rendering: pixelated; }
+  #demo-layers .lyr-panel__label { font-family: var(--nn-mono); font-size: 0.72rem; letter-spacing: 0.1em; color: var(--nn-muted); text-align: center; }
+
+  #demo-layers .lyr-info {
+    background: #fff; border: 1px solid var(--nn-line); border-radius: 6px; padding: 0.9rem 1.05rem;
+  }
+  #demo-layers .lyr-info__depth { font-family: var(--nn-mono); font-size: 0.7rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--nn-muted); margin-bottom: 0.3rem; }
+  #demo-layers .lyr-info__title { font-family: var(--nn-serif); font-weight: 700; font-size: 1.2rem; color: var(--nn-ink); margin-bottom: 0.3rem; }
+  #demo-layers .lyr-info__desc { font-size: 0.9rem; color: var(--nn-body); line-height: 1.58; }
+
+  #demo-layers .lyr-info__pred { margin-top: 0.9rem; padding-top: 0.7rem; border-top: 1px solid var(--nn-line); }
+  #demo-layers .lyr-info__pred-label { font-family: var(--nn-mono); font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--nn-muted); margin-bottom: 0.5rem; }
+  #demo-layers .lyr-preds { display: flex; flex-direction: column; gap: 0.3rem; }
+  #demo-layers .lyr-pred { display: grid; grid-template-columns: 80px 1fr 40px; gap: 0.5rem; align-items: center; font-family: var(--nn-mono); font-size: 0.82rem; }
+  #demo-layers .lyr-pred__name { color: var(--nn-ink); }
+  #demo-layers .lyr-pred__track { height: 5px; background: var(--nn-line); border-radius: 2px; overflow: hidden; }
+  #demo-layers .lyr-pred__fill { display: block; height: 100%; background: var(--nn-accent); transition: width 350ms; }
+  #demo-layers .lyr-pred__fill--lead { background: linear-gradient(90deg, var(--nn-accent), #5a94ce); box-shadow: 0 0 6px var(--nn-accent-glow); }
+  #demo-layers .lyr-pred__pct { color: var(--nn-muted); text-align: right; }
+
+  #demo-layers .lyr-ctrl { display: flex; flex-direction: column; gap: 0.25rem; background: #fafafc; border: 1px solid var(--nn-line); border-radius: 5px; padding: 0.8rem 1rem; }
+  #demo-layers .lyr-ctrl__name { font-family: var(--nn-mono); font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--nn-muted); }
+  #demo-layers .lyr-ctrl input[type=range] { -webkit-appearance: none; appearance: none; height: 5px; background: var(--nn-line); border-radius: 3px; outline: none; }
+  #demo-layers .lyr-ctrl input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none; width: 16px; height: 16px; border-radius: 50%;
+    background: var(--nn-accent); cursor: pointer; border: 2px solid #fff; box-shadow: 0 0 0 1px var(--nn-accent);
+  }
+  #demo-layers .lyr-ctrl input[type=range]::-moz-range-thumb {
+    width: 16px; height: 16px; border-radius: 50%; background: var(--nn-accent); cursor: pointer; border: 2px solid #fff;
+  }
+  #demo-layers .lyr-ticks { display: flex; justify-content: space-between; font-family: var(--nn-mono); font-size: 0.7rem; color: var(--nn-soft); margin-top: 0.2rem; }
+  @media (max-width: 540px) {
+    #demo-layers .lyr-ticks { display: grid; grid-template-columns: 1fr 1fr; row-gap: 0.15rem; }
+  }
+</style>
+
+<script>
+(function() {
+  const root = document.getElementById("demo-layers");
+  if (!root) return;
+  const canvas = root.querySelector(".lyr-canvas");
+  const ctx = canvas.getContext("2d");
+  const slider = root.querySelector("[data-lyr-slider]");
+  const depthEl = root.querySelector("[data-lyr-depth]");
+  const titleEl = root.querySelector("[data-lyr-title]");
+  const descEl = root.querySelector("[data-lyr-desc]");
+  const labelEl = root.querySelector("[data-lyr-label]");
+  const predsEl = root.querySelector("[data-lyr-preds]");
+  const predWrap = root.querySelector("[data-lyr-pred-wrap]");
+
+  const W = 256, H = 256;
+
+  // Hand-drawn "images", each is a function that renders onto the canvas
+  const IMAGES = {
+    cat: { name: "Cat photo",
+      truth: "cat",
+      preds: [["cat", 94], ["dog", 3], ["rabbit", 1.5], ["fox", 0.8], ["other", 0.7]],
+      draw(c) {
+        // background gradient
+        const g = c.createLinearGradient(0, 0, 0, H);
+        g.addColorStop(0, "#e8d7b0"); g.addColorStop(1, "#c7a677");
+        c.fillStyle = g; c.fillRect(0, 0, W, H);
+        // body
+        c.fillStyle = "#6a4a2b"; c.beginPath(); c.ellipse(128, 175, 80, 55, 0, 0, Math.PI * 2); c.fill();
+        // head
+        c.beginPath(); c.ellipse(128, 110, 55, 48, 0, 0, Math.PI * 2); c.fill();
+        // ears
+        c.beginPath(); c.moveTo(90, 72); c.lineTo(76, 32); c.lineTo(112, 66); c.closePath(); c.fill();
+        c.beginPath(); c.moveTo(166, 72); c.lineTo(180, 32); c.lineTo(144, 66); c.closePath(); c.fill();
+        // eyes
+        c.fillStyle = "#f8dc46"; c.beginPath(); c.arc(108, 108, 8, 0, Math.PI * 2); c.fill();
+        c.beginPath(); c.arc(148, 108, 8, 0, Math.PI * 2); c.fill();
+        c.fillStyle = "#111"; c.beginPath(); c.ellipse(108, 108, 3, 7, 0, 0, Math.PI * 2); c.fill();
+        c.beginPath(); c.ellipse(148, 108, 3, 7, 0, 0, Math.PI * 2); c.fill();
+        // nose + mouth
+        c.fillStyle = "#ec9ea3"; c.beginPath(); c.moveTo(128, 122); c.lineTo(122, 130); c.lineTo(134, 130); c.closePath(); c.fill();
+        c.strokeStyle = "#3a2515"; c.lineWidth = 1.6;
+        c.beginPath(); c.moveTo(128, 130); c.lineTo(128, 136); c.stroke();
+        c.beginPath(); c.arc(120, 138, 4, 0, Math.PI, false); c.stroke();
+        c.beginPath(); c.arc(136, 138, 4, 0, Math.PI, false); c.stroke();
+      }
+    },
+    car: { name: "Car photo", truth: "car",
+      preds: [["car", 91], ["truck", 5], ["bus", 2], ["motorcycle", 1.3], ["other", 0.7]],
+      draw(c) {
+        c.fillStyle = "#9fc4e3"; c.fillRect(0, 0, W, 160);
+        c.fillStyle = "#6b6b70"; c.fillRect(0, 160, W, H - 160);
+        // body
+        c.fillStyle = "#c42f2f"; c.fillRect(40, 120, 180, 55);
+        // roof
+        c.beginPath(); c.moveTo(70, 120); c.lineTo(100, 80); c.lineTo(170, 80); c.lineTo(200, 120); c.closePath(); c.fill();
+        // windows
+        c.fillStyle = "#d7e8f4"; c.fillRect(105, 90, 25, 28); c.fillRect(140, 90, 25, 28);
+        // wheels
+        c.fillStyle = "#1a1a1a"; c.beginPath(); c.arc(78, 180, 18, 0, Math.PI * 2); c.fill();
+        c.beginPath(); c.arc(190, 180, 18, 0, Math.PI * 2); c.fill();
+        c.fillStyle = "#ccc"; c.beginPath(); c.arc(78, 180, 8, 0, Math.PI * 2); c.fill();
+        c.beginPath(); c.arc(190, 180, 8, 0, Math.PI * 2); c.fill();
+      }
+    },
+    face: { name: "Face photo", truth: "face",
+      preds: [["face", 97], ["portrait", 2], ["head", 0.6], ["statue", 0.3], ["other", 0.1]],
+      draw(c) {
+        c.fillStyle = "#f0e3d2"; c.fillRect(0, 0, W, H);
+        // hair
+        c.fillStyle = "#3a241a"; c.beginPath(); c.arc(128, 105, 72, Math.PI, 2 * Math.PI); c.fill();
+        // face oval
+        c.fillStyle = "#f6d6b2"; c.beginPath(); c.ellipse(128, 135, 52, 66, 0, 0, Math.PI * 2); c.fill();
+        // eyes
+        c.fillStyle = "#fff"; c.beginPath(); c.ellipse(108, 125, 8, 5, 0, 0, Math.PI * 2); c.fill();
+        c.beginPath(); c.ellipse(148, 125, 8, 5, 0, 0, Math.PI * 2); c.fill();
+        c.fillStyle = "#2e4e7a"; c.beginPath(); c.arc(108, 125, 3.5, 0, Math.PI * 2); c.fill();
+        c.beginPath(); c.arc(148, 125, 3.5, 0, Math.PI * 2); c.fill();
+        // mouth
+        c.fillStyle = "#b6514f"; c.beginPath(); c.ellipse(128, 170, 16, 5, 0, 0, Math.PI * 2); c.fill();
+        // nose
+        c.strokeStyle = "#b29471"; c.lineWidth = 1.5; c.beginPath(); c.moveTo(128, 138); c.lineTo(124, 155); c.stroke();
+      }
+    },
+    banana: { name: "Banana photo", truth: "banana",
+      preds: [["banana", 96], ["plantain", 2.2], ["corn", 0.8], ["fruit", 0.6], ["other", 0.4]],
+      draw(c) {
+        c.fillStyle = "#2b3f22"; c.fillRect(0, 0, W, H);
+        // banana shape
+        c.fillStyle = "#e5b93a";
+        c.beginPath(); c.moveTo(50, 190); c.quadraticCurveTo(80, 50, 210, 80); c.quadraticCurveTo(200, 140, 160, 170); c.quadraticCurveTo(110, 200, 50, 190); c.fill();
+        // inner highlight
+        c.strokeStyle = "#b88f26"; c.lineWidth = 3; c.beginPath(); c.moveTo(60, 180); c.quadraticCurveTo(90, 70, 200, 90); c.stroke();
+        // brown tip
+        c.fillStyle = "#5c3b15"; c.beginPath(); c.arc(208, 82, 8, 0, Math.PI * 2); c.fill();
+      }
+    },
+    plane: { name: "Plane photo", truth: "airplane",
+      preds: [["airplane", 93], ["glider", 3.1], ["bird", 1.8], ["jet", 1.4], ["other", 0.7]],
+      draw(c) {
+        const g = c.createLinearGradient(0, 0, 0, H);
+        g.addColorStop(0, "#dce9f4"); g.addColorStop(1, "#8eb6dc");
+        c.fillStyle = g; c.fillRect(0, 0, W, H);
+        // clouds
+        c.fillStyle = "rgba(255,255,255,0.65)";
+        c.beginPath(); c.arc(60, 70, 24, 0, Math.PI * 2); c.arc(90, 65, 18, 0, Math.PI * 2); c.fill();
+        c.beginPath(); c.arc(200, 200, 22, 0, Math.PI * 2); c.arc(230, 205, 16, 0, Math.PI * 2); c.fill();
+        // plane body
+        c.fillStyle = "#eaeaee";
+        c.beginPath(); c.ellipse(128, 128, 75, 14, 0, 0, Math.PI * 2); c.fill();
+        // wings
+        c.beginPath(); c.moveTo(110, 128); c.lineTo(90, 100); c.lineTo(130, 120); c.closePath(); c.fill();
+        c.beginPath(); c.moveTo(130, 128); c.lineTo(150, 158); c.lineTo(110, 136); c.closePath(); c.fill();
+        // tail
+        c.beginPath(); c.moveTo(58, 128); c.lineTo(40, 108); c.lineTo(68, 124); c.closePath(); c.fill();
+        // windows
+        c.fillStyle = "#2a6fb8"; for (let i = 0; i < 7; i++) c.fillRect(85 + i * 15, 124, 5, 4);
+      }
+    },
+    street: { name: "Street scene", truth: "street",
+      preds: [["street", 78], ["city", 14], ["road", 5], ["building", 2.1], ["other", 0.9]],
+      draw(c) {
+        c.fillStyle = "#6d89a8"; c.fillRect(0, 0, W, 130);
+        c.fillStyle = "#4a4a50"; c.fillRect(0, 130, W, H - 130);
+        // buildings
+        c.fillStyle = "#2e3942"; c.fillRect(10, 50, 50, 90);
+        c.fillStyle = "#3f4a55"; c.fillRect(70, 30, 60, 110);
+        c.fillStyle = "#2a3238"; c.fillRect(140, 60, 45, 80);
+        c.fillStyle = "#3a434d"; c.fillRect(195, 40, 55, 100);
+        // windows (grid)
+        c.fillStyle = "#f3d678";
+        for (let y = 60; y < 130; y += 12) { for (let x = 80; x < 120; x += 10) if (Math.random() > 0.3) c.fillRect(x, y, 4, 4); }
+        for (let y = 70; y < 130; y += 12) { for (let x = 15; x < 55; x += 10) if (Math.random() > 0.35) c.fillRect(x, y, 4, 4); }
+        // road
+        c.fillStyle = "#f8dc46"; for (let x = 0; x < W; x += 40) c.fillRect(x + 6, 195, 18, 4);
+      }
+    }
+  };
+
+  const LAYERS = [
+    { d: 0, t: "Raw pixels", desc: "This is the image coming in. Each pixel is three numbers (R, G, B). The network hasn't done anything yet." },
+    { d: 1, t: "Edge detectors", desc: "The first convolutional layer responds to oriented edges, horizontals, verticals, diagonals. Every vision model re-discovers this independently." },
+    { d: 2, t: "Edge combinations", desc: "Corners, endpoints, junctions, combinations of nearby edges. Still very local; still mostly geometry." },
+    { d: 3, t: "Textures", desc: "Repeated patterns: fur, asphalt, skin, metal. Neurons here fire when local patches match a learned texture." },
+    { d: 4, t: "Texture + shape", desc: "Texture combined with contour. 'A curved edge with fur inside' vs 'a straight edge with metal inside'." },
+    { d: 5, t: "Object parts (small)", desc: "Noses, wheels, leaves, keyboard keys. The neurons now fire for parts of real-world objects that have human names." },
+    { d: 6, t: "Object parts (medium)", desc: "Eye + eyebrow + nose clusters. Wheel + fender. Wings + fuselage. Multi-part assemblies." },
+    { d: 7, t: "Object regions", desc: "The heatmap shows which region of the image is firing most strongly. This is where MI techniques like GradCAM operate." },
+    { d: 8, t: "Whole-object detectors", desc: "A neuron that fires for 'cat' regardless of pose. 'Car'. 'Face'. The model has human-level object categories now." },
+    { d: 9, t: "Object + context", desc: "Neurons that distinguish sub-categories and care about scene context. 'Cat on a sofa' vs 'cat outdoors'." },
+    { d: 10, t: "Near-final features", desc: "The representation is very compact now, a few hundred numbers that describe the image at a semantic level." },
+    { d: 11, t: "Pre-classification", desc: "One step before the output head. The model is almost ready to commit to a label." },
+    { d: 12, t: "Class probabilities", desc: "The output layer. Softmax over the class list. This is the model's answer." },
+  ];
+
+  let currentImg = "cat";
+  let baseImageData = null;
+
+  function renderBaseImage() {
+    ctx.clearRect(0, 0, W, H);
+    IMAGES[currentImg].draw(ctx);
+    baseImageData = ctx.getImageData(0, 0, W, H);
+  }
+
+  // Sobel edge filter
+  function sobel() {
+    const src = baseImageData.data;
+    const out = ctx.createImageData(W, H);
+    const gray = new Float32Array(W * H);
+    for (let i = 0; i < W * H; i++) gray[i] = (src[i * 4] + src[i * 4 + 1] + src[i * 4 + 2]) / 3;
+    for (let y = 1; y < H - 1; y++) {
+      for (let x = 1; x < W - 1; x++) {
+        const i = y * W + x;
+        const gx = -gray[i - W - 1] - 2 * gray[i - 1] - gray[i + W - 1]
+                  + gray[i - W + 1] + 2 * gray[i + 1] + gray[i + W + 1];
+        const gy = -gray[i - W - 1] - 2 * gray[i - W] - gray[i - W + 1]
+                  + gray[i + W - 1] + 2 * gray[i + W] + gray[i + W + 1];
+        const m = Math.min(255, Math.hypot(gx, gy));
+        const j = i * 4;
+        out.data[j] = m; out.data[j + 1] = Math.min(255, m * 1.1); out.data[j + 2] = Math.min(255, m * 1.3); out.data[j + 3] = 255;
+      }
+    }
+    return out;
+  }
+
+  // Textured / tiled feature-map visualisation
+  function renderFeatureTiles(depth) {
+    ctx.clearRect(0, 0, W, H);
+    const tiles = 4;
+    const tw = W / tiles, th = H / tiles;
+    for (let ty = 0; ty < tiles; ty++) {
+      for (let tx = 0; tx < tiles; tx++) {
+        // downscale the base image, then colourise per-tile
+        const hue = (tx + ty * tiles) * 47 % 360;
+        const variant = Math.random() * 0.5 + 0.25;
+        ctx.save();
+        ctx.beginPath(); ctx.rect(tx * tw, ty * th, tw, th); ctx.clip();
+        // base image scaled down
+        ctx.globalAlpha = 0.35;
+        ctx.drawImage(canvas, 0, 0, W, H, tx * tw, ty * th, tw, th);
+        ctx.globalAlpha = 1;
+        // pattern overlay
+        const g = ctx.createLinearGradient(tx * tw, ty * th, tx * tw + tw, ty * th + th);
+        g.addColorStop(0, "rgba(42, 111, 184, " + (variant * 0.35).toFixed(2) + ")");
+        g.addColorStop(0.5, "rgba(201, 140, 58, " + (variant * 0.28).toFixed(2) + ")");
+        g.addColorStop(1, "rgba(90, 148, 206, " + (variant * 0.35).toFixed(2) + ")");
+        ctx.fillStyle = g; ctx.fillRect(tx * tw, ty * th, tw, th);
+        // noise texture
+        const img = ctx.getImageData(tx * tw, ty * th, tw, th);
+        const scale = Math.min(8, Math.max(1, 8 - depth));
+        for (let i = 0; i < img.data.length; i += 4) {
+          const n = (Math.random() - 0.5) * 40 * variant;
+          img.data[i] = Math.max(0, Math.min(255, img.data[i] + n));
+          img.data[i + 1] = Math.max(0, Math.min(255, img.data[i + 1] + n));
+          img.data[i + 2] = Math.max(0, Math.min(255, img.data[i + 2] + n));
+        }
+        ctx.putImageData(img, tx * tw, ty * th);
+        ctx.restore();
+      }
+    }
+    // grid
+    ctx.strokeStyle = "rgba(255,255,255,0.4)"; ctx.lineWidth = 1;
+    for (let i = 1; i < tiles; i++) {
+      ctx.beginPath(); ctx.moveTo(i * tw, 0); ctx.lineTo(i * tw, H); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0, i * th); ctx.lineTo(W, i * th); ctx.stroke();
+    }
+  }
+
+  // Class-activation heatmap overlay
+  function renderHeatmap(depth) {
+    ctx.putImageData(baseImageData, 0, 0);
+    // Base image grey-ified
+    const img = ctx.getImageData(0, 0, W, H);
+    for (let i = 0; i < img.data.length; i += 4) {
+      const g = (img.data[i] + img.data[i + 1] + img.data[i + 2]) / 3;
+      img.data[i] = g; img.data[i + 1] = g; img.data[i + 2] = g;
+    }
+    ctx.putImageData(img, 0, 0);
+    // Heatmap blob centred on the subject, different per image
+    const CENTERS = {
+      cat: [128, 115], car: [128, 145], face: [128, 135],
+      banana: [130, 130], plane: [128, 125], street: [110, 110]
+    };
+    const [cx, cy] = CENTERS[currentImg] || [128, 128];
+    const radius = 50 + (12 - depth) * 6;
+    const g = ctx.createRadialGradient(cx, cy, 4, cx, cy, radius);
+    g.addColorStop(0, "rgba(255, 200, 64, 0.85)");
+    g.addColorStop(0.4, "rgba(201, 140, 58, 0.55)");
+    g.addColorStop(0.75, "rgba(42, 111, 184, 0.35)");
+    g.addColorStop(1, "rgba(42, 111, 184, 0)");
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  }
+
+  function renderBlur(depth) {
+    ctx.putImageData(baseImageData, 0, 0);
+    ctx.filter = "blur(" + ((depth - 8) * 1.5) + "px) saturate(1.8)";
+    ctx.drawImage(canvas, 0, 0);
+    ctx.filter = "none";
+    // Overlay semantic blob
+    ctx.fillStyle = "rgba(42, 111, 184, 0.22)";
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  function renderFinalPredictions() {
+    ctx.fillStyle = "#fafafc"; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = "#d7d7dc"; ctx.fillRect(0, H - 1, W, 1);
+    ctx.fillStyle = "var(--nn-ink)";
+    // Draw bars
+    const preds = IMAGES[currentImg].preds;
+    const totalH = H - 40;
+    const barH = totalH / preds.length - 6;
+    ctx.textAlign = "left"; ctx.textBaseline = "middle";
+    preds.forEach((p, i) => {
+      const [name, pct] = p;
+      const y = 20 + i * (barH + 6);
+      const barW = (pct / 100) * (W - 130);
+      // label
+      ctx.fillStyle = "#2a2a2a";
+      ctx.font = "12px 'SF Mono', Menlo, monospace";
+      ctx.fillText(name, 12, y + barH / 2 + 1);
+      // track
+      ctx.fillStyle = "#d7d7dc";
+      ctx.fillRect(80, y + barH / 2 - 3, W - 130, 6);
+      // fill
+      ctx.fillStyle = i === 0 ? "#2a6fb8" : "#9b9b9e";
+      ctx.fillRect(80, y + barH / 2 - 3, barW, 6);
+      // pct
+      ctx.fillStyle = "#6b6b70";
+      ctx.fillText(pct + "%", W - 40, y + barH / 2 + 1);
+    });
+  }
+
+  function renderLayer(depth) {
+    if (depth === 0) {
+      ctx.putImageData(baseImageData, 0, 0);
+    } else if (depth <= 2) {
+      const edges = sobel();
+      ctx.putImageData(edges, 0, 0);
+      if (depth === 2) {
+        // slight colour shift
+        ctx.globalAlpha = 0.25;
+        ctx.drawImage(canvas, 0, 0);
+        ctx.globalAlpha = 1;
+      }
+    } else if (depth <= 5) {
+      renderFeatureTiles(depth);
+    } else if (depth <= 8) {
+      renderHeatmap(depth);
+    } else if (depth <= 11) {
+      renderBlur(depth);
+    } else {
+      renderFinalPredictions();
+    }
+
+    const L = LAYERS[depth];
+    depthEl.textContent = "Depth: " + depth + " / 12";
+    titleEl.textContent = L.t;
+    descEl.textContent = L.desc;
+    labelEl.textContent = "Layer " + depth + " · " + L.t.toLowerCase();
+
+    if (depth === 12) {
+      predWrap.hidden = false;
+      predsEl.innerHTML = "";
+      IMAGES[currentImg].preds.forEach((p, i) => {
+        const [name, pct] = p;
+        const d = document.createElement("div");
+        d.className = "lyr-pred";
+        d.innerHTML =
+          '<span class="lyr-pred__name">' + name + '</span>' +
+          '<span class="lyr-pred__track"><span class="lyr-pred__fill ' + (i === 0 ? "lyr-pred__fill--lead" : "") + '" style="width:' + pct + '%"></span></span>' +
+          '<span class="lyr-pred__pct">' + pct + '%</span>';
+        predsEl.appendChild(d);
+      });
+    } else {
+      predWrap.hidden = true;
+    }
+  }
+
+  function selectImage(key) {
+    currentImg = key;
+    root.querySelectorAll("[data-lyr-img]").forEach(b => b.classList.toggle("is-active", b.dataset.lyrImg === key));
+    renderBaseImage();
+    renderLayer(+slider.value);
+  }
+
+  root.querySelectorAll("[data-lyr-img]").forEach(b => b.addEventListener("click", () => selectImage(b.dataset.lyrImg)));
+  slider.addEventListener("input", () => renderLayer(+slider.value));
+
+  selectImage("cat");
+  renderLayer(0);
+})();
+</script>

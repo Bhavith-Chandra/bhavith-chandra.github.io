@@ -1,0 +1,198 @@
+<div class="idemo" id="demo-tools">
+  <div class="idemo__card">
+    <div class="idemo__head"><span class="idemo__title">Interactive · What tool should I pick?</span></div>
+    <div class="idemo__body">
+
+      <p class="tool-lead">A non-exhaustive tour of the software you'll actually use. Filter by what you want to do.</p>
+
+      <div class="tool-filters" data-tool-filters>
+        <button class="tool-filter is-active" data-tool-f="all">All</button>
+        <button class="tool-filter" data-tool-f="transformers">Transformers</button>
+        <button class="tool-filter" data-tool-f="vision">Vision</button>
+        <button class="tool-filter" data-tool-f="sae">Sparse Autoencoders</button>
+        <button class="tool-filter" data-tool-f="attribution">Attribution</button>
+        <button class="tool-filter" data-tool-f="beginner">Beginner-friendly</button>
+      </div>
+
+      <div class="tool-grid" data-tool-grid></div>
+    </div>
+    <details>
+      <summary>How this demo works</summary>
+      <p>Each tool has a tag set. Clicking a filter shows only tools with that tag. "All" resets. Tools and descriptions are hand-curated; update them in <code>_includes/demos/mi-tools.html</code>.</p>
+    </details>
+  </div>
+</div>
+
+<style>
+  #demo-tools .tool-lead { margin: 0 0 1rem !important; color: var(--nn-body) !important; font-size: 0.98rem !important; line-height: 1.6 !important; }
+  #demo-tools .tool-filters { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-bottom: 1rem; }
+  #demo-tools .tool-filter {
+    padding: 0.4rem 0.75rem; background: #ffffff; border: 1px solid var(--nn-line); border-radius: 3px;
+    cursor: pointer; font-family: var(--nn-mono); font-size: 0.76rem; color: var(--nn-muted);
+    letter-spacing: 0.04em; transition: border-color 150ms, color 150ms, background 150ms;
+  }
+  #demo-tools .tool-filter:hover { border-color: var(--nn-accent); color: var(--nn-accent-dark); }
+  #demo-tools .tool-filter.is-active {
+    border-color: var(--nn-accent); background: var(--nn-accent-soft); color: var(--nn-accent-dark);
+  }
+
+  #demo-tools .tool-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 0.8rem;
+  }
+
+  #demo-tools .tool-card {
+    display: flex; flex-direction: column; gap: 0.5rem;
+    padding: 1rem 1.05rem; background: #ffffff; border: 1px solid var(--nn-line); border-radius: 6px;
+    text-decoration: none !important; color: inherit !important; border-left: 3px solid var(--nn-accent) !important;
+    transition: transform 220ms, box-shadow 220ms, opacity 220ms;
+  }
+  #demo-tools .tool-card:hover { transform: translateY(-2px); box-shadow: 0 5px 16px rgba(0, 0, 0, 0.06); }
+  #demo-tools .tool-card.is-hidden { display: none; }
+
+  #demo-tools .tool-head {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 0.5rem;
+  }
+  #demo-tools .tool-name { font-family: var(--nn-serif); font-size: 1.05rem; font-weight: 700; color: var(--nn-ink); }
+  #demo-tools .tool-lang {
+    font-family: var(--nn-mono); font-size: 0.7rem; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--nn-muted);
+    padding: 0.15rem 0.45rem; background: var(--nn-card); border: 1px solid var(--nn-line); border-radius: 3px;
+  }
+  #demo-tools .tool-blurb { font-size: 0.88rem; color: var(--nn-body); line-height: 1.55; margin: 0; }
+  #demo-tools .tool-tags { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: auto; padding-top: 0.4rem; }
+  #demo-tools .tool-tag {
+    font-family: var(--nn-mono); font-size: 0.68rem; letter-spacing: 0.06em;
+    padding: 0.15rem 0.45rem; background: var(--nn-accent-soft);
+    color: var(--nn-accent-dark); border-radius: 2px;
+  }
+  #demo-tools .tool-use-when {
+    font-family: var(--nn-mono); font-size: 0.72rem; color: var(--nn-muted);
+    padding-top: 0.5rem; border-top: 1px solid var(--nn-line); margin-top: 0.3rem;
+  }
+  #demo-tools .tool-use-when b { color: var(--nn-accent-dark); }
+
+  @media (max-width: 520px) {
+    #demo-tools .tool-grid { grid-template-columns: 1fr; }
+  }
+</style>
+
+<script>
+(function() {
+  const root = document.getElementById("demo-tools");
+  if (!root) return;
+
+  const TOOLS = [
+    {
+      name: "TransformerLens",
+      lang: "Python",
+      blurb: "The library for poking around inside transformers. Exposes activations, attention patterns, and hooks for intervention. Built by Neel Nanda.",
+      useWhen: "You want to run a small GPT-2 and watch what it does, token by token.",
+      tags: ["transformers", "beginner"],
+      link: "https://github.com/neelnanda-io/TransformerLens",
+    },
+    {
+      name: "nnsight",
+      lang: "Python",
+      blurb: "Newer toolkit from the NDIF project. Lets you intervene on and inspect very large models (including Llama-70B) without downloading them locally.",
+      useWhen: "You're studying frontier models that don't fit on your laptop.",
+      tags: ["transformers"],
+      link: "https://github.com/ndif-team/nnsight",
+    },
+    {
+      name: "SAELens",
+      lang: "Python",
+      blurb: "Train and analyse sparse autoencoders on transformer activations. Core tool for the monosemanticity line of work.",
+      useWhen: "You want to extract interpretable features from a model's residual stream.",
+      tags: ["sae", "transformers"],
+      link: "https://github.com/jbloomAus/SAELens",
+    },
+    {
+      name: "Captum",
+      lang: "PyTorch",
+      blurb: "Meta's attribution + interpretability toolkit. Integrated gradients, layer-conductance, LRP. More traditional / behavioural interpretability.",
+      useWhen: "You want standard attribution methods on a PyTorch model.",
+      tags: ["attribution", "vision"],
+      link: "https://captum.ai/",
+    },
+    {
+      name: "SHAP",
+      lang: "Python",
+      blurb: "Shapley-value-based feature attribution. Not mechanistic, but widely used in classical ML and a useful baseline.",
+      useWhen: "You need per-prediction feature attributions for a tabular or gradient-boosted model.",
+      tags: ["attribution", "beginner"],
+      link: "https://shap.readthedocs.io/",
+    },
+    {
+      name: "Activation Atlas",
+      lang: "Tool",
+      blurb: "Visual exploration of vision-model feature spaces. Distill-era tool, still a benchmark for presentation quality.",
+      useWhen: "You want to see what a ResNet or InceptionV1 neuron responds to, visually.",
+      tags: ["vision"],
+      link: "https://distill.pub/2019/activation-atlas/",
+    },
+    {
+      name: "Lucid / Microscope",
+      lang: "Python",
+      blurb: "Feature-visualisation library: synthesise inputs that maximise a neuron. OpenAI Microscope is a pre-rendered browseable version for popular vision models.",
+      useWhen: "You want to ask 'what does this neuron look for?' in a vision model.",
+      tags: ["vision"],
+      link: "https://microscope.openai.com/",
+    },
+    {
+      name: "Neuronpedia",
+      lang: "Web",
+      blurb: "Browseable database of extracted SAE features from several open models. Like a dictionary of what features your model has learned.",
+      useWhen: "You found an interesting feature index and want to know: is this known? has anyone labelled it?",
+      tags: ["sae", "beginner"],
+      link: "https://www.neuronpedia.org/",
+    },
+    {
+      name: "Penzai",
+      lang: "JAX / Python",
+      blurb: "Google's Pythonic model-surgery library. Particularly good at pretty printing + mutating transformer internals in JAX.",
+      useWhen: "You're in JAX land and want transformer interpretability tooling.",
+      tags: ["transformers"],
+      link: "https://github.com/google-deepmind/penzai",
+    },
+    {
+      name: "ARENA curriculum",
+      lang: "Curriculum",
+      blurb: "Not a tool, a structured self-study program. Most modern MI researchers went through something like it. Free.",
+      useWhen: "You want to learn MI from zero with exercises.",
+      tags: ["beginner"],
+      link: "https://www.arena.education/",
+    },
+  ];
+
+  const grid = root.querySelector("[data-tool-grid]");
+  TOOLS.forEach(t => {
+    const a = document.createElement("a");
+    a.className = "tool-card";
+    a.href = t.link;
+    a.target = "_blank";
+    a.rel = "noopener";
+    a.dataset.tags = t.tags.join(",");
+    a.innerHTML =
+      '<div class="tool-head">' +
+        '<div class="tool-name">' + t.name + '</div>' +
+        '<div class="tool-lang">' + t.lang + '</div>' +
+      '</div>' +
+      '<p class="tool-blurb">' + t.blurb + '</p>' +
+      '<div class="tool-use-when"><b>Pick if:</b> ' + t.useWhen + '</div>' +
+      '<div class="tool-tags">' + t.tags.map(x => '<span class="tool-tag">' + x + '</span>').join("") + '</div>';
+    grid.appendChild(a);
+  });
+
+  root.querySelectorAll("[data-tool-f]").forEach(b => {
+    b.addEventListener("click", () => {
+      const f = b.dataset.toolF;
+      root.querySelectorAll("[data-tool-f]").forEach(o => o.classList.toggle("is-active", o === b));
+      grid.querySelectorAll(".tool-card").forEach(card => {
+        const tags = card.dataset.tags.split(",");
+        card.classList.toggle("is-hidden", f !== "all" && !tags.includes(f));
+      });
+    });
+  });
+})();
+</script>

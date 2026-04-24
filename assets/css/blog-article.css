@@ -1,0 +1,690 @@
+/* =========================================================================
+   Blog article styles — uses the SAME palette and fonts as the rest of the
+   portfolio (NeelNanda-style). Relies on the --nn-* CSS variables defined
+   in neelnanda-theme.css (loaded via head/custom.html on every page).
+
+   Adds: article hero, callouts, research cards, interactive-demo chrome,
+         series progress nav. No dark mode, no separate font stack.
+   ========================================================================= */
+
+:root {
+  --nn-accent-amber: #c98c3a;
+  --nn-accent-warn: #c04550;
+  --nn-accent-teal: #2a9e8e;
+  --nn-accent-soft: rgba(42, 111, 184, 0.10);
+  --nn-accent-glow: rgba(42, 111, 184, 0.28);
+  --nn-mono: "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+}
+
+/* -------- Wrapper: follow the portfolio's reading column -------------- */
+.blog-article-main {
+  max-width: 1020px !important;
+  margin: 0 auto !important;
+  padding: 2rem 2rem 4rem !important;
+  background: transparent !important;
+}
+.blog-article {
+  max-width: 820px;
+  margin: 0 auto;
+  text-align: left;
+}
+
+/* -------- Hero -------------------------------------------------------- */
+.blog-article__hero {
+  padding: 1.2rem 0 1.6rem;
+  margin: 0 0 2rem;
+  border-bottom: 1px solid var(--nn-line);
+}
+.blog-article__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.9rem;
+  font-family: var(--nn-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--nn-muted);
+}
+.blog-article__tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.28rem 0.7rem;
+  background: var(--nn-accent-soft);
+  color: var(--nn-accent-dark);
+  border: 1px solid rgba(42, 111, 184, 0.22);
+  border-radius: 3px;
+  font-weight: 500;
+}
+.blog-article__tag::before {
+  content: "";
+  display: block;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--nn-accent);
+}
+.blog-article__series { color: var(--nn-muted); }
+
+.blog-article__title {
+  font-family: var(--nn-serif) !important;
+  font-weight: 700 !important;
+  font-size: clamp(2rem, 4.5vw, 3.1rem) !important;
+  line-height: 1.08 !important;
+  letter-spacing: -0.015em !important;
+  color: var(--nn-ink) !important;
+  margin: 0 0 0.9rem !important;
+  text-align: left !important;
+  border: none !important;
+  padding: 0 !important;
+}
+
+.blog-article__byline {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--nn-mono);
+  font-size: 0.82rem;
+  color: var(--nn-muted);
+}
+
+/* -------- Body typography (scoped to .blog-article__body) ------------ */
+.blog-article__body p,
+.blog-article__body li {
+  font-family: var(--nn-sans);
+  font-size: 1rem;
+  line-height: 1.72;
+  color: var(--nn-body);
+  text-align: left !important;
+  margin: 0.95em 0;
+}
+
+.blog-article__body h1,
+.blog-article__body h2,
+.blog-article__body h3,
+.blog-article__body h4 {
+  font-family: var(--nn-serif) !important;
+  color: var(--nn-ink) !important;
+  letter-spacing: -0.01em !important;
+  line-height: 1.2 !important;
+  margin: 2.4rem 0 0.7rem !important;
+  padding: 0 !important;
+  border: none !important;
+  text-align: left !important;
+  font-style: normal !important;
+  font-weight: 700 !important;
+}
+.blog-article__body h2 {
+  font-size: 1.7rem !important;
+  margin-top: 3rem !important;
+  padding-top: 1.6rem !important;
+  border-top: 1px solid var(--nn-line) !important;
+}
+.blog-article__body h2:first-child,
+.blog-article__body > h2:first-of-type {
+  border-top: none !important;
+  padding-top: 0 !important;
+  margin-top: 2rem !important;
+}
+.blog-article__body h3 {
+  font-size: 1.25rem !important;
+  margin-top: 1.8rem !important;
+  font-weight: 700 !important;
+}
+.blog-article__body h4 {
+  font-size: 1.05rem !important;
+  margin-top: 1.4rem !important;
+  font-weight: 700 !important;
+}
+
+.blog-article__body strong { color: var(--nn-ink); font-weight: 700; }
+.blog-article__body em { color: var(--nn-accent-dark); font-style: italic; }
+
+.blog-article__body a {
+  color: var(--nn-accent) !important;
+  text-decoration: underline !important;
+  text-decoration-thickness: 1px !important;
+  text-underline-offset: 2px !important;
+  border: none !important;
+}
+.blog-article__body a:hover {
+  color: var(--nn-accent-dark) !important;
+  text-decoration-thickness: 2px !important;
+}
+
+.blog-article__body ul,
+.blog-article__body ol {
+  padding-left: 1.4rem;
+  margin: 0.8em 0;
+  list-style-position: outside;
+}
+.blog-article__body ul { list-style-type: disc; }
+.blog-article__body li { margin: 0.4em 0; }
+.blog-article__body li::marker { color: var(--nn-accent); }
+
+.blog-article__body hr {
+  border: none;
+  border-top: 1px solid var(--nn-line);
+  margin: 2.4rem 0;
+}
+
+.blog-article__body :not(pre) > code {
+  font-family: var(--nn-mono);
+  font-size: 0.88em;
+  background: var(--nn-card);
+  color: var(--nn-accent-dark);
+  padding: 0.12em 0.38em;
+  border-radius: 3px;
+  border: 1px solid var(--nn-line);
+}
+.blog-article__body pre {
+  font-family: var(--nn-mono);
+  font-size: 0.88rem;
+  background: var(--nn-card);
+  border: 1px solid var(--nn-line);
+  border-radius: 6px;
+  padding: 1rem 1.2rem;
+  overflow-x: auto;
+}
+
+/* -------- Callouts (NN light variants) -------------------------------- */
+.callout {
+  margin: 1.6rem 0;
+  padding: 1.2rem 1.3rem 1.2rem 1.35rem;
+  background: var(--nn-card);
+  border: 1px solid var(--nn-line);
+  border-left: 3px solid var(--nn-accent);
+  border-radius: 4px;
+}
+.callout__label {
+  display: inline-block;
+  margin-bottom: 0.55rem;
+  font-family: var(--nn-mono);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--nn-accent-dark);
+}
+.callout p:first-child { margin-top: 0 !important; }
+.callout p:last-child { margin-bottom: 0 !important; }
+
+.callout--analogy { border-left-color: var(--nn-accent); }
+.callout--analogy .callout__label { color: var(--nn-accent-dark); }
+
+.callout--key {
+  border-left-color: var(--nn-accent-amber);
+  background: linear-gradient(180deg, rgba(201, 140, 58, 0.06), var(--nn-card));
+}
+.callout--key .callout__label { color: var(--nn-accent-amber); }
+
+.callout--warning {
+  border-left-color: var(--nn-accent-warn);
+  background: linear-gradient(180deg, rgba(192, 69, 80, 0.05), var(--nn-card));
+}
+.callout--warning .callout__label { color: var(--nn-accent-warn); }
+
+.callout--research { border-left-color: var(--nn-accent-teal); }
+.callout--research .callout__label { color: var(--nn-accent-teal); }
+
+/* -------- Research cards ---------------------------------------------- */
+.research-list {
+  display: grid;
+  gap: 0.7rem;
+  margin: 1.8rem 0;
+  padding: 0 !important;
+  list-style: none !important;
+}
+.research-list li { padding: 0 !important; margin: 0 !important; list-style: none !important; }
+.research-card {
+  display: block;
+  padding: 0.9rem 1.1rem;
+  background: var(--nn-card);
+  border: 1px solid var(--nn-line);
+  border-radius: 4px;
+  text-decoration: none !important;
+  border-left: 3px solid transparent !important;
+  transition: border-color 180ms, transform 180ms, box-shadow 180ms;
+}
+.research-card:hover {
+  border-left-color: var(--nn-accent) !important;
+  transform: translateX(2px);
+  box-shadow: 0 3px 14px rgba(0, 0, 0, 0.05);
+}
+.research-card__title {
+  font-family: var(--nn-serif);
+  font-size: 1.02rem;
+  font-weight: 700;
+  color: var(--nn-ink);
+  margin: 0 0 0.2rem;
+  line-height: 1.3;
+}
+.research-card__authors {
+  font-family: var(--nn-mono);
+  font-size: 0.78rem;
+  color: var(--nn-muted);
+  letter-spacing: 0.02em;
+}
+
+/* -------- Interactive-demo chrome ------------------------------------ */
+.idemo {
+  margin: 2.4rem 0;
+}
+.idemo__card {
+  background: var(--nn-card);
+  border: 1px solid var(--nn-line);
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+}
+.idemo__head {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.6rem 1rem;
+  background: #f5f5f8;
+  border-bottom: 1px solid var(--nn-line);
+  font-family: var(--nn-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--nn-muted);
+}
+.idemo__head::before {
+  content: "";
+  display: block;
+  width: 32px;
+  height: 8px;
+  background:
+    radial-gradient(circle 4px at 4px 4px, #e0859a 4px, transparent 4px),
+    radial-gradient(circle 4px at 16px 4px, #e6b75c 4px, transparent 4px),
+    radial-gradient(circle 4px at 28px 4px, #7ab29b 4px, transparent 4px);
+}
+.idemo__title { flex: 1; color: var(--nn-ink); font-weight: 500; }
+.idemo__body { padding: 1.6rem 1.3rem; background: var(--nn-card); }
+
+.idemo details {
+  margin: 0.2rem 1.3rem 1.3rem;
+  padding: 0.7rem 0.95rem;
+  background: #f5f5f8;
+  border: 1px solid var(--nn-line);
+  border-radius: 4px;
+  font-size: 0.88rem;
+}
+.idemo details summary {
+  cursor: pointer;
+  font-family: var(--nn-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--nn-muted);
+  list-style: none;
+}
+.idemo details summary::before { content: "▸ "; color: var(--nn-accent); }
+.idemo details[open] summary::before { content: "▾ "; }
+.idemo details p { margin: 0.7rem 0 0; color: var(--nn-muted); font-size: 0.88rem !important; line-height: 1.6 !important; }
+.idemo details code { font-size: 0.85em; }
+
+/* -------- Buttons used inside demos ---------------------------------- */
+.btn-primary {
+  display: inline-block;
+  padding: 0.58rem 1.2rem;
+  background: var(--nn-accent);
+  color: #ffffff !important;
+  border: none;
+  border-radius: 3px;
+  font-family: var(--nn-mono);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  text-decoration: none !important;
+  transition: background 150ms, transform 150ms, box-shadow 150ms;
+}
+.btn-primary:hover {
+  background: var(--nn-accent-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px var(--nn-accent-glow);
+}
+.btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+
+.btn-secondary {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  background: transparent;
+  color: var(--nn-accent) !important;
+  border: 1px solid var(--nn-accent) !important;
+  border-radius: 3px;
+  font-family: var(--nn-mono);
+  font-size: 0.78rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  text-decoration: none !important;
+  transition: background 150ms;
+}
+.btn-secondary:hover { background: var(--nn-accent-soft); }
+
+/* -------- Series nav -------------------------------------------------- */
+.series-nav {
+  margin: 3rem 0 1rem;
+  padding: 2rem 0 1rem;
+  border-top: 1px solid var(--nn-line);
+}
+.series-nav__progress {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin-bottom: 1.2rem;
+  font-family: var(--nn-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--nn-muted);
+}
+.series-nav__bar {
+  flex: 1;
+  height: 4px;
+  background: var(--nn-line);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.series-nav__bar-fill {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--nn-accent), #5a94ce);
+  border-radius: 2px;
+  transition: width 400ms;
+}
+.series-nav__links {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.9rem;
+}
+.series-nav__link {
+  display: block;
+  padding: 0.95rem 1.1rem;
+  background: var(--nn-card);
+  border: 1px solid var(--nn-line);
+  border-radius: 4px;
+  text-decoration: none !important;
+  transition: border-color 180ms, box-shadow 180ms;
+}
+.series-nav__link:hover {
+  border-color: var(--nn-accent) !important;
+  box-shadow: 0 3px 14px rgba(0, 0, 0, 0.05);
+}
+.series-nav__link--disabled { opacity: 0.45; pointer-events: none; }
+.series-nav__dir {
+  font-family: var(--nn-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--nn-muted);
+  margin-bottom: 0.3rem;
+}
+.series-nav__title {
+  font-family: var(--nn-serif);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--nn-ink);
+}
+.series-nav__link--next { text-align: right; }
+
+/* -------- Responsive -------------------------------------------------- */
+@media (max-width: 640px) {
+  .blog-article-main { padding: 1.2rem 1.1rem 2.5rem !important; }
+  .blog-article__title { font-size: 1.8rem !important; }
+  .blog-article__body h2 { font-size: 1.4rem !important; }
+  .blog-article__body h3 { font-size: 1.1rem !important; }
+  .idemo__body { padding: 1.2rem 0.9rem; }
+  .series-nav__links { grid-template-columns: 1fr; }
+  .series-nav__link--next { text-align: left; }
+}
+
+/* =========================================================================
+   Polish pass — senior-designer touches. Reading progress, drop cap,
+   pull quotes, anchor links, demo chrome refinement, animated heroes.
+   ========================================================================= */
+
+/* 1 · Reading progress bar at the top of a post */
+.reading-progress {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  z-index: 100;
+  pointer-events: none;
+  background: transparent;
+}
+.reading-progress__fill {
+  display: block;
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--nn-accent), #5a94ce, var(--nn-accent-teal));
+  box-shadow: 0 0 8px var(--nn-accent-glow);
+  transition: width 80ms linear;
+}
+
+/* 2 · Hero refinement — subtle gradient under the tag, more breathing room */
+.blog-article__hero {
+  padding: 0.4rem 0 2rem;
+  margin: 0 0 2.4rem;
+  border-bottom: 1px solid var(--nn-line);
+  position: relative;
+}
+.blog-article__hero::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: -1px;
+  height: 1px;
+  background: linear-gradient(90deg, var(--nn-accent) 0%, var(--nn-accent) 40px, transparent 40px);
+}
+.blog-article__tag {
+  transition: transform 200ms ease, box-shadow 200ms ease;
+}
+.blog-article__tag:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 10px var(--nn-accent-soft);
+}
+
+/* 3 · Drop cap on the first paragraph of every post */
+.blog-article__body > p:first-of-type::first-letter {
+  font-family: var(--nn-serif);
+  font-weight: 700;
+  font-size: 3.6em;
+  line-height: 0.9;
+  float: left;
+  margin: 0.1em 0.14em -0.08em 0;
+  color: var(--nn-ink);
+  background: linear-gradient(180deg, var(--nn-accent-dark), var(--nn-accent));
+  -webkit-background-clip: text;
+          background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Opt-out class for posts where the drop cap doesn't fit */
+.blog-article__body.no-dropcap > p:first-of-type::first-letter {
+  font-size: inherit; float: none; margin: 0; color: inherit;
+  -webkit-text-fill-color: currentColor;
+}
+
+/* 4 · Anchor link icon on heading hover */
+.blog-article__body h2,
+.blog-article__body h3 { position: relative; }
+.blog-article__body h2 .anchor,
+.blog-article__body h3 .anchor {
+  position: absolute;
+  left: -1.6rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: var(--nn-mono);
+  font-size: 0.85rem;
+  color: var(--nn-soft);
+  opacity: 0;
+  transition: opacity 180ms, color 180ms;
+  text-decoration: none !important;
+}
+.blog-article__body h2:hover .anchor,
+.blog-article__body h3:hover .anchor { opacity: 1; }
+.blog-article__body h2 .anchor:hover,
+.blog-article__body h3 .anchor:hover { color: var(--nn-accent); }
+
+/* 5 · Pull quote — large, serif, centered, with decorative mark */
+.pullquote {
+  margin: 2.8rem 0 !important;
+  padding: 1.8rem 1rem !important;
+  border-top: 1px solid var(--nn-line);
+  border-bottom: 1px solid var(--nn-line);
+  text-align: center !important;
+  font-family: var(--nn-serif) !important;
+  font-size: 1.5rem !important;
+  font-style: italic;
+  line-height: 1.35 !important;
+  color: var(--nn-ink) !important;
+  letter-spacing: -0.01em;
+  position: relative;
+  background: transparent !important;
+}
+.pullquote::before {
+  content: "“";
+  position: absolute;
+  top: -0.3rem;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--nn-serif);
+  font-size: 3rem;
+  color: var(--nn-accent);
+  font-style: normal;
+  line-height: 1;
+  background: var(--nn-body-bg);
+  padding: 0 0.4rem;
+}
+
+/* 6 · Callouts — more depth, a faint glyph */
+.callout {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+.callout:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+}
+.callout__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.callout__label::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 6px currentColor;
+}
+
+/* 7 · Research cards — add a subtle "↗" glyph, tighter layout */
+.research-card { position: relative; padding-right: 2.2rem; }
+.research-card::after {
+  content: "↗";
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: var(--nn-mono);
+  font-size: 1rem;
+  color: var(--nn-soft);
+  transition: color 180ms, transform 180ms;
+}
+.research-card:hover::after {
+  color: var(--nn-accent);
+  transform: translateY(-50%) translate(2px, -2px);
+}
+
+/* 8 · Demo chrome refinements */
+.idemo__card {
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.025),
+    0 12px 30px rgba(0, 0, 0, 0.035);
+  transition: box-shadow 240ms ease;
+}
+.idemo__card:hover {
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.04),
+    0 18px 40px rgba(0, 0, 0, 0.055);
+}
+.idemo__head {
+  background: linear-gradient(180deg, #f7f8fb, #eeeff4);
+  border-bottom: 1px solid var(--nn-line);
+}
+
+/* 9 · Series progress — animated shimmer */
+.series-nav__bar-fill {
+  position: relative;
+  overflow: hidden;
+}
+.series-nav__bar-fill::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.65), transparent);
+  animation: shimmer 2.6s linear infinite;
+}
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* 10 · Smooth scroll behaviour */
+html { scroll-behavior: smooth; }
+
+/* 11 · Prose refinements: first paragraph gets a little more weight */
+.blog-article__body > p:first-of-type {
+  font-size: 1.08rem;
+  line-height: 1.72;
+  color: var(--nn-ink);
+}
+
+/* 12 · Selected text */
+body.blog-dark ::selection,
+.blog-article ::selection {
+  background: var(--nn-accent-soft);
+  color: var(--nn-accent-dark);
+}
+
+/* 13 · Keyboard shortcut style for inline kbd */
+.blog-article__body kbd {
+  font-family: var(--nn-mono);
+  font-size: 0.85em;
+  padding: 0.15em 0.4em;
+  background: var(--nn-card);
+  border: 1px solid var(--nn-line);
+  border-bottom-width: 2px;
+  border-radius: 3px;
+  color: var(--nn-ink);
+}
+
+/* 14 · Footnote-ish small asides */
+.aside {
+  display: block;
+  margin: 0.8rem 0;
+  padding-left: 1rem;
+  border-left: 2px solid var(--nn-line);
+  font-size: 0.92rem;
+  color: var(--nn-muted);
+  line-height: 1.6;
+}
+
+/* 15 · Responsive fallbacks for polish */
+@media (max-width: 640px) {
+  .blog-article__body > p:first-of-type::first-letter {
+    font-size: 3em;
+  }
+  .pullquote { font-size: 1.2rem !important; padding: 1.4rem 0.5rem !important; }
+  .blog-article__body h2 .anchor,
+  .blog-article__body h3 .anchor { display: none; }
+}
+
