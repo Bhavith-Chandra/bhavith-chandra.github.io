@@ -6,7 +6,7 @@ author_profile: false
 
 # Selected Publications
 
-<p style="margin-bottom: 0.5em;"><a href="https://scholar.google.com/citations?user=nV1hdiMAAAAJ&hl=en" target="_blank"><strong>Full list on Google Scholar</strong></a> · Cited by 91 · h-index 2 · i10-index 2</p>
+<p style="margin-bottom: 0.5em;"><a href="https://scholar.google.com/citations?user=nV1hdiMAAAAJ&hl=en" target="_blank"><strong>Full list on Google Scholar</strong></a></p>
 
 ---
 
@@ -31,31 +31,31 @@ author_profile: false
 ---------------
 
 ### *Neural Sequence-to-Sequence Modeling with Attention by Leveraging Deep Learning Architectures for Enhanced Contextual Understanding in Abstractive Text Summarization*
-<ins>B.C. Challagundla</ins>, C. Peddavenkatagari · *International Journal of Machine Learning and Cybernetics (IJMLC)* · Cited by **26**
+<ins>B.C. Challagundla</ins>, C. Peddavenkatagari · *International Journal of Machine Learning and Cybernetics (IJMLC)*
 [PDF](https://arxiv.org/pdf/2404.08685) · [Google Scholar](https://scholar.google.com/citations?view_op=view_citation&hl=en&user=nV1hdiMAAAAJ&citation_for_view=nV1hdiMAAAAJ:qjMakFHDy7sC)
 
 ### *End-to-end Neural Embedding Pipeline for Large-scale PDF Document Retrieval Using Distributed FAISS and Sentence Transformer Models*
-<ins>B. Challagundla</ins>, P. Preethika, S. Challagundla, Y. Gogireddy · Cited by **11**
+<ins>B. Challagundla</ins>, P. Preethika, S. Challagundla, Y. Gogireddy
 [PDF](https://www.researchgate.net/profile/Yugandhar-Gogireddy/publication/384681635) · [Google Scholar](https://scholar.google.com/citations?view_op=view_citation&hl=en&user=nV1hdiMAAAAJ&citation_for_view=nV1hdiMAAAAJ:ULOm3_A8WrAC)
 
 ### *Dynamic Adaptation and Synergistic Integration of Genetic Algorithms and Deep Learning in Advanced Natural Language Processing*
-<ins>B.C. Challagundla</ins>, S. Challagundla · Cited by **11**
+<ins>B.C. Challagundla</ins>, S. Challagundla
 [Google Scholar](https://scholar.google.com/citations?view_op=view_citation&hl=en&user=nV1hdiMAAAAJ&citation_for_view=nV1hdiMAAAAJ:Tyk-4Ss8FVUC)
 
 ### *Advanced Neural Network Architecture for Enhanced Multi-Lead ECG Arrhythmia Detection through Optimized Feature Extraction*
-<ins>B.C. Challagundla</ins> · *International Journal for Multidisciplinary Research* · Cited by **9**
+<ins>B.C. Challagundla</ins> · *International Journal for Multidisciplinary Research*
 [PDF](https://arxiv.org/pdf/2404.15347) · [Google Scholar](https://scholar.google.com/citations?view_op=view_citation&hl=en&user=nV1hdiMAAAAJ&citation_for_view=nV1hdiMAAAAJ:Y0pCki6q_DkC)
 
 ### *Efficient CAPTCHA Image Recognition Using Convolutional Neural Networks and Long Short-Term Memory Networks*
-<ins>B.C. Challagundla</ins>, Y.R. Gogireddy, C. Reddy et al. · *Int. Journal of Advanced Research and Interdisciplinary Scientific Endeavours* · Cited by **21**
+<ins>B.C. Challagundla</ins>, Y.R. Gogireddy, C. Reddy et al. · *Int. Journal of Advanced Research and Interdisciplinary Scientific Endeavours*
 [PDF](https://www.ijarise.org/index.php/ijarise/article/download/82/78) · [Google Scholar](https://scholar.google.com/citations?view_op=view_citation&hl=en&user=nV1hdiMAAAAJ&citation_for_view=nV1hdiMAAAAJ:_kc_bZDykSQC)
 
 ### *Efficient CAPTCHA Image Recognition Using Convolutional Neural Networks and Long Short-Term Memory*
-<ins>B.C. Challagundla</ins>, C.R. Peddavenkatagari, Y.R. Gogireddy · *Int. Journal of Scientific Research in Engineering and Management* · Cited by **9**
+<ins>B.C. Challagundla</ins>, C.R. Peddavenkatagari, Y.R. Gogireddy · *Int. Journal of Scientific Research in Engineering and Management*
 [Google Scholar](https://scholar.google.com/citations?view_op=view_citation&hl=en&user=nV1hdiMAAAAJ&citation_for_view=nV1hdiMAAAAJ:YOwf2qJgpHMC)
 
 ### *Financial Advisory LLM Model for Modernizing Financial Services and Innovative Solutions for Financial Literacy in India*
-<ins>B.C. Challagundla</ins> et al. · Cited by **4**
+<ins>B.C. Challagundla</ins> et al.
 [PDF](https://assets-eu.researchsquare.com/files/rs-4354348/v1_covered_341a77ab-9100-4c87-b9df-b5c2ee75aeb0.pdf) · [Google Scholar](https://scholar.google.com/citations?view_op=view_citation&hl=en&user=nV1hdiMAAAAJ&citation_for_view=nV1hdiMAAAAJ:8k81kl-MbHgC)
 
 \* : <ins>Underline</ins> denotes Bhavith Chandra Challagundla.

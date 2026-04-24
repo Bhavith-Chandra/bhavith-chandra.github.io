@@ -65,6 +65,21 @@ My research focuses on mechanistic interpretability, world models, and AI safety
 
 - **Deep Learning** (NYU Courant, 2025) — Teaching Assistant for the graduate course by Prof. [Alfredo Canziani](https://atcold.github.io/) and Prof. [Yann LeCun](http://yann.lecun.com/). [Course site](https://atcold.github.io/NYU-DLFL25U/).
 
+## Contact
+
+Reach me at any of these. I'll usually reply within a day or two.
+
+<ul class="nn-contact">
+  <li>
+    <span class="nn-contact__label">Work / Personal</span>
+    <a class="nn-contact__addr" href="mailto:work.bhavithchandra@gmail.com">work.bhavithchandra@gmail.com</a>
+  </li>
+  <li>
+    <span class="nn-contact__label">NYU</span>
+    <a class="nn-contact__addr" href="mailto:bc4066@nyu.edu">bc4066@nyu.edu</a>
+  </li>
+</ul>
+
 ## Elsewhere
 
 - [Google Scholar](https://scholar.google.com/citations?user=nV1hdiMAAAAJ&hl=en) — 91 citations · h-index 2 · i10-index 2
