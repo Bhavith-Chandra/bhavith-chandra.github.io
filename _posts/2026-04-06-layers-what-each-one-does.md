@@ -122,7 +122,7 @@ Also means each layer can focus on adding a *small correction*, rather than comp
 
 Understanding what each layer does is one of the central projects of mechanistic interpretability. Not "layer 7 does something useful". *Exactly* what. Which features live in which layers. Which operations happen where. When we know that, we can start to decompose a model's behaviour the same way you'd decompose a program into functions.
 
-Okay, one more thing worth naming. Every weight in every layer we've talked about was set by a single procedure: gradient descent. That's what made any of this possible.
+Okay, one more thing worth naming. Every weight in every layer we've talked about was set by a single procedure: gradient descent. I'll write about how that actually works in the next blog.
 
 ## Research referenced in this post
 

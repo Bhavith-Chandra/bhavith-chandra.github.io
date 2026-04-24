@@ -120,7 +120,7 @@ For now, "it's gradient descent" is enough.
 
 When an MI researcher asks *"what did this model learn to do?"*, they're asking *"what do these weights mean?"* Finding the answer requires figuring out which directions in weight space correspond to human-interpretable concepts. Which is the project of the whole field.
 
-Next post: layers. Many weight matrices stacked on top of each other, each doing something different to the flow of information.
+I'll write about layers in the next blog. Many weight matrices stacked on top of each other, each doing something different to the flow of information.
 
 ## Research referenced in this post
 
