@@ -7,8 +7,6 @@ excerpt: "Every weight started life as a random number. All the grammar, all the
 read_time_label: "12 min read"
 ---
 
-Okay, final post of Phase 2. Let me pull on one thread I keep teasing.
-
 Every weight in a neural network started life as a random number. Really. Random.
 
 All the grammar, all the facts, all the reasoning patterns. Learned by being wrong, measuring how wrong, and nudging. Billions of times. For months.
@@ -135,20 +133,16 @@ Gradient descent optimises loss. That's all it does.
 
 Does not guarantee the model learned the right algorithm. Does not guarantee it will generalise. Does not guarantee it's doing what you think it's doing.
 
-The model might find a shortcut. A way to get low loss without learning the intended behaviour. (Recall specification gaming from Post 1.) Gradient descent won't catch this. It has no idea what the "intended behaviour" is. It just minimises the number you gave it.
+The model might find a shortcut. A way to get low loss without learning the intended behaviour. This is the "specification gaming" problem in a nutshell. Gradient descent won't catch it. It has no idea what the "intended behaviour" is. It just minimises the number you gave it.
 
 <aside class="callout callout--key">
   <div class="callout__label">Why this matters for MI</div>
   <p>Gradient descent produces the weights. MI is how we figure out what those weights <em>actually</em> learned. The relationship between these two procedures is one of the most interesting open questions in the field. <em>Why</em> does gradient descent so reliably produce interpretable circuits? Why does the same curve detector show up in every vision model? Is it inevitable?</p>
 </aside>
 
-## End of Phase 2
+## Wrap
 
-Alright, real talk: you now know how a single neuron works, how a bunch of them chain into layers, how weights store knowledge, and how all of that was *produced* in the first place. That's the vocabulary for the rest of the series. Not bad for seven posts.
-
-From here, we go into the specific architecture that has basically taken over AI: the **transformer**. Phase 3 starts with the piece of it that matters most, self-attention, and builds up to a complete working transformer we can point mechanistic-interpretability tools at.
-
-See you in Post 8. Don't ghost me.
+Alright, real talk: between this post and the ones before it, you now know how a single neuron works, how a bunch of them chain into layers, how weights store knowledge, and how all of that was *produced* in the first place. That's enough vocabulary to follow almost any mechanistic-interpretability paper on modern neural networks.
 
 ## Research referenced in this post
 

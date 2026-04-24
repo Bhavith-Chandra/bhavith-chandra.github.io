@@ -99,7 +99,7 @@ The model didn't ship with documentation. Its internal structure isn't organised
 
 Superposition is the technical reason for polysemanticity. 512 neurons, 5000 concepts, you have to share. The clever (and spooky) thing: the model stores concepts at *angles* to each other in high-dim space. A careful reader can disentangle them approximately. Not cleanly. Not perfectly. Just well enough.
 
-Which is why naive interpretation ("what does neuron 734 do?") gives confused answers. The right question is "what are the *feature directions* in this 512-dim space?" And that's what **sparse autoencoders** (Phase 4) finally cracked.
+Which is why naive interpretation ("what does neuron 734 do?") gives confused answers. The right question is "what are the *feature directions* in this 512-dim space?" And that's what **sparse autoencoders** finally cracked.
 
 ## The analogy that captures it
 
@@ -137,7 +137,7 @@ Finish line. We've succeeded when:
 3. We can predict failures before they happen: "this model will fail on inputs with property X because its circuit for handling X is weak."
 4. We can verify: "this model genuinely doesn't have a deceptive capability hidden inside, because we've checked the circuits."
 
-Not there yet. Maybe 5% of the way, if I'm being generous. But the progress in the last three years has been kind of wild. That's what Post 3 is about.
+Not there yet. Maybe 5% of the way, if I'm being generous. But the progress in the last three years has been kind of wild.
 
 ## Research referenced in this post
 

@@ -85,7 +85,7 @@ Not perfectly clean (features mix across layers), but the gradient from syntax t
 
 ### The logit lens
 
-A cool MI technique that reads out the model's *best guess* at each layer, before the final output. Early layers, the guess is mostly garbage. Middle layers, it starts approaching the right semantic category. Late layers, it converges on the final answer. Shows you how the model builds its answer progressively. We'll build a demo of this in Phase 7.
+A cool MI technique that reads out the model's *best guess* at each layer, before the final output. Early layers, the guess is mostly garbage. Middle layers, it starts approaching the right semantic category. Late layers, it converges on the final answer. Shows you how the model builds its answer progressively.
 
 ## Depth vs width
 
@@ -115,14 +115,14 @@ Also means each layer can focus on adding a *small correction*, rather than comp
 
 <aside class="callout callout--key">
   <div class="callout__label">Why this matters for MI</div>
-  <p>The <strong>residual stream</strong> (the accumulated sum of all layers' outputs) is one of the core concepts in transformer interpretability. You'll see it everywhere in Phase 3. For now, remember: in a modern network, information doesn't get overwritten layer by layer; it gets added to.</p>
+  <p>The <strong>residual stream</strong> (the accumulated sum of all layers' outputs) is one of the core concepts in transformer interpretability. Remember this: in a modern network, information doesn't get overwritten layer by layer; it gets added to.</p>
 </aside>
 
 ## The MI connection
 
 Understanding what each layer does is one of the central projects of mechanistic interpretability. Not "layer 7 does something useful". *Exactly* what. Which features live in which layers. Which operations happen where. When we know that, we can start to decompose a model's behaviour the same way you'd decompose a program into functions.
 
-Okay, one more thing before we go. Every weight we've talked about was set by a single procedure: gradient descent. That's what made any of this possible. Let's actually watch it work.
+Okay, one more thing worth naming. Every weight in every layer we've talked about was set by a single procedure: gradient descent. That's what made any of this possible.
 
 ## Research referenced in this post
 

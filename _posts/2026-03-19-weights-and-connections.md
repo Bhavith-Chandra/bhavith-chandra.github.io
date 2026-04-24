@@ -78,7 +78,7 @@ In transformers, attention weights form patterns like:
 - Heads that look for subject-verb agreement
 - Heads that copy information from far back in the sequence
 
-These patterns live in the weight matrices. Finding them is a big chunk of mechanistic interpretability. We used the Behavioural-vs-Mechanistic demo in Post 2 to visualise exactly this.
+These patterns live in the weight matrices. Finding them is a big chunk of mechanistic interpretability.
 
 ## Why weights are hard to read directly
 
@@ -114,7 +114,7 @@ Do that billions of times, across trillions of words. Yes, literally trillions. 
 
 The weights that emerge encode the statistical regularities of everything the model was trained on. Grammar. Facts. Logic. Poetry. Chemistry. Slang. All of it. Compressed into numbers.
 
-Post 7 explains this in full. For now, "it's gradient descent" is enough.
+For now, "it's gradient descent" is enough.
 
 ## The MI connection
 

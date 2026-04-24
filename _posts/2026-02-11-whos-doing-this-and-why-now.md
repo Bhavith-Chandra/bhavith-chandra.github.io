@@ -120,9 +120,7 @@ Field is young enough that smart outsiders contribute. Methods are learnable. Pa
   <p>Six weeks of focused effort and you'll understand more of the frontier than 99% of ML engineers.</p>
 </aside>
 
-That's Phase 1. The *why*. From here we get into the *how*: what a feature actually is, what a circuit actually is, how we find them. Phase 2 starts with neurons, weights, layers, and training. The raw materials.
-
-See you in Post 4. Bring snacks.
+That's the *why*. The *how* is a longer story: what a feature actually is, what a circuit actually is, how we find them. It all starts with the raw materials: neurons, weights, layers, and training.
 
 ## Research referenced in this post
 

@@ -94,7 +94,7 @@ This whole setup (weights times inputs, plus bias, through an activation) is wha
 *Finding features* = figuring out which neurons fire, on which inputs, why.
 *Finding circuits* = figuring out which neurons talk to which other neurons, and what that conversation computes.
 
-Everything in this series is built on this one tiny unit. Next post: what happens when you wire a million of them together, every neuron talking to every other neuron. That's where things get weird.
+Everything else in mechanistic interpretability is built on this one tiny unit. Wire a million of them together, every neuron talking to every other neuron, and things get weird.
 
 ## Research referenced in this post
 

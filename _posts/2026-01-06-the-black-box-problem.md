@@ -13,7 +13,7 @@ Right now, an AI is deciding whether you get a loan. Another is looking at your 
 
 The people who built them? Don't really know how they work. You ask an engineer, you get a shrug and "it worked on the test set."
 
-That's not a figure of speech. That's the actual situation. This whole series is my attempt to explain how we got here, and what we're doing about it.
+That's not a figure of speech. That's the actual situation. This post is my attempt to explain how we got here, and what we're doing about it.
 
 ---
 
@@ -118,7 +118,7 @@ The problem is that nothing is *labelled*.
 
 Imagine reading a program where every variable is `var12345`, every function is `f_9281`, no comments, no types, no tests, and the whole thing was written by an optimiser grinding against a loss function for a month straight. Technically readable. Practically: oof.
 
-Mechanistic interpretability is the project of re-deriving those labels. *This neuron is the whisker detector. That attention head is the induction circuit. This subnetwork is where the model decides whether to refuse.* Hard? Yes. Increasingly doable? Also yes. That's the rest of this series.
+Mechanistic interpretability is the project of re-deriving those labels. *This neuron is the whisker detector. That attention head is the induction circuit. This subnetwork is where the model decides whether to refuse.* Hard? Yes. Increasingly doable? Also yes.
 
 So what would it even *look like* to understand what's inside?
 
@@ -126,13 +126,13 @@ So what would it even *look like* to understand what's inside?
 
 ## What you'll walk away with
 
-By the end of Phase 1 (this post and two more), you'll know:
+The goal of mechanistic interpretability:
 
-- what MI is, and how it differs from every other interpretability approach
-- who's doing the work, and which tools to pick up first
-- where the frontier is, and where amateurs still contribute
+- to explain what MI is, and how it differs from every other interpretability approach
+- to map out who's doing the work, and which tools to pick up first
+- to name where the frontier is, and where amateurs still contribute
 
-By post 31, if you've actually done the exercises, you'll have rebuilt the major tools yourself. Feature visualisation, circuit extraction, sparse autoencoders, induction heads, the IOI circuit. You'll read new MI papers the day they come out and mostly follow.
+If you dig in deep enough, you'll end up rebuilding the major tools yourself. Feature visualisation, circuit extraction, sparse autoencoders, induction heads, the IOI circuit. Read new MI papers the day they come out and you'll mostly follow.
 
 That's the deal. Let's go. Pour yourself a coffee, this is going to be fun.
 
