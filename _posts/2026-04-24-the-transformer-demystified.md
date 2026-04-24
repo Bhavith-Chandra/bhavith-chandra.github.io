@@ -3,21 +3,15 @@ layout: post-article
 title: "The Transformer, Demystified: A Factory Floor That Runs on Language"
 date: 2026-04-24
 permalink: /posts/the-transformer-demystified/
-excerpt: "Strip the scary name away and a transformer is six boring stations on a conveyor belt. Text goes in. Numbers travel. A word comes out. Here's what happens at each station."
+excerpt: "A decoder-only transformer is a stack of N identical blocks operating on a residual stream of token vectors. Six stations, one conveyor belt, one probability distribution per step."
 read_time_label: "12 min read"
 accent: amber
 math: true
 ---
 
-Okay. Let's do the thing where we stop being afraid of the word "transformer."
+A **decoder-only transformer** is a stack of $N$ identical blocks operating on a sequence of $T$ token vectors. Input: a token sequence. Output: a probability distribution over the vocabulary for the next token. The internals consist of six stations on a conveyor belt called the **residual stream**.
 
-I know. It sounds like something that should require a PhD and a warning label. The truth is almost insulting: a transformer is a factory floor with about six stations on it. A sentence walks in one end. A guess at the next word walks out the other. In between is a conveyor belt. And every station does one small, boring job.
-
-That's it. That's ChatGPT. That's Claude. That's the thing people are worried might take over the world. Six stations and a belt.
-
-The reason it *feels* complicated is that the belt is really long, the stations run in parallel, and the vectors being shuffled around have several hundred dimensions that we can't visualise. But the structure? The structure is dumb in the best possible way.
-
-Let's walk the floor.
+This post defines each station precisely, explains why the architecture replaced RNNs, and sets up the vocabulary used in the rest of the series.
 
 ---
 
@@ -25,106 +19,122 @@ Let's walk the floor.
 
 {% include demos/factory-floor.html %}
 
-Click a station. Press play. Watch the little token slide along the belt. That is, genuinely, the shape of what happens when you type a message to an LLM. All the rest is detail.
+Click a station, press play, watch one token's vector traverse the pipeline. The structure is identical for every modern LLM: GPT-2, GPT-3, GPT-4, Claude, Llama, Gemini.
 
-## The six stations, briefly
+## The six stations
 
-**1. Tokenizer.** The text comes in as characters, and characters are annoying to do math on. The tokenizer chops the text into subword pieces and assigns each piece an integer ID. `"unhappily"` might become `["un", "happ", "ily"]` → `[403, 7829, 6148]`. We'll spend a whole post on this in the next blog, because it's where half the model's weirdest bugs live.
+**1. Tokenizer.** Maps a string to a sequence of integer IDs using a fixed vocabulary $V$ (typical sizes: 50,257 for GPT-2, 100,277 for GPT-4, 128,000 for Llama 3). Modern tokenizers use byte-pair encoding (BPE) or its variants. Example: `"unhappily"` → `["un", "happ", "ily"]` → `[403, 7829, 6148]`.
 
-**2. Embedding.** Each integer ID gets looked up in a giant table. Out comes a 768-dimensional vector (for GPT-2 small; 12,288 for GPT-3, 16,384 for the really big stuff). Similar-meaning tokens get similar vectors. This is the model's first, rough guess at what each word "means."
+**2. Embedding.** A learned lookup table $W_E \in \mathbb{R}^{V \times d_\text{model}}$ maps each token ID to a $d_\text{model}$-dimensional vector. Common sizes: $d_\text{model} = 768$ (GPT-2 small), 4,096 (Llama 3 8B), 12,288 (GPT-3 175B). The $i$-th row of $W_E$ is the embedding for token $i$.
 
-**3. Attention.** This is the one everyone talks about. At every position in the sentence, the model asks: *"which other positions should I pay attention to, and what information should I pull from them?"* The word `"it"` notices the noun three tokens back. The verb notices its subject. Nothing magical, just a weighted average steered by the vectors themselves.
+**3. Self-attention.** At each position $t$, the model computes weighted sums over all positions $\le t$ (causal mask). Weights are derived from query/key dot products. Output: a new vector at each position that has read from earlier positions. Multiple heads run in parallel ($n_\text{heads} = 12, 32, 96, \ldots$), each in a lower-dimensional subspace.
 
-**4. MLP.** A per-position feed-forward network. Same-shape input, same-shape output, but in between it does non-linear processing. This is where a lot of the model's "knowledge" seems to live, facts, transformations, little lookup patterns.
+**4. MLP.** A position-wise feed-forward network: two linear layers with a non-linearity (GeLU, SwiGLU). Hidden dimension is typically $4 d_\text{model}$. Same shape in, same shape out. Operates independently on each position.
 
-**5. Repeat.** Attention + MLP is one *block*. You stack a pile of these. GPT-2 small has 12. Llama 3 8B has 32. GPT-4 is thought to have something like 120. Every block reads from the conveyor belt and writes back to it.
+**5. Repeat.** One **block** = attention + MLP + residual connections + layer norms. Stack $N$ of them. GPT-2 small: $N=12$. Llama 3 8B: $N=32$. GPT-3 175B: $N=96$. GPT-4 (rumoured): $N \approx 120$.
 
-**6. Unembedding.** At the very end, the final vector is compared against every word in the vocabulary. The comparison produces a score for each word, which gets softmaxed into a probability distribution. Sample from that, and you have your next token.
+**6. Unembedding.** Multiply the final residual stream vector by $W_U \in \mathbb{R}^{d_\text{model} \times V}$ to produce **logits**. Apply softmax to get a probability distribution over the vocabulary. Sample → next token.
 
-That is the entire pipeline. I am not hiding anything. There is no secret extra box.
+Total parameters scale roughly as $N \cdot d_\text{model}^2 \cdot 12$ for the standard recipe.
 
 <aside class="callout callout--analogy">
   <div class="callout__label">Analogy</div>
-  <p>The transformer is a factory that takes half-formed meaning and refines it, one station at a time. The belt carries everyone's thoughts at once. Each station reads the belt, adds its own contribution, and puts the updated thoughts back. By the time the belt reaches the end of the floor, the vector at the last position is confident enough to name a single next word.</p>
+  <p>Each station reads the conveyor belt, computes a small contribution, and adds it back. By the final station the vector at the last position has accumulated enough information to identify the next token.</p>
 </aside>
 
-## The belt, which is a very big deal
+## The residual stream
 
-Notice I keep saying "the belt." In the official literature this is called the **residual stream**, and it is arguably the single most important idea in modern transformer interpretability.
-
-Here's the trick. Each block does not *replace* the previous block's output. It *adds* to it. If $x_i$ is the vector on the belt at position $i$ before a block, then after the block:
+In the literature this conveyor belt is the **residual stream**. Each block's output is *added* to its input, not substituted:
 
 $$x_i \;\leftarrow\; x_i + \text{block}(x_i)$$
 
-<div class="math-translate">In words: the new belt vector equals the old belt vector plus whatever the block computed. Nothing gets overwritten. Everything accumulates.</div>
+<div class="math-translate">In words: the new belt vector equals the old belt vector plus whatever the block computed. Nothing is overwritten; contributions accumulate.</div>
 
-Sounds like a tiny detail. It is the reason transformers work.
+{% include demos/stream-accumulator.html %}
 
-- Information from early layers can flow all the way to the end without being forgotten.
-- Each block only has to produce a small *correction* to the running total, which is way easier to train than "compute everything from scratch."
-- For us MI-folk, the residual stream gives us a single, canonical place to *read the model's mind* at any point in the computation. Layer 3? Just look at the belt after block 3.
+Three consequences follow directly from this additive structure:
 
-We're going to spend an entire post on the residual stream, it's that important, so I won't belabour it here. File it away: **the belt is the main character.**
+1. **Gradient flow.** Information from layer 0 reaches layer $N$ along the identity path. This is why deep transformers train in the first place.
+2. **Per-block delta.** Each block computes a *correction*, not a full representation. Easier optimization target.
+3. **Linear decomposability.** The output is a sum of token embeddings + each block's contribution. Mechanistic interpretability uses this directly: ablate one head, see the difference in the logits.
 
-## Why this thing beat everything else
+Elhage et al. ([2021, "Mathematical Framework"](https://transformer-circuits.pub/2021/framework/index.html)) formalize this view. The residual stream is the central object in the rest of this series.
 
-For a long time, the reigning architecture for language was the **recurrent neural network** (RNN), a model that reads text one token at a time, maintaining a little hidden state as it goes. Like reading a book by passing a single post-it note from page to page and updating it. It works. Sort of. Two problems:
+## Why transformers replaced RNNs
 
-1. **You can't parallelise it.** Token $t$ depends on token $t-1$'s hidden state. You have to process the sentence sequentially. On a GPU, that's a crime against nature.
-2. **The post-it note forgets.** Long-range dependencies fade. By the end of a paragraph the model has basically lost the beginning.
+**Recurrent neural networks (RNNs)** process tokens sequentially, maintaining a hidden state $h_t = f(h_{t-1}, x_t)$. Two structural problems:
 
-Transformers ([Vaswani et al., 2017](https://arxiv.org/abs/1706.03762)) fixed both problems in one stroke by replacing the post-it note with attention. Now every position can look at every other position *directly*, all at once, in parallel. No sequential dependency, no forgetting. The belt is wide. The lookups are fast. The GPU is happy.
+1. **No parallelism.** Token $t$ depends on $h_{t-1}$. Cannot batch positions on a GPU.
+2. **Vanishing dependencies.** Gradients through 1,000 timesteps decay or explode. LSTMs and GRUs help but do not solve it at scale.
 
-The paper was called, memorably, *"Attention Is All You Need,"* which turned out to be one of the most accurate titles in ML history.
+Transformers ([Vaswani et al., 2017](https://arxiv.org/abs/1706.03762)) replace recurrence with self-attention: every position reads from every other position in parallel via a single matrix multiplication. Sequence length $T$ → $O(T^2)$ time, but fully parallel within a sequence and across batch dimensions. On modern GPUs the constant factor wins.
 
 <aside class="callout callout--key">
   <div class="callout__label">Why this matters for MI</div>
-  <p>Every modern LLM you've heard of, GPT-4, Claude, Llama, Gemini, is a transformer. Different sizes, different training data, different tweaks. But the factory floor is the same six stations. Learn this once and you've got the scaffolding for every frontier model.</p>
+  <p>Every modern LLM is a decoder-only transformer with the same six stations. Different sizes, different training data, different fine-tuning. The interpretability tools from this series transfer directly across all of them.</p>
 </aside>
 
-## "Decoder-only," and why we only care about that flavour
+## Decoder-only
 
-The original 2017 paper had an *encoder* (for reading the input) and a *decoder* (for writing the output). Machine-translation, that's what they were after.
+The original 2017 paper had two halves: an **encoder** (reads input) and a **decoder** (writes output), wired for machine translation. For autoregressive text generation, only the decoder is needed.
 
-Then people noticed: if you just want to generate text, you don't need the encoder. Chop it off. Keep the decoder. Train it to predict the next token, given all previous tokens. That's a **decoder-only transformer**, GPT-2, GPT-3, Claude, Llama, all of them.
+A **decoder-only transformer** uses **causal self-attention**: position $t$ may only attend to positions $0, 1, \ldots, t$. This enforces left-to-right generation and matches the next-token-prediction training objective.
 
-For this post and every post after, when I say "transformer," I mean decoder-only. Simpler. One stream of tokens in, one probability distribution out. The structure you clicked through above.
+This series is exclusively about decoder-only transformers. (Encoder-only models like BERT are used for classification and embedding tasks, not generation.)
 
-(There are also *encoder-only* models like BERT, which are great for classification but don't generate text. We won't touch those here.)
+## Autoregressive generation
 
-## A quick note on "autoregressive"
-
-One more word that sounds scarier than it is. **Autoregressive** means the model generates one token, appends it to the input, and generates the next one using the now-longer input. Then repeats.
+The transformer produces one probability distribution per forward pass. To generate text:
 
 ```
-input:  "The cat sat on the"
-model:  → "mat"
-input:  "The cat sat on the mat"
-model:  → "."
-input:  "The cat sat on the mat."
-model:  → "<end>"
+input:  "The cat sat on the"          → logits → sample → "mat"
+input:  "The cat sat on the mat"      → logits → sample → "."
+input:  "The cat sat on the mat."     → logits → sample → "<eos>"
 ```
 
-That's all it means. One token at a time, each conditioned on everything before it. The factory floor runs once per token. When you watch a chatbot "type," you are literally watching the factory floor run, over and over, as fast as the GPU allows.
+This is **autoregressive decoding**. Each generated token is appended to the input and the model runs again. Sampling strategies (greedy, top-k, top-p, temperature) determine *which* token gets picked from the distribution. KV-caching avoids recomputing attention over previous tokens, making the per-step cost roughly $O(T)$ rather than $O(T^2)$.
 
-## What's ahead on this belt
+## Key dimensions, by model
 
-The next few posts walk through each station in detail:
+| Model | $N$ | $d_\text{model}$ | $n_\text{heads}$ | $V$ | Parameters |
+|---|---|---|---|---|---|
+| GPT-2 small | 12 | 768 | 12 | 50,257 | 124M |
+| GPT-2 XL | 48 | 1,600 | 25 | 50,257 | 1.5B |
+| GPT-3 | 96 | 12,288 | 96 | 50,257 | 175B |
+| Llama 3 8B | 32 | 4,096 | 32 | 128,000 | 8B |
+| Llama 3 70B | 80 | 8,192 | 64 | 128,000 | 70B |
 
-- **Tokens**, what they are, why they're not words, and why this causes subtle chaos.
-- **The residual stream**, the belt, in all its glory, plus the single most useful mental model for understanding an LLM.
-- **Attention**, how a position decides what to look at, and the QK/OV decomposition that turned MI into a real science.
-- **MLPs**, the feed-forward layers, and why we now think of them as *key-value memories*.
-- **The full forward pass**, everything wired up, end to end, with real numbers from a real model.
+Memorize one row (GPT-2 small is most common in MI papers) and use it as the reference point.
 
-By the end of that run, you'll have the complete vocabulary to read any transformer interpretability paper. The next blog starts with tokens.
+## What's ahead
 
-## Research referenced in this post
+Subsequent posts cover each station in mechanistic detail:
+
+- **Tokens.** BPE, vocabulary quirks, the bugs they cause.
+- **Residual stream.** The most important MI primitive; logit lens; linear decomposition.
+- **Attention.** QK/OV decomposition; induction heads; IOI circuit.
+- **MLPs.** Key-value memory framing; superposition; sparse autoencoders.
+- **Full forward pass.** End-to-end with real GPT-2 numbers.
+
+The next post is on tokenization.
+
+## Resources
+
+### Foundational papers
 
 <ul class="research-list">
-  <li><a class="research-card" href="https://arxiv.org/abs/1706.03762" target="_blank" rel="noopener"><div class="research-card__title">Attention Is All You Need</div><div class="research-card__authors">Vaswani, A. et al. · 2017 · the original transformer paper</div></a></li>
-  <li><a class="research-card" href="https://jalammar.github.io/illustrated-transformer/" target="_blank" rel="noopener"><div class="research-card__title">The Illustrated Transformer</div><div class="research-card__authors">Alammar, J. · 2018 · the friendliest diagram-led tour of the architecture</div></a></li>
-  <li><a class="research-card" href="https://transformer-circuits.pub/2021/framework/index.html" target="_blank" rel="noopener"><div class="research-card__title">A Mathematical Framework for Transformer Circuits</div><div class="research-card__authors">Elhage, N. et al. · Anthropic, 2021 · the residual-stream view used throughout this series</div></a></li>
-  <li><a class="research-card" href="https://cdn.openai.com/better-language-models/language_models_are_unsupervised_multitask_learners.pdf" target="_blank" rel="noopener"><div class="research-card__title">Language Models are Unsupervised Multitask Learners</div><div class="research-card__authors">Radford, A. et al. · OpenAI, 2019 · GPT-2</div></a></li>
-  <li><a class="research-card" href="https://arxiv.org/abs/2005.14165" target="_blank" rel="noopener"><div class="research-card__title">Language Models are Few-Shot Learners</div><div class="research-card__authors">Brown, T. et al. · 2020 · GPT-3, the "scale it up" paper</div></a></li>
+  <li><a class="research-card" href="https://arxiv.org/abs/1706.03762" target="_blank" rel="noopener"><div class="research-card__title">Attention Is All You Need</div><div class="research-card__authors">Vaswani et al., 2017 · the original transformer paper</div></a></li>
+  <li><a class="research-card" href="https://transformer-circuits.pub/2021/framework/index.html" target="_blank" rel="noopener"><div class="research-card__title">A Mathematical Framework for Transformer Circuits</div><div class="research-card__authors">Elhage et al., Anthropic 2021 · residual-stream view used throughout this series</div></a></li>
+  <li><a class="research-card" href="https://cdn.openai.com/better-language-models/language_models_are_unsupervised_multitask_learners.pdf" target="_blank" rel="noopener"><div class="research-card__title">Language Models are Unsupervised Multitask Learners</div><div class="research-card__authors">Radford et al., OpenAI 2019 · GPT-2 architecture and training</div></a></li>
+  <li><a class="research-card" href="https://arxiv.org/abs/2005.14165" target="_blank" rel="noopener"><div class="research-card__title">Language Models are Few-Shot Learners</div><div class="research-card__authors">Brown et al., 2020 · GPT-3, scaling laws in practice</div></a></li>
+</ul>
+
+### Tutorials and code
+
+<ul class="research-list">
+  <li><a class="research-card" href="https://jalammar.github.io/illustrated-transformer/" target="_blank" rel="noopener"><div class="research-card__title">The Illustrated Transformer</div><div class="research-card__authors">Jay Alammar · diagram-led walkthrough of the original architecture</div></a></li>
+  <li><a class="research-card" href="https://github.com/karpathy/nanoGPT" target="_blank" rel="noopener"><div class="research-card__title">nanoGPT</div><div class="research-card__authors">Andrej Karpathy · ~300-line PyTorch implementation of GPT-2</div></a></li>
+  <li><a class="research-card" href="https://www.youtube.com/watch?v=kCc8FmEb1nY" target="_blank" rel="noopener"><div class="research-card__title">Let's build GPT: from scratch, in code, spelled out</div><div class="research-card__authors">Karpathy · 2-hour lecture; pairs with nanoGPT</div></a></li>
+  <li><a class="research-card" href="https://transformerlensorg.github.io/TransformerLens/" target="_blank" rel="noopener"><div class="research-card__title">TransformerLens</div><div class="research-card__authors">Neel Nanda et al. · the standard MI library; load any HF model and inspect activations</div></a></li>
+  <li><a class="research-card" href="https://www.neelnanda.io/mechanistic-interpretability/getting-started" target="_blank" rel="noopener"><div class="research-card__title">A Comprehensive Mechanistic Interpretability Explainer</div><div class="research-card__authors">Neel Nanda · glossary and recommended reading order</div></a></li>
 </ul>

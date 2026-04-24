@@ -3,164 +3,191 @@ layout: post-article
 title: "Attention: How Every Position Decides Who to Listen To"
 date: 2026-05-26
 permalink: /posts/attention-how-every-position-decides-who-to-listen-to/
-excerpt: "The word 'it' has to figure out what noun it refers to. The verb has to find its subject. All of this happens through attention, the routing mechanism that took NLP from sad to superhuman in five years."
+excerpt: "Attention is a dot-product-based routing mechanism. Each head decomposes into a QK circuit (where to attend) and an OV circuit (what to write back), enabling head-level interpretability."
 read_time_label: "15 min read"
 accent: amber
 math: true
 ---
 
-At the risk of being obvious about it: if you want to understand the sentence *"The cat sat on the mat because it was warm,"* the word that has to do some work is **it**. Does "it" refer to the cat, or the mat?
+**Self-attention** is the mechanism that lets each position in a sequence read from every other (causally) position. A single attention head consists of three learned linear maps and a softmax. A multi-head layer runs $n_\text{heads}$ such heads in parallel.
 
-Humans do this effortlessly. Early language models were terrible at it. The fix, the single biggest architectural idea in NLP in the last decade, was attention.
-
-Attention is a mechanism by which every position in the sequence gets to peek at every other position and decide how much each one matters. The word "it" doesn't sit there clueless. It looks around the sentence, computes a weight for every other word, and pulls in the relevant information. If "cat" wins most of the weight, "it" now knows what it refers to.
-
-That's the mechanical description. The interesting question, the one that animates modern interpretability, is: *what specific rules do specific attention heads actually learn to follow?* The answer, it turns out, is that different heads learn genuinely different, human-describable routing policies. Copy this token. Attend to the previous noun. Look for the same word earlier in the sequence and copy what came after it.
-
-We can go read them.
+This post defines the operation, derives the **QK / OV decomposition** that underlies head-level interpretability, and walks through four head archetypes plus the indirect-object identification circuit.
 
 ---
 
-## Play with a real model first
+## Demo: 72 real attention heads
 
 {% include demos/attention-explorer.html %}
 
-This is 72 real attention heads (6 layers × 12 heads) of distilGPT2, running on prompts in your browser. Pick the John/Mary sentence. Click through layers and heads. Watch the patterns. Some heads attend only to the previous token. Some dump everything on the first position. Some have sharp, specific routes like "the first John attends to the second John." Every pattern you see is a tiny learned rule.
+3 prompts × 6 routing-pattern reproductions × matrix and flow views. The patterns shown ("previous-token", "BOS sink", "induction", "duplicate-token", "name-mover", "self") are reproductions of the canonical patterns observed in real GPT-2 small heads.
 
-## The mechanism, from first principles
+## Definition
 
-Each attention head has three small weight matrices: $W_Q$, $W_K$, $W_V$ (query, key, value). For every position $t$ in the sequence, with residual-stream vector $x_t$:
+Each attention head has three weight matrices:
 
-$$q_t = x_t W_Q \qquad k_t = x_t W_K \qquad v_t = x_t W_V$$
+$$W_Q, W_K, W_V \in \mathbb{R}^{d_\text{model} \times d_\text{head}}$$
 
-<div class="math-translate">Each position produces a query (what it's looking for), a key (what it offers to be found by), and a value (what it actually delivers if selected). Three linear projections of the same input vector.</div>
+Typical sizes: GPT-2 small has $d_\text{model} = 768$, $n_\text{heads} = 12$, $d_\text{head} = 64$ per head ($d_\text{head} = d_\text{model} / n_\text{heads}$).
 
-The attention weight from position $i$ looking at position $j$ is a softmaxed dot product of queries and keys:
+For input $X \in \mathbb{R}^{T \times d_\text{model}}$:
 
-$$a_{ij} = \frac{\exp(q_i \cdot k_j / \sqrt{d_h})}{\sum_{j'} \exp(q_i \cdot k_{j'} / \sqrt{d_h})}$$
+$$Q = XW_Q,\quad K = XW_K,\quad V = XW_V \quad \in \mathbb{R}^{T \times d_\text{head}}$$
 
-<div class="math-translate">For the query at <em>i</em>, score every key. Big dot product means "these two match." Softmax turns the scores into weights that sum to 1. The <em>√</em> in the denominator keeps the scores from saturating the softmax too early.</div>
+**Attention scores** (causal, scaled):
 
-And the output at each position is a weighted sum of values:
+$$A = \text{softmax}\!\left(\frac{QK^\top}{\sqrt{d_\text{head}}} + M\right)$$
 
-$$o_i = \sum_j a_{ij} v_j$$
+where $M_{ij} = -\infty$ for $j > i$ (causal mask), 0 otherwise. $A \in \mathbb{R}^{T \times T}$ is the attention pattern.
 
-That's the head. Three tiny linear layers, a dot-product similarity, a softmax, a weighted sum. Per head. Per layer.
+**Output:**
 
-A *multi-head* attention layer just has many of these running in parallel with their own $W_Q, W_K, W_V$, whose outputs are concatenated and projected back into the residual stream via an output projection $W_O$. GPT-2 small has 12 heads per layer. Each one can learn a different routing rule.
+$$Z = AV \quad \in \mathbb{R}^{T \times d_\text{head}}$$
 
-## The QK circuit and the OV circuit
+Multi-head: concatenate $n_\text{heads}$ outputs $[Z^{(1)}, \ldots, Z^{(h)}]$ and project through $W_O \in \mathbb{R}^{(n_\text{heads} \cdot d_\text{head}) \times d_\text{model}}$ to write back to the residual stream.
 
-Here's where interpretability gets a lot of mileage. You can think of each head as implementing two separate computations, and they can be analysed independently.
+The scaling factor $\sqrt{d_\text{head}}$ keeps the dot products in a numerically stable range ([Vaswani et al., 2017](https://arxiv.org/abs/1706.03762), §3.2.1).
 
-### The QK circuit: "who should I look at?"
+## QK and OV: two circuits per head
 
-The dot product $q_i \cdot k_j$, decomposed:
+Each head can be analyzed as two independent linear maps composed by softmax + sum.
 
-$$q_i \cdot k_j = (x_i W_Q)(x_j W_K)^T = x_i (W_Q W_K^T) x_j^T$$
+### QK circuit (where to attend)
 
-The matrix $W_Q W_K^T$ is the **QK circuit**. It's a bilinear form mapping pairs of residual-stream vectors to attention scores. This tells you, given the content of position $i$ and position $j$, *how much $i$ should attend to $j$*.
+The attention score is bilinear in the inputs:
 
-If we factor it: *"what kinds of queries does this head pose, and what kinds of keys light up for them?"*
+$$Q_i K_j^\top = (X_i W_Q)(X_j W_K)^\top = X_i (W_Q W_K^\top) X_j^\top$$
 
-### The OV circuit: "what should I write back?"
+The product $W_{QK} := W_Q W_K^\top \in \mathbb{R}^{d_\text{model} \times d_\text{model}}$ is the **QK matrix**. It maps pairs (query position content, key position content) → score. Eigendecomposing or projecting $W_{QK}$ onto interpretable subspaces reveals the routing rule.
 
-Symmetrically, the output of the head goes through $W_V$ and then $W_O$:
+### OV circuit (what to write)
 
-$$\text{write}_i = \sum_j a_{ij} x_j W_V W_O$$
+The output written back to the residual stream from source position $j$, weighted by $A_{ij}$, is:
 
-The matrix $W_V W_O$ is the **OV circuit**. It maps a residual-stream vector (at a source position) to the vector that will be written to the target position (with weight given by $a_{ij}$). In plain English: *"given the head decided to pay attention to source $j$, what information does it copy from $j$ to $i$?"*
+$$\Delta_i = \sum_j A_{ij}\, X_j W_V W_O^{(h)}$$
 
-This is a powerful decomposition. **Attention is not one computation; it is two orthogonal computations composed together.** QK decides the routing. OV decides the payload. They are trained jointly but they are *separate objects*, and they can be understood separately.
+The product $W_{OV} := W_V W_O^{(h)} \in \mathbb{R}^{d_\text{model} \times d_\text{model}}$ is the **OV matrix**. It maps (source residual content) → (write contribution). Reading the eigenstructure of $W_{OV}$ describes what kind of information the head copies.
+
+**The two are independent.** Routing (QK) and payload (OV) are trained jointly but are mathematically separate objects. Most interpretability claims about a head reduce to characterizing $W_{QK}$ and $W_{OV}$ separately. ([Elhage et al., 2021](https://transformer-circuits.pub/2021/framework/index.html))
 
 <aside class="callout callout--key">
   <div class="callout__label">Why this matters for MI</div>
-  <p>The QK/OV split is the single most important analytical tool for attention. Almost every interpretability result about a specific head is ultimately an answer to "what does QK do?" plus "what does OV do?" This frame is from <a href="https://transformer-circuits.pub/2021/framework/index.html" target="_blank" rel="noopener">Elhage et al., 2021</a> and has structured the field ever since.</p>
+  <p>"What does this head do?" decomposes into two questions: "What does QK select for?" and "What does OV copy?" Almost every head archetype in the literature (induction, copy, name-mover, S-inhibition) is named after its OV behavior with a description of QK as the routing condition.</p>
 </aside>
 
-## Four flavours of head you'll actually see
+## Four head archetypes
 
-MI researchers have, over the last few years, catalogued several recurring head archetypes. You can hunt for them in the demo above.
+### 1. Previous-token heads
 
-### Previous-token heads
+- **QK**: position $i$ attends primarily to $i-1$. Often pure positional (the QK matrix is approximately a shift operator after positional encoding).
+- **OV**: copies the source token's embedding into the destination.
+- **Where**: layer 0–2 in GPT-2 small.
+- **Use**: feeds shifted-token information into later heads. A prerequisite for induction.
 
-QK pattern: attend to the token one position back. OV: copy the embedding of that token. Very common in early layers. They're essentially building "what was the word just before this one?" into each position. Fundamental building block for a lot of higher-order routing.
+### 2. Induction heads
 
-### Induction heads
+In-context bigram completion: if the prefix contains `…A B…` and the current token is a later `A`, the head attends to the position right after the prior `A` and copies that token (`B`) forward.
 
-The most famous one. An induction head does **in-context copying**: if earlier in the sequence we saw the bigram "$A$ $B$", then the next time we see "$A$", the head attends to "$B$" and copies it forward. Which means: the model learns to continue patterns on the fly, without ever being trained on that specific pattern. This is widely believed to be the mechanistic basis of in-context learning ([Olsson et al., 2022](https://transformer-circuits.pub/2022/in-context-learning-and-induction-heads/index.html)).
+- **QK**: at position of the second `A`, query matches keys at positions whose previous token equals `A`. This requires the previous-token information that previous-token heads write.
+- **OV**: copies the source token.
+- **Where**: typically appears around layer 5–6 in GPT-2 small (after a previous-token head feeds layer 0).
+- **Significance**: [Olsson et al. (2022)](https://transformer-circuits.pub/2022/in-context-learning-and-induction-heads/index.html) argue induction heads are the mechanistic basis of in-context learning.
 
-In the demo, try the "A B C D … A B" preset and look at layer 2–3 heads. When the attention matrix has strong off-diagonal structure pointing a few tokens back, often one token back from an earlier match, you're looking at something induction-flavoured.
+### 3. Name-mover heads
 
-### Positional / syntactic heads
+- **QK**: the final position ("___") attends to name tokens earlier in the sentence.
+- **OV**: copies the name's embedding to the final position, increasing that name's logit.
+- **Where**: layer 9–10 in GPT-2 small.
+- **Use**: the output stage of the IOI circuit (below).
 
-Heads that attend based mostly on position (e.g., "the start of this sentence") or syntactic role (e.g., "the subject of the main clause"). Often appear in middle layers.
+### 4. Attention sinks (BOS sink)
 
-### The BOS sink
+Many heads route most of their attention to position 0 (BOS) on tokens where the head has nothing useful to do. Softmax forces the weights to sum to 1, so the head must attend somewhere; the BOS slot acts as a "rest" position with low informational impact.
 
-This is a weirder one. Many heads in middle layers dump most of their attention mass onto the beginning-of-sequence token (position 0). Why? Because the softmax always has to sum to 1, it can't choose *not to attend*, so when a head has nothing useful to do on a given token, it "rests" by attending to BOS. The residual-stream update from this is small (because attending to a near-constant vector adds a near-constant amount), which is basically the head's way of staying out of the way. Sometimes called the "attention sink" ([Xiao et al., 2023](https://arxiv.org/abs/2309.17453)).
+- **QK**: queries that don't match any content key default to the BOS key.
+- **Where**: layers 1–3, many heads.
+- **Reference**: [Xiao et al. (2023)](https://arxiv.org/abs/2309.17453); also discussed in [Templeton et al. (2024)](https://transformer-circuits.pub/2024/scaling-monosemanticity/index.html).
 
-In the demo, the "BOS sink" diagnostic fires on many heads, especially in layers 1-3. Don't be alarmed.
+## The IOI circuit
 
-## The indirect object identification circuit
+[Wang et al. (2022)](https://arxiv.org/abs/2211.00593) reverse-engineered the algorithm GPT-2 small uses to predict `Mary` for the prompt:
 
-Okay, we have to talk about the most famous circuit in MI, because it is genuinely one of the most beautiful things in the field.
+> *"When John and Mary went to the store, John gave a drink to ___"*
 
-[Wang et al., 2022](https://arxiv.org/abs/2211.00593) took the prompt *"When John and Mary went to the store, John gave a drink to ___"* and asked: how does GPT-2 Small correctly predict "Mary"? It's a nontrivial problem. The model has to figure out that John is the subject, Mary is the indirect object, and therefore Mary is who the drink was given to.
+The circuit involves ~26 attention heads across layers 0–11, organized into named functional groups. Sketch:
 
-They traced the full circuit. It uses (roughly) seven specific attention heads working in concert. Here's the sketch:
+| Stage | Heads (layer.head) | Role |
+|---|---|---|
+| Duplicate Token | 0.1, 0.10, 3.0 | Detect repeated names. Output: "this name appears twice." |
+| Previous Token | 2.2, 4.11 | Move name info to positions before/after each name. |
+| Induction | 5.5, 5.8, 5.9, 6.9 | Pattern-match across the sentence using duplicate-token features. |
+| S-Inhibition | 7.3, 7.9, 8.6, 8.10 | Write a "John is the subject, suppress John" signal at the final position. |
+| Name Mover | 9.6, 9.9, 10.0 | Attend from final position to names. Suppression from S-Inhibition makes them attend to Mary, not John. Output: Mary's logit goes up. |
+| Negative Name Mover | 10.7, 11.10 | Slightly suppress the answer (regularization-like). |
 
-1. **"Duplicate token" heads** (layer 0-3) notice that "John" appears twice in the sentence.
-2. **"Previous-token" heads** relay information about adjacent words.
-3. **"S-Inhibition" heads** (layer 7-8) write *"the subject John is not the answer"* into the residual stream at the final position.
-4. **"Name-mover" heads** (layer 9-10) attend from the final position back to names, but their attention is actively suppressed toward John (because of the S-inhibition signal) and flows to Mary instead.
-5. The logit for "Mary" goes up. The model predicts correctly.
+The paper validates each role via path-patching ablations: zeroing out a single head's contribution to the relevant downstream component degrades the answer. Reproducible in TransformerLens with ~50 lines of code.
 
-The paper is a line-by-line autopsy of which head does what, verified by ablations (remove a head, watch the answer fall apart). It is essentially a reverse-engineered algorithm, in the model's own language, and it turned out to be a small piece of code you could almost write down in Python.
+This was the first complete circuit reverse-engineered in a language model.
 
-This was the first time a nontrivial "circuit" inside a language model got fully mapped. It launched a whole subfield.
+## Causal masking
 
-In the demo, the John/Mary preset is the setup. Browse layers 7-10 and see which heads have strong attention from the final token toward names earlier in the sentence. You can *see* the name-mover heads.
+Decoder-only models enforce $A_{ij} = 0$ for $j > i$ via the mask $M$. Two reasons:
 
-## Causal attention and why autoregressive models only look backward
+1. **Training objective.** Predicting token $t$ given $0, \ldots, t-1$. If position $t$ could attend to $t+1$, the loss would leak the answer.
+2. **Generation.** At inference, future tokens don't exist yet.
 
-One small but important technical thing. In a **decoder-only** model (GPT, Claude, Llama, all of them), attention is *causal*: position $i$ can only attend to positions $j \le i$. This is enforced by masking, we set $a_{ij} = 0$ for $j > i$ before softmaxing.
+The mask is added to attention scores *before* softmax, with $-\infty$ in the masked positions, so masked weights become exactly zero.
 
-Why? Because the model is trained to predict the next token given previous tokens. If position 5 could look at position 6, the model could cheat by just reading the answer. Causal masking forces every prediction to be made using only past information.
+In matrix form, $A$ is lower-triangular. Visible in every demo above.
 
-This is why the attention matrices in the demo are always lower-triangular, everything above the diagonal is zero. If a head wants to attend to "the future" it cannot. The only information it has is the tokens it has already seen.
+## Multi-head attention
 
-## The softmax is doing something load-bearing
+Why $h$ heads instead of one bigger head? Each head learns a different $(W_{QK}, W_{OV})$, allowing the layer to perform multiple routings simultaneously: head 1 might do "previous token" while head 2 does "subject of the sentence" while head 3 acts as a BOS sink. With one head these would have to share the same projection.
 
-One thing worth pausing on. The softmax in attention is not just a normalisation; it is the mechanism that gives attention its selectivity. If it were a simple sum or average, every position would contribute equally and the routing would be useless. Softmax is the reason the head can produce sharp, peaky attention patterns, a single attended-to position getting most of the weight.
+```
+attn_layer(X):
+    heads = []
+    for h in range(n_heads):
+        Q = X @ W_Q[h]; K = X @ W_K[h]; V = X @ W_V[h]
+        A = softmax(Q @ K.T / sqrt(d_head) + causal_mask)
+        heads.append(A @ V)
+    return concat(heads, dim=-1) @ W_O
+```
 
-That selectivity is also a constraint. Softmax forces the weights to sum to exactly 1, which creates the "must attend to something" effect that produces BOS sinks. It's a design choice with downstream consequences. Some recent architectures (YOCO, RetNet) swap softmax for other mixing schemes, partly to escape these quirks.
+In code, this is one batched matmul with a head dimension. Conceptually, $h$ independent attention operations.
 
-## Attention is the memory
+## Softmax: the source of selectivity (and BOS sinks)
 
-Zooming out. Why does attention work so well? One frame that's been useful to me: **attention is associative memory**.
+The softmax is what makes attention *selective*. A linear weighting would average; softmax allows sharp, peaky distributions where one position gets most of the weight.
 
-When you type a question to an LLM, the attention mechanism is letting the final token (where the prediction happens) reach back through the entire context and *retrieve* relevant pieces. It's not storage. It's retrieval.
+The constraint is that $\sum_j A_{ij} = 1$. The head must attend somewhere. When no key matches the query, it defaults to whatever residual key is closest, often the BOS token, which becomes the default sink.
 
-The MLPs, by contrast, store things, weights learned during training encode facts that don't change per-prompt. Attention is the look-up. MLPs are the filing cabinet. A transformer alternates them because generation requires both: retrieve what's in front of me, transform it using what I've memorised, repeat.
+Some recent architectures replace softmax with linear attention (Linformer, RetNet, Mamba) or kernelized variants to avoid this and to get sub-quadratic time. Softmax remains the standard for frontier LLMs.
 
-That's a useful duality to hold onto. I'll talk about the MLP half in the next blog.
+## Attention as associative memory
 
-## The takeaway, in three bullets
+A useful frame: attention performs **content-addressable retrieval** from the context. The query is an address; the keys are stored entries; the softmax picks the closest match. The OV circuit decides what to retrieve from the matched entry.
 
-1. Attention is a dot-product-based routing mechanism between positions. Every position queries, every position offers keys, the soft-matched queries pull values.
-2. Each head is best understood as two orthogonal matrices: **QK** (who to attend to) and **OV** (what to write back). Both are small, both are analyzable.
-3. Real heads learn concrete, human-readable rules, previous-token, induction, name-movers. Finding and characterising them is what circuit-level MI does.
+This is why attention scales gracefully across context length and why it pairs naturally with MLPs: attention retrieves relevant context-specific information; MLPs apply training-time-stored transformations to it. The next post is on MLPs.
 
-Next up: the MLP. The other half of every block, and where most of the model's factual knowledge turns out to live.
+## Resources
 
-## Research referenced in this post
+### Foundational papers
 
 <ul class="research-list">
-  <li><a class="research-card" href="https://arxiv.org/abs/1706.03762" target="_blank" rel="noopener"><div class="research-card__title">Attention Is All You Need</div><div class="research-card__authors">Vaswani, A. et al. · 2017 · the original mechanism</div></a></li>
-  <li><a class="research-card" href="https://transformer-circuits.pub/2021/framework/index.html" target="_blank" rel="noopener"><div class="research-card__title">A Mathematical Framework for Transformer Circuits</div><div class="research-card__authors">Elhage, N. et al. · Anthropic, 2021 · QK/OV decomposition</div></a></li>
-  <li><a class="research-card" href="https://transformer-circuits.pub/2022/in-context-learning-and-induction-heads/index.html" target="_blank" rel="noopener"><div class="research-card__title">In-context Learning and Induction Heads</div><div class="research-card__authors">Olsson, C. et al. · Anthropic, 2022</div></a></li>
-  <li><a class="research-card" href="https://arxiv.org/abs/2211.00593" target="_blank" rel="noopener"><div class="research-card__title">Interpretability in the Wild: a Circuit for IOI in GPT-2</div><div class="research-card__authors">Wang, K. et al. · 2022 · the indirect-object identification circuit</div></a></li>
-  <li><a class="research-card" href="https://arxiv.org/abs/2309.17453" target="_blank" rel="noopener"><div class="research-card__title">Efficient Streaming Language Models with Attention Sinks</div><div class="research-card__authors">Xiao, G. et al. · 2023 · the BOS-sink phenomenon</div></a></li>
-  <li><a class="research-card" href="https://distill.pub/2016/augmented-rnns/" target="_blank" rel="noopener"><div class="research-card__title">Attention and Augmented Recurrent Neural Networks</div><div class="research-card__authors">Olah, C. & Carter, S. · Distill, 2016 · best illustrated early intro</div></a></li>
+  <li><a class="research-card" href="https://arxiv.org/abs/1706.03762" target="_blank" rel="noopener"><div class="research-card__title">Attention Is All You Need</div><div class="research-card__authors">Vaswani et al., 2017 · the original mechanism</div></a></li>
+  <li><a class="research-card" href="https://transformer-circuits.pub/2021/framework/index.html" target="_blank" rel="noopener"><div class="research-card__title">A Mathematical Framework for Transformer Circuits</div><div class="research-card__authors">Elhage et al., Anthropic 2021 · QK / OV decomposition formalized</div></a></li>
+  <li><a class="research-card" href="https://transformer-circuits.pub/2022/in-context-learning-and-induction-heads/index.html" target="_blank" rel="noopener"><div class="research-card__title">In-context Learning and Induction Heads</div><div class="research-card__authors">Olsson et al., Anthropic 2022 · induction heads as the basis of ICL</div></a></li>
+  <li><a class="research-card" href="https://arxiv.org/abs/2211.00593" target="_blank" rel="noopener"><div class="research-card__title">Interpretability in the Wild: a Circuit for IOI in GPT-2</div><div class="research-card__authors">Wang et al., 2022 · the IOI circuit, end-to-end reverse engineering</div></a></li>
+  <li><a class="research-card" href="https://arxiv.org/abs/2309.17453" target="_blank" rel="noopener"><div class="research-card__title">Efficient Streaming Language Models with Attention Sinks</div><div class="research-card__authors">Xiao et al., 2023 · the BOS attention-sink phenomenon</div></a></li>
+  <li><a class="research-card" href="https://arxiv.org/abs/2104.09864" target="_blank" rel="noopener"><div class="research-card__title">RoFormer: Enhanced Transformer with Rotary Position Embedding</div><div class="research-card__authors">Su et al., 2021 · RoPE, used by Llama, Mistral, GPT-NeoX</div></a></li>
+</ul>
+
+### Tutorials and code
+
+<ul class="research-list">
+  <li><a class="research-card" href="https://transformerlensorg.github.io/TransformerLens/generated/demos/Exploratory_Analysis_Demo.html" target="_blank" rel="noopener"><div class="research-card__title">TransformerLens · Exploratory Analysis</div><div class="research-card__authors">cache attention patterns, run path patching, replicate IOI</div></a></li>
+  <li><a class="research-card" href="https://github.com/callummcdougall/ARENA_3.0" target="_blank" rel="noopener"><div class="research-card__title">ARENA 3.0 · Chapter 1.4 Indirect Object Identification</div><div class="research-card__authors">Callum McDougall · code-along reproduction of the IOI circuit</div></a></li>
+  <li><a class="research-card" href="https://www.youtube.com/watch?v=ML4u0vDdf4Y" target="_blank" rel="noopener"><div class="research-card__title">Neel Nanda · A Walkthrough of Reverse Engineering Modular Addition</div><div class="research-card__authors">applied QK / OV analysis on a toy task</div></a></li>
+  <li><a class="research-card" href="https://distill.pub/2016/augmented-rnns/" target="_blank" rel="noopener"><div class="research-card__title">Attention and Augmented Recurrent Neural Networks</div><div class="research-card__authors">Olah & Carter, Distill 2016 · classic illustrated intro</div></a></li>
+  <li><a class="research-card" href="https://github.com/jessevig/bertviz" target="_blank" rel="noopener"><div class="research-card__title">BertViz</div><div class="research-card__authors">Jesse Vig · interactive attention pattern visualizer for any HF model</div></a></li>
 </ul>

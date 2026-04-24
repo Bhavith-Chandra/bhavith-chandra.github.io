@@ -3,165 +3,169 @@ layout: post-article
 title: "The Residual Stream: The Belt That Runs the Whole Factory"
 date: 2026-05-12
 permalink: /posts/the-residual-stream/
-excerpt: "If you understand one thing about transformers, make it this. The residual stream is the shared scratchpad that every block reads, edits, and writes to. It is where the model's thoughts live, and it is the main object of modern interpretability."
+excerpt: "The residual stream is a per-position running sum that every block reads from and writes to. Because it is additive and lives in a single coordinate frame, it admits direct linear decomposition: the foundation of the logit lens, direct logit attribution, and activation patching."
 read_time_label: "13 min read"
 accent: amber
 math: true
 ---
 
-I'm going to do something slightly unusual. I'm going to spend an entire post on a single idea, because that idea is load-bearing for basically every interpretability result from 2021 onward. If you skim this post, skim something else instead.
+The **residual stream** is the central data structure of a transformer. It is a tensor of shape $[T, d_\text{model}]$ where $T$ is the sequence length and $d_\text{model}$ is the model dimension. Each block reads it, computes an additive update, and writes it back. The stream is never overwritten.
 
-The idea: the **residual stream**.
-
-Informally: the conveyor belt from the last post. Formally: a running sum, one vector per token position, that every block in the network reads from and writes to, and that stays coherent, in the same "language", from the input embeddings all the way to the final logits.
-
-That last part is the deep bit. Most of the cleverness in modern MI comes from taking that fact seriously.
+This post defines the stream formally, explains why the additive structure is load-bearing, and introduces the two interpretability primitives derived from it: the **logit lens** and **direct logit attribution**.
 
 ---
 
-## Run one yourself first
+## Demo: logit lens trajectory
 
 {% include demos/residual-stream.html %}
 
-Click a preset. The model will download once (~85MB, cached), run a real forward pass, and show you what I'm about to explain. Each cell is the logit-lens prediction at that layer × token position. Watch the final column evolve as you read bottom-to-top: early layers say nothing meaningful, middle layers drift toward a semantic category, the top layer locks in the answer.
+Each cell shows the model's top-1 prediction at layer $\ell$, position $t$. Saturation = confidence. Click a cell for the full top-5 distribution and the residual norm.
 
-This is not a toy. That's literally what a real model does when you prompt it.
+## Formal definition
 
-## What the stream actually is
+For a transformer with $L$ blocks operating on $T$ tokens, the residual stream is the sequence of states $\{X_0, X_1, \ldots, X_L\}$, each $X_\ell \in \mathbb{R}^{T \times d_\text{model}}$.
 
-A transformer with $L$ blocks, processing a sequence of $T$ tokens with hidden dimension $d$, maintains a tensor of shape $[T, d]$ throughout the forward pass. Call this $X$.
+**Initial state:** $X_0 = E + P$ where $E$ is the token embedding and $P$ is the positional encoding (or $X_0 = E$ for models with rotary/RoPE applied inside attention).
 
-Starting state: embed each token. $X_0 = E$ (plus positional info).
+**Block update:**
 
-Then each block updates:
+$$X_{\ell+1} = X_\ell + \text{Attn}_\ell(\text{LN}(X_\ell)) + \text{MLP}_\ell(\text{LN}(X_\ell + \text{Attn}_\ell(\text{LN}(X_\ell))))$$
 
-$$X_{\ell+1} = X_\ell + \text{Attn}_\ell(X_\ell) + \text{MLP}_\ell(X_\ell)$$
+The layer norms ($\text{LN}$) appear inside each sublayer in the **pre-norm** configuration used by GPT-2, Llama, and most modern models. Schematically:
 
-<div class="math-translate">In words: at each block, take whatever is currently on the belt, compute an attention update and an MLP update, and <strong>add them to the belt</strong>. Do not overwrite. Do not replace. Add.</div>
+$$X_{\ell+1} = X_\ell + \Delta_\ell^\text{attn} + \Delta_\ell^\text{mlp}$$
 
-After $L$ blocks you have $X_L$. The unembedding layer reads $X_L$ at the last position and produces the distribution over next tokens.
+**Final read:** logits = $\text{LN}(X_L) \cdot W_U$, where $W_U \in \mathbb{R}^{d_\text{model} \times V}$ is the unembedding matrix.
 
-The key feature is that **plus sign**. It changes everything.
+The architectural choice that everything depends on is the `+`: each $\Delta$ is *added*, never substituted.
 
-## Why "+" is the whole ball game
+## Why additive matters
 
-Imagine you designed the network differently. Each block *replaces* the previous state:
+Compare the residual update with a non-residual update $X_{\ell+1} = f_\ell(X_\ell)$. Two structural problems with the latter:
 
-$$X_{\ell+1} = \text{block}_\ell(X_\ell)$$
+**Vanishing information.** Any signal computed at layer $\ell$ must be re-encoded by $f_{\ell+1}, f_{\ell+2}, \ldots$ to survive. After 30 layers of arbitrary nonlinear transformations, layer-1 signals are effectively destroyed.
 
-This is how classical feed-forward networks work, and it's how RNNs work. It has two problems:
+**Vanishing gradients.** Backprop multiplies gradients through every $f_\ell$. With layer-norm and sigmoid/tanh nonlinearities the gradient norm shrinks geometrically. Pre-2015 networks rarely trained stably past 20 layers.
 
-**Problem 1: vanishing information.** Layer 1 computes something useful, say "this token is a noun." Layer 2 transforms it. Layer 3 transforms it further. By layer 40, that "noun" information has been funnelled through 39 non-linear transformations and is almost certainly gone, unless every intermediate layer somehow chose to preserve it. Which they won't, because they're not designed to.
+Residual connections ([He et al., 2015](https://arxiv.org/abs/1512.03385)) solve both: $X_{\ell+1} = X_\ell + f_\ell(X_\ell)$ has an identity path from layer $\ell$ to $\ell+1$. Information and gradients flow through the `+` without distortion. This is what made GPT-2's 48-layer and GPT-3's 96-layer networks trainable.
 
-**Problem 2: vanishing gradients.** Training requires sending error signals backward through every layer. With each multiplication the signal shrinks. 40 layers in, the gradient that should be telling the early layers what to learn is numerically zero. The deep parts of the network stop learning entirely.
+For interpretability, the additive structure has a stronger consequence: the final state is *literally* a sum.
 
-Both problems were well known by 2015. The fix, in vision and then in language, was residual connections ([He et al., 2015](https://arxiv.org/abs/1512.03385)). Add instead of replace. Now:
+$$X_L = X_0 + \sum_{\ell=0}^{L-1} \Delta_\ell^\text{attn} + \sum_{\ell=0}^{L-1} \Delta_\ell^\text{mlp}$$
 
-- Information from layer 1 can flow unchanged all the way to layer $L$, it's still in there, mixed with everything added after.
-- Gradients flow backward through the "+" without shrinking. Deep networks train stably.
-
-For a transformer, this becomes the residual stream: one shared vector per position, accumulated across all blocks. Each block writes a (usually small) correction. The final state is the sum of every correction ever made to each position.
+Every component's contribution is a linear term. This makes the residual stream **linearly decomposable**.
 
 <aside class="callout callout--analogy">
   <div class="callout__label">Analogy</div>
-  <p>Picture a Google Doc that a whole team of editors is working on at once. Nobody's allowed to delete anything; everyone can only add a comment or a suggestion. At the end of the day the document is the sum of everyone's contributions. To figure out what the document "means," you don't have to interview every editor, you just read the document. To figure out what <em>one editor</em> contributed, you look at the diff they made. The document is the residual stream. The editors are the layers.</p>
+  <p>A shared document where every editor can only add comments, not delete. The final document is the sum of all contributions. To attribute the final state to one editor, look at their diff.</p>
 </aside>
 
-## Reading the stream: the logit lens
+## The logit lens
 
-Here's the move that made modern MI possible.
+Final-layer logits are computed as $\text{LN}(X_L) \cdot W_U$. Because every $X_\ell$ lives in $\mathbb{R}^{T \times d_\text{model}}$, the same projection is well-defined at every layer:
 
-The final output of the transformer is produced by projecting $X_L$ through the **unembedding matrix** $W_U$ and taking a softmax:
+$$\text{logits}_\ell := \text{LN}(X_\ell) \cdot W_U$$
 
-$$p(\text{next token}) = \text{softmax}(X_L \cdot W_U)$$
+[Nostalgebraist (2020)](https://www.lesswrong.com/posts/AcKRB8wDpdaN6v6ru/interpreting-gpt-the-logit-lens) called this the **logit lens**. It returns the model's "current best guess" at each intermediate layer, treating the partial residual stream as if it were the final state.
 
-The clever observation ([Nostalgebraist, 2020](https://www.lesswrong.com/posts/AcKRB8wDpdaN6v6ru/interpreting-gpt-the-logit-lens)): because every intermediate $X_\ell$ lives in the same vector space as $X_L$, we can apply $W_U$ to $X_\ell$ as well. This gives us, at every layer, the model's *current best guess* at the next token if it had to commit right now.
+Empirically (visible in the demo above for "Paris is the capital of"):
 
-This is called the **logit lens**, and it's what the demo above is showing you.
+- Layers 0–2: predictions are close to a unigram distribution. The model has not yet aggregated context.
+- Layers 3–6: top-k starts ranking semantically related tokens (countries, cities).
+- Layers 7–11: the correct answer (`France`) reaches top-1 with high probability.
 
-Run it on "Paris is the capital of ___" and watch the evolution.
-
-- **Embedding layer.** Junk. Maybe "the" or "a". The raw token embedding for "of" has no idea what it wants to predict next, it just contains info about the token itself.
-- **Block 0–1.** Still pretty junky, but starting to look vaguely like geography words. "the", "a", "this".
-- **Block 2–3.** Converging on the semantic type. Country names start showing up in the top-5. "Europe", "France", "Germany".
-- **Block 4–5.** Top-1 is "France" with high confidence. The answer has arrived.
-
-The logit lens *works* because the residual stream is coherent from start to finish. That's a non-trivial fact about the architecture. You couldn't do this on most other networks.
+The lens is not exact, intermediate $X_\ell$ has different statistics than $X_L$, but it is informative and free. Refinements include the **tuned lens** ([Belrose et al., 2023](https://arxiv.org/abs/2303.08112)), which learns a per-layer affine correction.
 
 <aside class="callout callout--key">
   <div class="callout__label">Why this matters for MI</div>
-  <p>The logit lens is a free, training-free tool for seeing what a model is thinking at every intermediate layer. Many modern techniques, tuned lens, direct logit attribution, activation patching, are refinements of or close cousins to this idea. If you learn one interpretability technique, learn this one first.</p>
+  <p>The logit lens is a training-free decoder for any layer's residual stream. Activation patching, direct logit attribution, and most circuit-discovery techniques inherit from this idea. Internalizing it makes the literature readable.</p>
 </aside>
 
-## Direct logit attribution
+## Direct logit attribution (DLA)
 
-Now the payoff. Because the residual stream is a *sum* of contributions, you can decompose the final logit of any token into a sum of contributions from every block:
+Because $X_L$ is a sum, the logit for any vocabulary token $w$ is also a sum:
 
-$$\text{logit}(w) = \left(\sum_{\ell=0}^{L} \Delta_\ell\right) \cdot W_U[:, w] = \sum_{\ell=0}^{L} \Delta_\ell \cdot W_U[:, w]$$
+$$\text{logit}(w) = (X_0 \cdot W_U[:, w]) + \sum_{\ell=0}^{L-1} (\Delta_\ell^\text{attn} \cdot W_U[:, w]) + \sum_{\ell=0}^{L-1} (\Delta_\ell^\text{mlp} \cdot W_U[:, w])$$
 
-<div class="math-translate">The final score for word <em>w</em> is the sum of dot products between every layer's contribution and <em>w</em>'s unembedding vector. Each term says: "how much did <em>this</em> layer push the prediction toward <em>w</em>?"</div>
+Each term is a scalar: how much that component pushed the prediction toward $w$. This is **direct logit attribution**.
 
-This is **direct logit attribution (DLA)** and it's the Swiss army knife of transformer interpretability. Want to know which block was responsible for the model answering "France" correctly? Compute each layer's contribution to the logit of "France". The one with the biggest contribution is where the key computation happened. Drill further: attention or MLP? Then which head or which neuron? This is how you trace a model's reasoning back to specific components.
+Practical use:
 
-## Why the "channels" metaphor is helpful (and also a lie)
+```python
+# in TransformerLens
+import transformer_lens as tl
+model = tl.HookedTransformer.from_pretrained("gpt2")
+tokens = model.to_tokens("Paris is the capital of")
+logits, cache = model.run_with_cache(tokens)
 
-You'll sometimes hear the residual stream described as a bunch of "channels", loosely, dimensions, each carrying a specific piece of information. Position 0 channel 5 might be "this token is a verb." Position 0 channel 73 might be "this token is the subject of the sentence."
+# decompose final residual stream into per-component contributions
+per_layer = cache.decompose_resid(layer=-1, return_labels=True)
+# project each onto W_U for the answer token
+answer_id = model.to_single_token(" France")
+W_U = model.W_U[:, answer_id]
+contributions = per_layer[0] @ W_U  # one scalar per component
+```
 
-This is kind of true and kind of not. The real situation ([Elhage et al., 2021](https://transformer-circuits.pub/2021/framework/index.html)):
+The largest entries in `contributions` identify the layers/heads/MLPs that drove the answer. DLA is the starting point for circuit analysis: keep zooming in (head → query/key/value → input neurons) until you have a mechanism.
 
-- The residual stream has $d$ dimensions (768 for GPT-2, 4096 for Llama 3, much bigger for frontier models).
-- Blocks read from and write to specific *subspaces* of the stream.
-- Those subspaces are generally not axis-aligned, a "feature" is a direction in the space, not a single coordinate.
-- Many features live on top of each other in **superposition**, more features than there are dimensions, packed in by relying on sparsity.
+## Subspaces and superposition
 
-So "channels" is a useful first approximation. The refined view is "directions in a high-dimensional space, many of them overlapping." We'll spend serious time on superposition in later posts, because it's *why* neurons are often polysemantic. For now, think of the stream as a busy 768-lane highway where lanes overlap and cars can ride partly in two lanes at once. Fine? Fine.
+The stream has $d_\text{model}$ dimensions but generally encodes far more *features* than that. Components write to and read from **subspaces** of the stream, generally not axis-aligned.
 
-## A concrete thing to believe
+[Elhage et al. (2022, "Superposition")](https://transformer-circuits.pub/2022/toy_model/index.html) characterize this: when features are sparse (most are off most of the time), a $d$-dim space can represent ~$d / \log d$ features by overlapping them. The cost is interference: reading one feature picks up small projections from others.
 
-Let me drive one fact home because it will save you time reading papers.
+Consequences:
 
-> **Every major transformer phenomenon can be described as "something reads from the residual stream at some position, computes something, and writes something back to the residual stream at (possibly a different) position."**
+1. Single neurons are typically **polysemantic** (active for multiple unrelated concepts).
+2. Single residual coordinates are not interpretable; *directions* are.
+3. **Sparse autoencoders (SAEs)** ([Bricken et al., 2023](https://transformer-circuits.pub/2023/monosemantic-features/index.html); [Templeton et al., 2024](https://transformer-circuits.pub/2024/scaling-monosemanticity/index.html)) recover interpretable directions by training an overcomplete dictionary on cached residual streams.
 
-Copy heads read from an earlier position and write a copy to the current position. Induction heads read a match-detection signal from one direction and write a "copy this token" signal to another. Factual-recall MLPs read from subject tokens and write facts about them. IOI heads juggle subject and object between positions to figure out who the indirect object is.
+Provisional model: think of the stream as a high-dimensional space where many features overlap, recoverable by linear probes or SAEs but not by reading individual coordinates.
 
-All of it. Read-from, compute, write-to. The *language* of the model is "operations on the residual stream."
+## Reading the heatmap
 
-This is why Elhage et al. call the residual stream **"the central object of the transformer."** Not the attention heads. Not the MLPs. The stream.
+In the demo, watch:
 
-## Reading the logit lens heatmap
+1. **Vertical evolution.** The same column (token position) refines its top prediction across layers.
+2. **Horizontal differences.** Earlier positions are *not* trying to predict the next token, they are accumulating information that attention will later pull into the final position. Their logit-lens predictions are largely incidental.
+3. **Final column saturation.** This is where the actual next-token prediction happens. Saturation increases monotonically (with rare exceptions in degenerate prompts).
 
-Pop back up to the demo and stare at the heatmap colour.
+## BOS and attention sinks
 
-Amber saturation = the model's confidence in its top guess at that cell. Watch how the saturation grows as you scan from bottom (embedding) to top (final block). For most prompts you'll see:
+The first token's residual stream typically accumulates "housekeeping" state. Attention heads with no relevant key in a given query often place mass on the BOS token as a default, the **attention sink** ([Xiao et al., 2023](https://arxiv.org/abs/2309.17453)). [Templeton et al. (2024)](https://transformer-circuits.pub/2024/scaling-monosemanticity/index.html) found that BOS-position SAE features are systematically distinct from content-position features.
 
-1. The saturation increases monotonically.
-2. The *top-1 token* changes 2-3 times as layers refine.
-3. The final column (the last token of the input) is where prediction happens, earlier columns are mostly the model maintaining information about those tokens rather than predicting anything.
+Treat the BOS column as anomalous when interpreting diagnostics.
 
-That last observation is important. The model only needs to predict *one* next token. All the work on earlier positions is setup, those positions are accumulating information that the attention mechanism will later pull into the final position. They're not trying to predict; they're trying to be *useful*.
+## The unifying claim
 
-## The BOS token scratchpad
+> Every transformer mechanism can be expressed as "component $C$ reads from subspace $R$ of the residual stream and writes to subspace $W$ of the residual stream."
 
-One charming empirical finding from [Scaling Monosemanticity (Templeton et al., 2024)](https://transformer-circuits.pub/2024/scaling-monosemanticity/index.html): the beginning-of-sequence token's residual stream ends up carrying a bunch of model-wide "housekeeping" state. Averaged running statistics, attention sinks, odd summary features. Kind of like a blank page at the front of the doc where the model scribbles notes to itself that don't correspond to any particular input token.
+Examples:
+- **Copy heads** (attention): read content from position $i$, write the same content to position $j$.
+- **Induction heads**: read a match-detection signal at the previous position, write a "copy this token" signal at the current.
+- **Factual-recall MLPs** ([Meng et al., 2022, ROME](https://arxiv.org/abs/2202.05262)): read subject embedding from subject tokens, write attribute information back.
+- **IOI circuit** ([Wang et al., 2022](https://arxiv.org/abs/2211.00593)): a chain of read/write heads juggling name and position information.
 
-You don't need to understand why right now, just note that the first token's stream often looks weird in diagnostics, and this is the reason.
+The next two posts cover attention and MLPs as readers/writers in detail.
 
-## What to take away
+## Resources
 
-1. **The residual stream is a running sum**, not a sequence of replacements.
-2. **Every block adds a correction.** Nothing is ever overwritten.
-3. **Intermediate states live in the same space as the output**, which is what makes the logit lens work.
-4. **Interpretability, at its core, is the study of what gets read from and written to the stream, and by what components.**
-
-Hold onto that last one. When we get into attention next, I'll unpack the QK/OV decomposition, which is exactly the language of "what this head reads, and what it writes." Same with MLPs after that. Every component we study is best understood as a reader-writer on this shared belt. I'll get to attention in the next blog.
-
-## Research referenced in this post
+### Foundational papers
 
 <ul class="research-list">
-  <li><a class="research-card" href="https://arxiv.org/abs/1512.03385" target="_blank" rel="noopener"><div class="research-card__title">Deep Residual Learning for Image Recognition</div><div class="research-card__authors">He, K. et al. · 2015 · ResNet, the original residual-connection paper</div></a></li>
-  <li><a class="research-card" href="https://transformer-circuits.pub/2021/framework/index.html" target="_blank" rel="noopener"><div class="research-card__title">A Mathematical Framework for Transformer Circuits</div><div class="research-card__authors">Elhage, N. et al. · Anthropic, 2021 · introduces the residual-stream view</div></a></li>
-  <li><a class="research-card" href="https://www.lesswrong.com/posts/AcKRB8wDpdaN6v6ru/interpreting-gpt-the-logit-lens" target="_blank" rel="noopener"><div class="research-card__title">Interpreting GPT: the logit lens</div><div class="research-card__authors">Nostalgebraist · LessWrong, 2020 · the technique used in the demo above</div></a></li>
-  <li><a class="research-card" href="https://arxiv.org/abs/2303.08112" target="_blank" rel="noopener"><div class="research-card__title">Eliciting Latent Predictions from Transformers with the Tuned Lens</div><div class="research-card__authors">Belrose, N. et al. · 2023 · a refined version of the logit lens</div></a></li>
-  <li><a class="research-card" href="https://transformer-circuits.pub/2022/in-context-learning-and-induction-heads/index.html" target="_blank" rel="noopener"><div class="research-card__title">In-context Learning and Induction Heads</div><div class="research-card__authors">Olsson, C. et al. · Anthropic, 2022 · heavy use of residual-stream decomposition</div></a></li>
-  <li><a class="research-card" href="https://transformer-circuits.pub/2024/scaling-monosemanticity/index.html" target="_blank" rel="noopener"><div class="research-card__title">Scaling Monosemanticity</div><div class="research-card__authors">Templeton, A. et al. · Anthropic, 2024 · residual-stream features in Claude 3 Sonnet</div></a></li>
+  <li><a class="research-card" href="https://arxiv.org/abs/1512.03385" target="_blank" rel="noopener"><div class="research-card__title">Deep Residual Learning for Image Recognition</div><div class="research-card__authors">He et al., 2015 · ResNet, the original residual-connection paper</div></a></li>
+  <li><a class="research-card" href="https://transformer-circuits.pub/2021/framework/index.html" target="_blank" rel="noopener"><div class="research-card__title">A Mathematical Framework for Transformer Circuits</div><div class="research-card__authors">Elhage et al., Anthropic 2021 · introduces the residual-stream view; foundational for this series</div></a></li>
+  <li><a class="research-card" href="https://www.lesswrong.com/posts/AcKRB8wDpdaN6v6ru/interpreting-gpt-the-logit-lens" target="_blank" rel="noopener"><div class="research-card__title">Interpreting GPT: the logit lens</div><div class="research-card__authors">Nostalgebraist, LessWrong 2020 · the original logit-lens post</div></a></li>
+  <li><a class="research-card" href="https://arxiv.org/abs/2303.08112" target="_blank" rel="noopener"><div class="research-card__title">Eliciting Latent Predictions from Transformers with the Tuned Lens</div><div class="research-card__authors">Belrose et al., 2023 · per-layer affine refinement of the logit lens</div></a></li>
+  <li><a class="research-card" href="https://transformer-circuits.pub/2022/toy_model/index.html" target="_blank" rel="noopener"><div class="research-card__title">Toy Models of Superposition</div><div class="research-card__authors">Elhage et al., Anthropic 2022 · why features overlap in the residual stream</div></a></li>
+  <li><a class="research-card" href="https://transformer-circuits.pub/2024/scaling-monosemanticity/index.html" target="_blank" rel="noopener"><div class="research-card__title">Scaling Monosemanticity</div><div class="research-card__authors">Templeton et al., Anthropic 2024 · SAE features in Claude 3 Sonnet's residual stream</div></a></li>
+</ul>
+
+### Tools and code
+
+<ul class="research-list">
+  <li><a class="research-card" href="https://transformerlensorg.github.io/TransformerLens/generated/demos/Main_Demo.html" target="_blank" rel="noopener"><div class="research-card__title">TransformerLens · Main Demo</div><div class="research-card__authors">cache hooks, decompose_resid, direct logit attribution in code</div></a></li>
+  <li><a class="research-card" href="https://github.com/AlignmentResearch/tuned-lens" target="_blank" rel="noopener"><div class="research-card__title">tuned-lens</div><div class="research-card__authors">official tuned-lens implementation; works on any HF causal LM</div></a></li>
+  <li><a class="research-card" href="https://www.neelnanda.io/mechanistic-interpretability/glossary" target="_blank" rel="noopener"><div class="research-card__title">Neel Nanda's MI Glossary</div><div class="research-card__authors">definitions for residual stream, DLA, activation patching</div></a></li>
+  <li><a class="research-card" href="https://arena3-chapter1-transformer-interp.streamlit.app/" target="_blank" rel="noopener"><div class="research-card__title">ARENA · Transformer Interpretability</div><div class="research-card__authors">guided exercises building DLA and the logit lens from scratch</div></a></li>
 </ul>

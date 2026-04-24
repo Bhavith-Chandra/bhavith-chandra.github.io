@@ -3,152 +3,188 @@ layout: post-article
 title: "MLPs: The Other Half of Every Block"
 date: 2026-06-08
 permalink: /posts/mlps-the-other-half-of-every-block/
-excerpt: "Attention gets the press. But two-thirds of a transformer's parameters live in the MLPs. They are the model's filing cabinet, where facts, transformations, and unreasonably specific patterns end up stored as little key-value pairs."
+excerpt: "MLPs hold ~⅔ of a transformer's parameters and act as key-value memories: each neuron is a learned (key, value) pair that adds to the residual stream when the key matches. Where most factual knowledge lives."
 read_time_label: "12 min read"
 accent: amber
 math: true
 ---
 
-If attention is the part of the model that *retrieves* information from context, the MLP is the part that *stores* information from training. About two-thirds of a transformer's parameters sit in the MLPs. If you want to know where the model's knowledge lives, you point at these.
+The **MLP** (multi-layer perceptron, or feed-forward network) is the second sublayer in every transformer block. It contains ~⅔ of the model's parameters and operates position-wise: each token's residual stream vector is processed independently.
 
-For a long time the MLP got short shrift in the interpretability literature. Attention was sexy. Attention had named heads (induction! copy! name-mover!). MLPs were a featureless wall of weights, a single number times another single number, repeated 3,072 times.
-
-That changed around 2021, when [Geva et al.](https://arxiv.org/abs/2012.14913) made a beautifully simple argument: an MLP layer can be read as a **key-value memory**. Each neuron is a *key* (a pattern in the residual stream) paired with a *value* (a vector to write back). Suddenly MLPs had structure. Suddenly we could name them.
-
-Let's make that concrete.
+This post defines the MLP, derives the **key-value memory** interpretation ([Geva et al., 2021](https://arxiv.org/abs/2012.14913)) that underlies most modern MLP interpretability, covers neuron archetypes and superposition, and connects the framework to factual editing (ROME/MEMIT) and sparse autoencoders.
 
 ---
 
-## Poke at some neurons first
+## Demo: neuron activations
 
 {% include demos/neuron-inspector.html %}
 
-Cycle through the dropdown. Read the contexts. Notice that some neurons are crisply about one thing (Python keywords, capital letters, France-related facts) and others are weirdly about four unrelated things at once. That second case is **superposition**, which I'll get to. But first, the basic structure.
+Cycle through neurons. Some are monosemantic (Python keywords, capital letters, France-related contexts). Some are **polysemantic**, firing on multiple unrelated concepts. The polysemantic case is explained by superposition (below).
 
-## What an MLP is, in one paragraph
+## Definition
 
-A transformer MLP block has two linear layers separated by a non-linearity:
+For input $x \in \mathbb{R}^{d_\text{model}}$ at one position, a transformer MLP computes:
 
-$$\text{MLP}(x) = W_{\text{out}} \cdot \sigma(W_{\text{in}} \cdot x)$$
+$$\text{MLP}(x) = W_\text{out}\, \sigma(W_\text{in}\, x + b_\text{in}) + b_\text{out}$$
 
-<div class="math-translate">Project the residual vector up to a much wider dimension, apply a non-linearity (in modern LLMs, GELU or SwiGLU, but always a smooth squash-or-pass-through gate), and project back down. The output gets added to the residual stream.</div>
+where:
+- $W_\text{in} \in \mathbb{R}^{d_\text{ffn} \times d_\text{model}}$
+- $W_\text{out} \in \mathbb{R}^{d_\text{model} \times d_\text{ffn}}$
+- $\sigma$ is a non-linearity (GeLU, ReLU, or in modern models SwiGLU)
+- $d_\text{ffn} = 4 \cdot d_\text{model}$ is the standard ratio
 
-The "wider dimension" is typically $4 \times d_{\text{model}}$. So GPT-2 small has $d_{\text{model}} = 768$ and an MLP intermediate dimension of 3,072. Llama 3 8B has $d_{\text{model}} = 4096$ and intermediate around 14,336. Each of those intermediate units is a **neuron**.
+Sizes:
 
-Three things to notice:
+| Model | $d_\text{model}$ | $d_\text{ffn}$ | Neurons per block |
+|---|---|---|---|
+| GPT-2 small | 768 | 3,072 | 3,072 |
+| GPT-2 XL | 1,600 | 6,400 | 6,400 |
+| Llama 3 8B | 4,096 | 14,336 | 14,336 |
+| GPT-3 175B | 12,288 | 49,152 | 49,152 |
 
-1. **MLPs operate on each position independently.** Unlike attention, there is no mixing across token positions. Each token's MLP runs on its own residual vector, in parallel.
-2. **The wider intermediate dimension matters.** That's where the actual storage capacity lives. 3,072 neurons in a single block of GPT-2, multiply by 12 blocks and you get 36,864 distinct units to study.
-3. **The non-linearity is what makes it a feature detector.** Without GELU, two stacked linear layers collapse into a single linear layer and the MLP can't represent anything interesting. The non-linearity makes each neuron a thresholded-gate: "fire if the input matches my pattern, otherwise don't."
+Three properties:
 
-## Reading MLPs as key-value memories
+1. **Position-wise.** No mixing across token positions. Operates in parallel on each token's residual vector.
+2. **Up-projection then down-projection.** Hidden width $4\times$ wider than the residual stream. Storage capacity scales with $d_\text{ffn}$.
+3. **Non-linearity is essential.** Without $\sigma$, two stacked linear layers collapse to one and the MLP cannot represent any nonlinear pattern.
 
-Here is the move. The first matrix, $W_{\text{in}}$, has shape $[d_{\text{model}}, d_{\text{ffn}}]$. Each *column* is a vector in residual-stream space, call it the **key** for neuron $n$. The dot product $W_{\text{in}}[:, n] \cdot x$ measures *how much $x$ matches that key*.
+## Key-value memory interpretation
 
-The second matrix, $W_{\text{out}}$, has shape $[d_{\text{ffn}}, d_{\text{model}}]$. Each *row* is a vector in residual-stream space, call it the **value** for neuron $n$. When neuron $n$ fires (its activation is large), it writes that value (scaled by the activation) back to the residual stream.
+Decompose $W_\text{in}$ row-wise and $W_\text{out}$ column-wise:
 
-So the MLP layer's update can be rewritten as:
+- Row $n$ of $W_\text{in}$, written $k_n^\top$, is a vector in $\mathbb{R}^{d_\text{model}}$: the **key** of neuron $n$.
+- Column $n$ of $W_\text{out}$, written $v_n$, is a vector in $\mathbb{R}^{d_\text{model}}$: the **value** of neuron $n$.
 
-$$\text{MLP}(x) = \sum_{n=1}^{d_{\text{ffn}}} \sigma(\langle x, k_n \rangle) \cdot v_n$$
+Then:
 
-<div class="math-translate">For each of the (thousands of) neurons, compute how much the input matches that neuron's key, gate that match through the non-linearity, and add the corresponding value vector to the output. Sum over all neurons.</div>
+$$\text{MLP}(x) = \sum_{n=1}^{d_\text{ffn}} \sigma(k_n^\top x + b_n)\, v_n$$
 
-This is a **soft key-value lookup**. The MLP looks up a giant database keyed by patterns and writes back the corresponding payloads. Every neuron contributes a tiny bit. The aggregate output is the sum.
+The MLP is a sum of $d_\text{ffn}$ scaled value-vectors, where each scaling coefficient is a non-linearly gated dot product of $x$ with the corresponding key.
+
+Equivalently:
+- The key $k_n$ tests whether $x$ matches a specific pattern (large $k_n^\top x$ ⇒ match).
+- The non-linearity gates: only neurons whose match exceeds threshold contribute.
+- Each contributing neuron writes its value $v_n$ to the residual stream, scaled by activation.
+
+This is a soft, sparse key-value lookup over a learned database of $d_\text{ffn}$ entries per block. ([Geva et al., 2021](https://arxiv.org/abs/2012.14913))
 
 <aside class="callout callout--key">
   <div class="callout__label">Why this matters for MI</div>
-  <p>The key-value framing is what made MLPs interpretable. Once you can read each neuron's key (its trigger pattern) and value (its written contribution), you can label neurons. Each one becomes a tiny "if you see X, write Y." This is the basis for ROME (Meng 2022), which can edit specific facts in a model by surgically modifying the relevant key-value pair.</p>
+  <p>The key-value framing reduces MLP interpretability to two independent questions per neuron: (1) what input pattern activates k<sub>n</sub>? (2) what does v<sub>n</sub> write to the residual stream? Both are tractable. Top-activating dataset examples answer (1); projecting v<sub>n</sub> onto W<sub>U</sub> answers (2).</p>
 </aside>
 
-## What kinds of patterns do real neurons learn?
+## Neuron archetypes
 
-A few archetypes show up reliably across transformers:
+Empirically, MLP neurons fall into recurring categories:
 
-### Surface-feature neurons
+### Surface-feature neurons (early layers)
 
-Early-layer neurons that fire on simple lexical patterns: capital letters, punctuation, specific morphemes, code tokens. The "Python-keyword neuron" in the demo is one. They pre-process the stream into useful tags that downstream blocks consume.
+Fire on lexical patterns: capital letters, punctuation, specific morphemes, code-syntax tokens. Their values write tags downstream blocks consume.
 
-### Syntactic neurons
+### Syntactic neurons (mid layers)
 
-Mid-layer neurons that fire after specific grammatical patterns, possessives, definite articles, sentence beginnings. They write contributions that bias the next-token distribution toward syntactically valid continuations.
+Fire after grammatical patterns: possessives, definite articles, sentence-initial positions. Values bias the next-token distribution toward syntactically valid continuations.
 
-### Factual-recall neurons
+### Factual-recall neurons (mid-to-late layers)
 
-These are the famous ones. A small set of neurons in mid-to-late MLPs encode specific facts. The "France/Paris" neuron in the demo is a stylised version. [Meng et al., 2022](https://rome.baulab.info/) showed you can locate a specific factual association ("the Eiffel Tower is in Paris") to a small group of neurons in a small range of layers, and edit it surgically. Suddenly the model thinks the Eiffel Tower is in Rome. (The model insists on this firmly. It's funny and slightly horrifying.)
+Encode specific facts. [Meng et al. (2022, ROME)](https://arxiv.org/abs/2202.05262) demonstrated that "the Eiffel Tower is in Paris" can be located to a small set of neurons in mid layers and surgically edited (so the model claims the Eiffel Tower is in Rome) by modifying $W_\text{out}$ columns at those positions.
 
-### Abstract pattern neurons
+### Abstract / semantic neurons (late layers)
 
-Late-layer neurons that fire on more semantic patterns: sentiment shifts, sarcasm, irony, discourse markers. These are harder to characterise cleanly because the patterns themselves are abstract.
+Fire on higher-level patterns: sentiment, sarcasm, discourse markers. Harder to characterize from top-activating examples alone.
 
-### Junk drawer
+### Uninterpretable from top examples
 
-A nontrivial fraction of neurons just don't have a clean interpretation when you look at top-activating contexts. Sometimes they're polysemantic (next section). Sometimes they're doing something the literature hasn't named yet. Don't be alarmed if a randomly chosen neuron looks confusing.
+A non-trivial fraction of neurons have no clean concept-level description. Often these are polysemantic.
 
-## Polysemanticity, the inconvenient truth
+## Polysemanticity and superposition
 
-Here's the thing nobody mentions in their first introduction to MI: **most real neurons are not monosemantic.**
+Most real neurons are **polysemantic**: top-activating contexts span multiple unrelated concepts.
 
-The "Python-keyword neuron" looks clean. The "polysemantic mixed bag" neuron in the demo also looks clean, at exactly four totally different things. DNA letters. Car brands. Weekday names. Latin botanical names. There is no single concept that ties these together. The neuron just happens to fire strongly on all of them.
+[Elhage et al. (2022, "Toy Models of Superposition")](https://transformer-circuits.pub/2022/toy_model/index.html) explain why. When features are sparse (most off most of the time), a $d$-dimensional space can represent ~$d / \log d$ features by overlapping them at non-orthogonal angles. The non-linearity in the MLP allows partial recovery: only one feature in a superposed pair is typically active in any given input, so interference is bounded.
 
-Why? Because a transformer needs to represent *more concepts than it has neurons*. GPT-2 small has 36,864 MLP neurons total. The number of distinct concepts it has learned to distinguish is far larger than that. So the model packs concepts on top of each other. This is called **superposition**.
+Consequences:
 
-The mechanism: features are stored as *directions* in the high-dimensional residual stream, not as single coordinates. Two features that are unlikely to ever co-occur in the same input can share the same direction (more or less) without interfering, because when one fires, the other isn't relevant. The non-linearity in the MLP lets the model *unpack* superposed features by attending to whichever one is contextually present.
+1. The "real" interpretable features are *directions* (linear combinations of neurons), not single neurons.
+2. Reading individual neuron activations gives a tangled, polysemantic picture.
+3. To recover monosemantic features, train an overcomplete dictionary on cached activations: a **sparse autoencoder (SAE)**.
 
-Practical consequences:
+[Bricken et al. (2023, "Towards Monosemanticity")](https://transformer-circuits.pub/2023/monosemantic-features/index.html) and [Templeton et al. (2024, "Scaling Monosemanticity")](https://transformer-circuits.pub/2024/scaling-monosemanticity/index.html) trained SAEs on Claude 3 Sonnet and recovered millions of monosemantic features ranging from "the Golden Gate Bridge" to "code with security vulnerabilities."
 
-- Most individual neurons look polysemantic when you read their top-activating examples.
-- The "real" features are linear combinations of neurons, not individual ones.
-- To recover monosemantic features, you need a tool that can decompose a high-dimensional space into its underlying directions, even when those directions outnumber the dimensions.
+## Direct logit attribution for MLPs
 
-That tool turned out to be **sparse autoencoders**, which is the punchline of the whole second half of the modern interpretability era. We'll meet them properly later. For now, just know:
+Because each neuron's contribution to the residual stream is $\sigma(k_n^\top x) v_n$, its contribution to the final logit of token $w$ is:
 
-> When you see a polysemantic neuron, you're not looking at the model's actual feature. You're looking at a tangled superposition of multiple features that the SAE can untangle.
+$$\Delta\text{logit}_n(w) = \sigma(k_n^\top x)\, v_n^\top W_U[:, w]$$
 
-## Direct logit attribution, MLP edition
+Sort neurons by $|\Delta\text{logit}_n(w)|$ to identify which neurons drove the prediction. This is **MLP-level DLA**.
 
-Same idea as for attention. Because each MLP block writes to the residual stream additively, you can ask: *for a specific output prediction, how much did this MLP contribute?*
+```python
+# in TransformerLens
+mlp_act = cache["post", layer, "mlp"]      # [seq, d_ffn]
+W_out = model.W_out[layer]                 # [d_ffn, d_model]
+W_U = model.W_U[:, answer_id]              # [d_model]
+neuron_dla = mlp_act[-1] * (W_out @ W_U)   # [d_ffn]
+top_neurons = neuron_dla.argsort(descending=True)[:10]
+```
 
-Concretely, take the "Paris" neuron in the demo. Its output direction is roughly aligned with the unembedding vector for the token " Paris". When the neuron fires (because the residual stream encodes something like "capital of France"), it adds a vector to the stream that bumps the logit for " Paris" upward. The DLA contribution of this single neuron to the prediction of " Paris" is positive and measurable.
+## Why MLPs hold the knowledge
 
-Run that analysis for every neuron in every layer, and you can decompose any prediction into "which neurons pushed the answer in which direction." That's a great deal of what circuit-level interpretability does in practice.
+Three lines of evidence support the claim that factual knowledge lives in MLPs:
 
-## Why MLPs are *where* the knowledge is
+1. **Parameter share.** MLPs are ~⅔ of total parameters. Most learned content is statistically there.
+2. **Editing.** ROME and [MEMIT](https://memit.baulab.info/) edit specific facts by modifying MLP weights at specific layers (typically mid-layers, around layer 5–8 in GPT-2 medium). Editing attention weights does not produce the same effect.
+3. **Causal tracing.** [Meng et al. (2022)](https://arxiv.org/abs/2202.05262) corrupt subject tokens, then restore individual layers' activations one at a time and measure which restoration recovers the correct prediction. The signal localizes to mid-layer MLPs.
 
-Stepping back. Why do we believe MLPs store factual knowledge, while attention does context routing?
+A clean operational summary: **attention moves information; MLPs add new information.** Both contribute additively to the residual stream. Their roles are complementary.
 
-Three pieces of evidence:
+## Activation functions in modern models
 
-1. **Parameter count.** MLPs hold roughly two-thirds of the weights. If knowledge is in weights, statistically most of it is in MLPs.
-2. **Editing experiments.** ROME and MEMIT can edit a specific fact (say "the Eiffel Tower is in Paris" → "in Rome") by tweaking only a small number of MLP neurons in mid layers. Editing attention parameters does not produce the same effect.
-3. **Probing.** When researchers probe for the presence of factual information at intermediate layers, the signal jumps sharply at MLP layers, not at attention layers. The MLP is where information gets *added* to the stream.
+| Model | Non-linearity | Form |
+|---|---|---|
+| GPT-2 / GPT-3 | GeLU | $x \cdot \Phi(x)$ |
+| Original Transformer | ReLU | $\max(0, x)$ |
+| PaLM, Llama, Mistral | SwiGLU | $\text{Swish}(W_g x) \odot (W_\text{in} x)$ |
 
-A clean way to internalise it: **attention moves information around. MLPs add new information.** Both contribute to the final answer, but in different ways. This is also why MLPs at different depths specialise, early MLPs add surface features, mid-layer MLPs add facts and syntax, late MLPs add abstract semantics.
+SwiGLU adds a gating branch:
 
-## The thing nobody tells you about GELU
+$$\text{MLP}_\text{SwiGLU}(x) = W_\text{out}\, (\text{Swish}(W_g x) \odot W_\text{in} x)$$
 
-A small implementation note that becomes important if you read MI papers. The non-linearity choice, GELU vs ReLU vs SwiGLU, affects how cleanly you can decompose the MLP.
+This requires three matrices instead of two, but the key-value interpretation extends: each neuron's "key" is now a (gate, input) pair, and the value is still the corresponding $W_\text{out}$ column. Most MLP interpretability tooling generalizes with minor modification.
 
-ReLU is a hard gate: $\sigma(x) = \max(0, x)$. Either the neuron fires or it doesn't. Easy to interpret as a binary decision.
+## What we have so far
 
-GELU and SwiGLU are softer. They produce small non-zero outputs even for slightly negative inputs. This means a neuron's "off" state still leaks a small contribution, which makes the per-neuron analysis a bit messier. In practice, you compensate by looking at activations as continuous and analysing only neurons whose activations exceed a threshold.
+| Component | Role | Reads | Writes |
+|---|---|---|---|
+| Embedding | Token → vector | token IDs | residual stream |
+| Attention | Cross-position routing | residual stream (all positions) | residual stream (current position) |
+| MLP | Stored knowledge / transforms | residual stream (current position) | residual stream (current position) |
+| Unembedding | Vector → logits | residual stream (last position) | output distribution |
 
-Modern frontier models almost all use SwiGLU. When you read papers about MLPs in Llama or Claude, that's the non-linearity in play. The key-value framing still applies, the math just has an extra gating term.
+All four components communicate exclusively via the residual stream. Every interpretability tool in this series operates on that interface.
 
-## Wrap
+The next post runs a full forward pass through GPT-2 small, end-to-end, with concrete numbers at every stage.
 
-MLPs are 60% of a transformer's parameters. They are the model's stored memory. They can be read as key-value pairs: each neuron has a key (a pattern in the residual stream that activates it) and a value (a vector it writes back). Some neurons are clean, Python keywords, capital letters, individual facts. Many neurons are polysemantic, packing multiple concepts on top of each other through superposition.
+## Resources
 
-Attention does retrieval. MLPs do storage. Together they alternate, block by block, accumulating contributions on the residual stream until the unembedding layer can read off a confident next token.
-
-Which means: we now have all the parts. Tokens, embeddings, attention, MLPs, residual stream, unembedding. The next blog will run a full forward pass end-to-end, with real numbers, to make sure every piece you've read about is in the right place.
-
-## Research referenced in this post
+### Foundational papers
 
 <ul class="research-list">
-  <li><a class="research-card" href="https://arxiv.org/abs/2012.14913" target="_blank" rel="noopener"><div class="research-card__title">Transformer Feed-Forward Layers Are Key-Value Memories</div><div class="research-card__authors">Geva, M. et al. · 2021 · the foundational paper</div></a></li>
-  <li><a class="research-card" href="https://rome.baulab.info/" target="_blank" rel="noopener"><div class="research-card__title">Locating and Editing Factual Associations in GPT (ROME)</div><div class="research-card__authors">Meng, K. et al. · 2022 · MLPs hold facts and we can edit them</div></a></li>
-  <li><a class="research-card" href="https://memit.baulab.info/" target="_blank" rel="noopener"><div class="research-card__title">Mass-Editing Memory in a Transformer (MEMIT)</div><div class="research-card__authors">Meng, K. et al. · 2023 · scaling fact-editing to thousands of edits</div></a></li>
-  <li><a class="research-card" href="https://transformer-circuits.pub/2022/toy_model/index.html" target="_blank" rel="noopener"><div class="research-card__title">Toy Models of Superposition</div><div class="research-card__authors">Elhage, N. et al. · Anthropic, 2022 · why polysemanticity is rational</div></a></li>
-  <li><a class="research-card" href="https://transformer-circuits.pub/2023/monosemantic-features/index.html" target="_blank" rel="noopener"><div class="research-card__title">Towards Monosemanticity</div><div class="research-card__authors">Bricken, T. et al. · Anthropic, 2023 · sparse autoencoders untangle the mess</div></a></li>
-  <li><a class="research-card" href="https://distill.pub/2020/circuits/zoom-in/" target="_blank" rel="noopener"><div class="research-card__title">Zoom In: An Introduction to Circuits</div><div class="research-card__authors">Olah, C. et al. · Distill, 2020 · vision-side, but the framing applies</div></a></li>
+  <li><a class="research-card" href="https://arxiv.org/abs/2012.14913" target="_blank" rel="noopener"><div class="research-card__title">Transformer Feed-Forward Layers Are Key-Value Memories</div><div class="research-card__authors">Geva et al., 2021 · the key-value framing</div></a></li>
+  <li><a class="research-card" href="https://arxiv.org/abs/2202.05262" target="_blank" rel="noopener"><div class="research-card__title">Locating and Editing Factual Associations in GPT (ROME)</div><div class="research-card__authors">Meng et al., 2022 · causal tracing + rank-one MLP edits</div></a></li>
+  <li><a class="research-card" href="https://memit.baulab.info/" target="_blank" rel="noopener"><div class="research-card__title">Mass-Editing Memory in a Transformer (MEMIT)</div><div class="research-card__authors">Meng et al., 2023 · scaling ROME to thousands of edits</div></a></li>
+  <li><a class="research-card" href="https://transformer-circuits.pub/2022/toy_model/index.html" target="_blank" rel="noopener"><div class="research-card__title">Toy Models of Superposition</div><div class="research-card__authors">Elhage et al., Anthropic 2022 · why polysemanticity is rational</div></a></li>
+  <li><a class="research-card" href="https://transformer-circuits.pub/2023/monosemantic-features/index.html" target="_blank" rel="noopener"><div class="research-card__title">Towards Monosemanticity</div><div class="research-card__authors">Bricken et al., Anthropic 2023 · SAEs on a 1-layer transformer</div></a></li>
+  <li><a class="research-card" href="https://transformer-circuits.pub/2024/scaling-monosemanticity/index.html" target="_blank" rel="noopener"><div class="research-card__title">Scaling Monosemanticity</div><div class="research-card__authors">Templeton et al., Anthropic 2024 · SAEs on Claude 3 Sonnet, millions of features</div></a></li>
+  <li><a class="research-card" href="https://arxiv.org/abs/2002.05202" target="_blank" rel="noopener"><div class="research-card__title">GLU Variants Improve Transformer</div><div class="research-card__authors">Shazeer, 2020 · why SwiGLU replaced GeLU in modern LLMs</div></a></li>
+</ul>
+
+### Tools and code
+
+<ul class="research-list">
+  <li><a class="research-card" href="https://neuronpedia.org/" target="_blank" rel="noopener"><div class="research-card__title">Neuronpedia</div><div class="research-card__authors">browse top-activating contexts for MLP neurons and SAE features across many models</div></a></li>
+  <li><a class="research-card" href="https://github.com/jbloomAus/SAELens" target="_blank" rel="noopener"><div class="research-card__title">SAELens</div><div class="research-card__authors">train and analyze sparse autoencoders on any HF transformer</div></a></li>
+  <li><a class="research-card" href="https://rome.baulab.info/" target="_blank" rel="noopener"><div class="research-card__title">ROME · code & demo</div><div class="research-card__authors">Bau Lab · reproduce factual editing in GPT-2 / GPT-J</div></a></li>
+  <li><a class="research-card" href="https://transformerlensorg.github.io/TransformerLens/generated/demos/Main_Demo.html#MLP-Layers" target="_blank" rel="noopener"><div class="research-card__title">TransformerLens · MLP analysis</div><div class="research-card__authors">cache MLP activations, decompose neuron contributions to logits</div></a></li>
+  <li><a class="research-card" href="https://distill.pub/2020/circuits/zoom-in/" target="_blank" rel="noopener"><div class="research-card__title">Zoom In: An Introduction to Circuits</div><div class="research-card__authors">Olah et al., Distill 2020 · the original feature-and-circuit framing (vision)</div></a></li>
 </ul>
