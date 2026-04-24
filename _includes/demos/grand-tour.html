@@ -1,0 +1,515 @@
+<div class="idemo" id="demo-grand">
+  <div class="idemo__card">
+    <div class="idemo__head"><span class="idemo__title">Interactive · Grand tour · full forward pass, stage by stage</span></div>
+    <div class="idemo__body">
+
+      <p class="gt-lead">One last walkthrough. Pick a prompt, press <strong>step</strong>, and watch every stage of the forward pass: tokenize, embed, then for each of the 6 blocks see attention's contribution and MLP's contribution, then unembed into a final probability distribution. Real distilGPT2 weights, every number live.</p>
+
+      <div class="gt-presets" data-gt-presets>
+        <button class="gt-preset is-active" data-gt-preset="0">The capital of France is</button>
+        <button class="gt-preset" data-gt-preset="1">A B C D E F G A B C</button>
+        <button class="gt-preset" data-gt-preset="2">Once upon a time, a small</button>
+        <button class="gt-preset" data-gt-preset="3">def add(a, b):&#10;    return</button>
+      </div>
+
+      <div class="gt-status" data-gt-status>Pick a preset to start.</div>
+
+      <div class="gt-body" data-gt-body hidden>
+
+        <div class="gt-stages" data-gt-stages></div>
+
+        <div class="gt-controls">
+          <button class="gt-btn" data-gt-prev>← Step back</button>
+          <button class="gt-btn gt-btn--primary" data-gt-next>Step forward →</button>
+          <button class="gt-btn gt-btn--ghost" data-gt-play>▶ Auto-play</button>
+          <span class="gt-progress" data-gt-progress>0 / 0</span>
+        </div>
+
+        <div class="gt-stage-panel" data-gt-stage-panel>
+          <div class="gt-stage-panel__head">
+            <span class="gt-stage-panel__addr" data-gt-stage-addr>—</span>
+            <span class="gt-stage-panel__title" data-gt-stage-title>—</span>
+          </div>
+          <div class="gt-stage-panel__desc" data-gt-stage-desc></div>
+
+          <div class="gt-views">
+            <!-- left: residual stream snapshot -->
+            <div class="gt-view gt-view--residual">
+              <div class="gt-view__label">Residual stream · top logit-lens prediction at each position</div>
+              <div class="gt-residual-strip" data-gt-residual></div>
+            </div>
+
+            <!-- right: stage-specific detail -->
+            <div class="gt-view gt-view--detail">
+              <div class="gt-view__label" data-gt-view-detail-label>Stage detail</div>
+              <div class="gt-detail" data-gt-detail></div>
+            </div>
+          </div>
+
+          <!-- final-prediction bar (only on last stage) -->
+          <div class="gt-final" data-gt-final hidden>
+            <div class="gt-view__label">Final next-token distribution (top 8)</div>
+            <ol class="gt-final-list" data-gt-final-list></ol>
+          </div>
+        </div>
+      </div>
+
+      <details>
+        <summary>What this demo is and isn't</summary>
+        <p>Real forward pass of <code>Xenova/distilgpt2</code> in your browser, ~85 MB cached after first load. We extract residual-stream snapshots at each layer (via <code>output_hidden_states</code>) and attention weights (via <code>output_attentions</code>). The "logit lens" projection uses the same shortcut as the residual-stream demo: dot-product against a 6,000-token chunk of the embedding table, top-1. So each cell's prediction is exact for those 6,000 tokens, and approximate (but usually correct) for the rare ones. The "MLP delta" shown is the residual-stream change between adjacent blocks, which conflates attention + MLP within the same block — see the long-form post above for the cleaner per-component decomposition.</p>
+      </details>
+    </div>
+  </div>
+</div>
+
+<style>
+  #demo-grand .gt-lead { margin: 0 0 1.05rem !important; font-size: 0.98rem !important; color: var(--nn-body) !important; line-height: 1.6 !important; }
+
+  #demo-grand .gt-presets { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.9rem; }
+  #demo-grand .gt-preset {
+    padding: 0.4rem 0.78rem; font-family: var(--nn-mono); font-size: 0.78rem;
+    background: #fff; border: 1px solid var(--nn-line); border-radius: 3px;
+    color: var(--nn-ink); cursor: pointer; transition: all 120ms;
+  }
+  #demo-grand .gt-preset:hover { border-color: #b77214; }
+  #demo-grand .gt-preset.is-active { background: rgba(251,191,36,0.18); border-color: #b77214; color: #7c4d0a; }
+
+  #demo-grand .gt-status {
+    padding: 0.55rem 0.85rem; font-family: var(--nn-mono); font-size: 0.76rem;
+    color: var(--nn-muted); background: #fafaf7; border: 1px dashed var(--nn-line);
+    border-radius: 3px; margin-bottom: 0.9rem;
+  }
+  #demo-grand .gt-status.is-loading { color: #b77214; border-color: rgba(183,114,20,0.4); }
+  #demo-grand .gt-status.is-ready { color: #2a9e8e; border-color: rgba(42,158,142,0.4); }
+  #demo-grand .gt-status.is-error { color: #c04550; border-color: rgba(192,69,80,0.4); }
+
+  #demo-grand .gt-stages {
+    display: flex; gap: 0.3rem; align-items: stretch; padding: 0.6rem;
+    background: #fafaf7; border: 1px solid var(--nn-line); border-radius: 4px;
+    margin-bottom: 0.7rem; overflow-x: auto;
+  }
+  #demo-grand .gt-stage {
+    flex: 1 0 auto; min-width: 80px; padding: 0.5rem 0.45rem;
+    background: #fff; border: 1px solid var(--nn-line); border-radius: 3px;
+    text-align: center; cursor: pointer; transition: all 120ms;
+    font-family: var(--nn-mono); font-size: 0.72rem; color: var(--nn-ink);
+  }
+  #demo-grand .gt-stage:hover { border-color: #b77214; }
+  #demo-grand .gt-stage.is-active { background: #b77214; color: #fff; border-color: #7c4d0a; }
+  #demo-grand .gt-stage.is-visited { background: rgba(251,191,36,0.18); border-color: rgba(183,114,20,0.4); }
+  #demo-grand .gt-stage__idx {
+    display: block; font-size: 0.62rem; letter-spacing: 0.1em;
+    color: var(--nn-muted); margin-bottom: 0.2rem;
+  }
+  #demo-grand .gt-stage.is-active .gt-stage__idx { color: rgba(255,255,255,0.7); }
+
+  #demo-grand .gt-controls {
+    display: flex; gap: 0.45rem; align-items: center; margin-bottom: 0.9rem;
+  }
+  #demo-grand .gt-btn {
+    padding: 0.45rem 0.95rem; font-family: var(--nn-mono); font-size: 0.78rem;
+    background: #fff; color: var(--nn-ink); border: 1px solid var(--nn-line);
+    border-radius: 3px; cursor: pointer;
+  }
+  #demo-grand .gt-btn:hover { border-color: #b77214; color: #b77214; }
+  #demo-grand .gt-btn:disabled { color: #ccc; border-color: #eee; cursor: not-allowed; }
+  #demo-grand .gt-btn--primary {
+    background: #b77214; color: #fff; border-color: #b77214; font-weight: 600;
+  }
+  #demo-grand .gt-btn--primary:hover { background: #7c4d0a; color: #fff; border-color: #7c4d0a; }
+  #demo-grand .gt-btn--ghost { color: var(--nn-muted); }
+  #demo-grand .gt-progress {
+    margin-left: auto; font-family: var(--nn-mono); font-size: 0.74rem; color: var(--nn-muted);
+  }
+
+  #demo-grand .gt-stage-panel {
+    padding: 1rem 1.1rem; background: #fff; border: 1px solid var(--nn-line);
+    border-left: 3px solid #b77214; border-radius: 3px;
+  }
+  #demo-grand .gt-stage-panel__head {
+    display: flex; gap: 0.7rem; align-items: baseline; flex-wrap: wrap; margin-bottom: 0.45rem;
+  }
+  #demo-grand .gt-stage-panel__addr {
+    font-family: var(--nn-mono); font-size: 0.72rem; letter-spacing: 0.1em;
+    text-transform: uppercase; color: #b77214;
+  }
+  #demo-grand .gt-stage-panel__title { font-size: 1.05rem; font-weight: 600; color: var(--nn-ink); }
+  #demo-grand .gt-stage-panel__desc {
+    font-size: 0.92rem; color: var(--nn-body); line-height: 1.55; margin-bottom: 0.95rem;
+  }
+
+  #demo-grand .gt-views {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 0.95rem;
+  }
+  @media (max-width: 720px) { #demo-grand .gt-views { grid-template-columns: 1fr; } }
+  #demo-grand .gt-view {
+    padding: 0.7rem 0.85rem; background: #fafaf7;
+    border: 1px solid var(--nn-line); border-radius: 3px;
+  }
+  #demo-grand .gt-view__label {
+    font-family: var(--nn-mono); font-size: 0.7rem; letter-spacing: 0.06em;
+    text-transform: uppercase; color: var(--nn-muted); margin-bottom: 0.5rem;
+  }
+  #demo-grand .gt-residual-strip {
+    display: flex; flex-wrap: wrap; gap: 0.25rem;
+  }
+  #demo-grand .gt-residual-tok {
+    display: inline-flex; flex-direction: column; align-items: center;
+    padding: 0.32rem 0.5rem; background: #fff;
+    border: 1px solid var(--nn-line); border-radius: 3px;
+    font-family: var(--nn-mono); font-size: 0.76rem;
+    min-width: 56px;
+  }
+  #demo-grand .gt-residual-tok__src {
+    color: var(--nn-muted); font-size: 0.66rem; margin-bottom: 0.18rem;
+  }
+  #demo-grand .gt-residual-tok__pred {
+    color: var(--nn-ink); font-weight: 600;
+  }
+  #demo-grand .gt-residual-tok__final .gt-residual-tok__pred { color: #b77214; }
+
+  #demo-grand .gt-detail {
+    font-family: var(--nn-mono); font-size: 0.84rem; color: var(--nn-body);
+    line-height: 1.55;
+  }
+  #demo-grand .gt-detail-attn-mat {
+    display: grid; gap: 1px; margin-top: 0.4rem; max-width: 280px;
+  }
+  #demo-grand .gt-detail-attn-cell {
+    aspect-ratio: 1; border: 1px solid #e0e0e0; cursor: default;
+  }
+
+  #demo-grand .gt-final {
+    margin-top: 0.95rem; padding: 0.85rem 1rem; background: #fafaf7;
+    border: 1px solid var(--nn-line); border-radius: 3px;
+  }
+  #demo-grand .gt-final-list { list-style: none; padding: 0; margin: 0; }
+  #demo-grand .gt-final-list li {
+    display: flex; align-items: center; gap: 0.6rem; padding: 0.25rem 0;
+    font-family: var(--nn-mono); font-size: 0.86rem;
+  }
+  #demo-grand .gt-final-list li:first-child {
+    font-weight: 600; color: #7c4d0a;
+  }
+  #demo-grand .gt-final-tok {
+    background: #fff; padding: 0.13rem 0.55rem; border: 1px solid var(--nn-line);
+    border-radius: 3px; min-width: 100px;
+  }
+  #demo-grand .gt-final-bar {
+    flex: 1; height: 7px; background: #eee6d1; border-radius: 3px; overflow: hidden;
+  }
+  #demo-grand .gt-final-bar-fill { height: 100%; background: #b77214; }
+  #demo-grand .gt-final-pct { font-size: 0.78rem; color: var(--nn-muted); min-width: 48px; text-align: right; }
+</style>
+
+<script>
+(function(){
+  const root = document.getElementById("demo-grand"); if (!root) return;
+
+  const PRESETS = [
+    "The capital of France is",
+    "A B C D E F G A B C",
+    "Once upon a time, a small",
+    "def add(a, b):\n    return"
+  ];
+
+  const statusEl = root.querySelector("[data-gt-status]");
+  const bodyEl = root.querySelector("[data-gt-body]");
+  const stagesEl = root.querySelector("[data-gt-stages]");
+  const progressEl = root.querySelector("[data-gt-progress]");
+  const stageAddr = root.querySelector("[data-gt-stage-addr]");
+  const stageTitle = root.querySelector("[data-gt-stage-title]");
+  const stageDesc = root.querySelector("[data-gt-stage-desc]");
+  const residualEl = root.querySelector("[data-gt-residual]");
+  const detailLabel = root.querySelector("[data-gt-view-detail-label]");
+  const detailEl = root.querySelector("[data-gt-detail]");
+  const finalEl = root.querySelector("[data-gt-final]");
+  const finalListEl = root.querySelector("[data-gt-final-list]");
+
+  let tf = null, model = null, tokenizer = null;
+  let runData = null;   // { tokens, perStage: [{title, desc, predictions, detail}], finalDist }
+  let stageIdx = 0;
+  let playTimer = null;
+
+  function setStatus(msg, cls){
+    statusEl.textContent = msg;
+    statusEl.classList.remove("is-loading","is-ready","is-error");
+    if (cls) statusEl.classList.add(cls);
+  }
+
+  async function loadModel(){
+    if (model && tokenizer) return;
+    setStatus("Downloading distilGPT2 (~85 MB, cached)…", "is-loading");
+    try {
+      tf = await import("https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.1");
+      tf.env.allowLocalModels = false;
+      tf.env.useBrowserCache = true;
+      tokenizer = await tf.AutoTokenizer.from_pretrained("Xenova/distilgpt2");
+      model = await tf.AutoModel.from_pretrained("Xenova/distilgpt2", { quantized: true });
+    } catch (e) {
+      setStatus("Model load failed: " + (e.message || e), "is-error");
+      throw e;
+    }
+  }
+
+  // Build/cache the lens vocabulary, shared with other demos
+  async function ensureLens(hidden){
+    const LENS = 6000;
+    if (window.__rs_lens_cache && window.__rs_lens_cache.size === LENS) return window.__rs_lens_cache;
+    const ids = [];
+    for (let i = 0; i < LENS; i++) ids.push(i);
+    const batch = new tf.Tensor("int64", BigInt64Array.from(ids.map(BigInt)), [1, LENS]);
+    const attn = new tf.Tensor("int64", BigInt64Array.from(ids.map(() => 1n)), [1, LENS]);
+    const out = await model({ input_ids: batch, attention_mask: attn }, { output_hidden_states: true });
+    const e = out.hidden_states[0];
+    const flat = new Float32Array(e.data);
+    const norms = new Float32Array(LENS);
+    for (let i = 0; i < LENS; i++){
+      let s = 0;
+      for (let j = 0; j < hidden; j++){ const v = flat[i*hidden+j]; s += v*v; }
+      norms[i] = Math.sqrt(s) || 1;
+    }
+    const texts = ids.map(id => { try { return tokenizer.decode([id]); } catch { return ""; } });
+    window.__rs_lens_cache = { size: LENS, hidden, emb: flat, norms, texts };
+    return window.__rs_lens_cache;
+  }
+
+  function topLensFor(vec, lens, hidden, k){
+    const scores = new Float32Array(lens.size);
+    for (let i = 0; i < lens.size; i++){
+      let s = 0;
+      const base = i * hidden;
+      for (let j = 0; j < hidden; j++) s += vec[j] * lens.emb[base + j];
+      scores[i] = s;
+    }
+    const idx = Array.from({length: lens.size}, (_, i) => i);
+    idx.sort((a, b) => scores[b] - scores[a]);
+    const top = idx.slice(0, k);
+    const maxS = scores[top[0]];
+    const exps = top.map(i => Math.exp((scores[i] - maxS) / 4));
+    const sum = exps.reduce((a, b) => a + b, 0);
+    return top.map((i, j) => ({ id: i, text: lens.texts[i], prob: exps[j] / sum, logit: scores[i] }));
+  }
+
+  async function runForward(text){
+    await loadModel();
+    setStatus(`Running forward pass on "${text}"…`, "is-loading");
+    await new Promise(r => setTimeout(r, 20));
+
+    const inputs = await tokenizer(text, { return_tensors: "np" });
+    const ids = Array.from(inputs.input_ids.data).map(Number);
+    const tokens = ids.map(id => tokenizer.decode([id]));
+
+    const outputs = await model(inputs, { output_hidden_states: true, output_attentions: true });
+    const hidden = outputs.hidden_states[outputs.hidden_states.length - 1].dims[2];
+    const lens = await ensureLens(hidden);
+
+    const T = ids.length;
+    const nLayers = outputs.hidden_states.length;  // embed + 6 blocks = 7
+
+    // Per-position top logit-lens prediction at each layer
+    const predsByLayer = [];
+    for (let l = 0; l < nLayers; l++){
+      const data = new Float32Array(outputs.hidden_states[l].data);
+      const layer = [];
+      for (let p = 0; p < T; p++){
+        const vec = new Float32Array(hidden);
+        for (let j = 0; j < hidden; j++) vec[j] = data[p*hidden + j];
+        const top = topLensFor(vec, lens, hidden, 1);
+        layer.push(top[0]);
+      }
+      predsByLayer.push(layer);
+    }
+
+    // Build stages
+    const perStage = [];
+    perStage.push({
+      title: "Tokenize",
+      addr: "Stage 1 / " + (3 + nLayers - 1),
+      desc: `Your text was split into ${T} tokens by GPT-2 BPE. Each becomes an integer ID. The IDs are what the model actually processes.`,
+      kind: "tokens",
+      detail: tokens.map((t, i) => `${i}: ${JSON.stringify(t)} → ${ids[i]}`),
+      preds: tokens.map(t => ({ src: JSON.stringify(t).replace(/^"|"$/g, "").slice(0, 12), pred: "—" }))
+    });
+    perStage.push({
+      title: "Embed",
+      addr: "Stage 2",
+      desc: "Each token ID looked up its 768-dim embedding. The residual stream is initialised. Logit-lens at this stage shows what each token 'means' on its own — usually just the token itself.",
+      kind: "embed",
+      detail: ["The embedding for each token includes positional information, so two identical tokens in different positions have different embeddings."],
+      preds: predsByLayer[0].map((p, i) => ({ src: tokens[i].trim().slice(0, 12) || "·", pred: p.text.trim().slice(0, 10) || "·", prob: p.prob }))
+    });
+
+    // Per-block stage
+    for (let l = 1; l < nLayers; l++){
+      // attention summary for this block (max attention per row)
+      const attnT = outputs.attentions[l - 1]; // [1, H, T, T]
+      const H = attnT.dims[1];
+      const adata = new Float32Array(attnT.data);
+      // for visualization: average across heads
+      const avgAttn = [];
+      for (let q = 0; q < T; q++){
+        const row = new Float32Array(T);
+        for (let h = 0; h < H; h++){
+          for (let k = 0; k <= q; k++){
+            row[k] += adata[(h * T + q) * T + k] / H;
+          }
+        }
+        avgAttn.push(row);
+      }
+
+      perStage.push({
+        title: `Block ${l - 1}`,
+        addr: `Stage ${2 + l} · Attn + MLP`,
+        desc: `Block ${l - 1} reads the residual stream, mixes information across positions via 12 attention heads, and writes a transformed contribution back. The MLP then adds further computation per-position. Watch the per-position predictions evolve.`,
+        kind: "block",
+        attn: avgAttn,
+        preds: predsByLayer[l].map((p, i) => ({ src: tokens[i].trim().slice(0, 12) || "·", pred: p.text.trim().slice(0, 10) || "·", prob: p.prob }))
+      });
+    }
+
+    // Final stage: unembed
+    const finalLayer = predsByLayer[nLayers - 1];
+    const finalVec = new Float32Array(hidden);
+    const lastData = new Float32Array(outputs.hidden_states[nLayers - 1].data);
+    for (let j = 0; j < hidden; j++) finalVec[j] = lastData[(T - 1) * hidden + j];
+    const finalDist = topLensFor(finalVec, lens, hidden, 8);
+
+    perStage.push({
+      title: "Unembed",
+      addr: `Stage ${3 + nLayers - 1}`,
+      desc: "The final residual vector at the last position gets projected against the full vocabulary. Softmax → probabilities. The model's prediction.",
+      kind: "final",
+      preds: finalLayer.map((p, i) => ({ src: tokens[i].trim().slice(0, 12) || "·", pred: p.text.trim().slice(0, 10) || "·", prob: p.prob, isFinal: i === T - 1 })),
+      finalDist
+    });
+
+    runData = { tokens, perStage, T };
+    stageIdx = 0;
+    setStatus(`Ready · ${T} tokens, ${perStage.length} stages. Step through the run.`, "is-ready");
+    bodyEl.hidden = false;
+    buildStageStrip();
+    renderStage();
+  }
+
+  function buildStageStrip(){
+    stagesEl.innerHTML = "";
+    runData.perStage.forEach((s, i) => {
+      const el = document.createElement("div");
+      el.className = "gt-stage";
+      el.innerHTML = `<span class="gt-stage__idx">${String(i+1).padStart(2,'0')}</span>${s.title}`;
+      el.addEventListener("click", () => { stopPlay(); stageIdx = i; renderStage(); });
+      stagesEl.appendChild(el);
+    });
+  }
+
+  function renderStage(){
+    const total = runData.perStage.length;
+    progressEl.textContent = `${stageIdx + 1} / ${total}`;
+    stagesEl.querySelectorAll(".gt-stage").forEach((el, i) => {
+      el.classList.toggle("is-active", i === stageIdx);
+      el.classList.toggle("is-visited", i < stageIdx);
+    });
+
+    const s = runData.perStage[stageIdx];
+    stageAddr.textContent = s.addr;
+    stageTitle.textContent = s.title;
+    stageDesc.textContent = s.desc;
+
+    // residual strip
+    residualEl.innerHTML = "";
+    s.preds.forEach((p, i) => {
+      const tok = document.createElement("span");
+      tok.className = "gt-residual-tok";
+      if (p.isFinal) tok.classList.add("gt-residual-tok__final");
+      tok.innerHTML =
+        `<span class="gt-residual-tok__src">${escapeHtml(p.src)}</span>` +
+        `<span class="gt-residual-tok__pred">${escapeHtml(p.pred)}</span>`;
+      residualEl.appendChild(tok);
+    });
+
+    // detail
+    if (s.kind === "tokens"){
+      detailLabel.textContent = "Tokens & IDs";
+      detailEl.innerHTML = s.detail.map(d => `<div>${escapeHtml(d)}</div>`).join("");
+    } else if (s.kind === "embed"){
+      detailLabel.textContent = "What just happened";
+      detailEl.innerHTML = s.detail.map(d => `<div>${escapeHtml(d)}</div>`).join("");
+    } else if (s.kind === "block"){
+      detailLabel.textContent = "Average attention pattern (this block)";
+      const T = s.attn.length;
+      let html = `<div class="gt-detail-attn-mat" style="grid-template-columns:repeat(${T},1fr)">`;
+      for (let q = 0; q < T; q++){
+        for (let k = 0; k < T; k++){
+          const v = s.attn[q][k];
+          const bg = heat(v);
+          html += `<div class="gt-detail-attn-cell" style="background:${bg}" title="from ${runData.tokens[q]} → ${runData.tokens[k]}: ${v.toFixed(2)}"></div>`;
+        }
+      }
+      html += `</div>`;
+      detailEl.innerHTML = html;
+    } else if (s.kind === "final"){
+      detailLabel.textContent = "Top of the unembedded distribution";
+      detailEl.innerHTML = "→ See the bar chart below.";
+    }
+
+    // final list
+    if (s.kind === "final"){
+      finalEl.hidden = false;
+      finalListEl.innerHTML = "";
+      s.finalDist.forEach((d, i) => {
+        const li = document.createElement("li");
+        const w = Math.max(3, Math.round(d.prob * 100));
+        li.innerHTML =
+          `<span class="gt-final-tok">${escapeHtml(d.text)}</span>` +
+          `<span class="gt-final-bar"><span class="gt-final-bar-fill" style="width:${w}%"></span></span>` +
+          `<span class="gt-final-pct">${(d.prob * 100).toFixed(1)}%</span>`;
+        finalListEl.appendChild(li);
+      });
+    } else {
+      finalEl.hidden = true;
+    }
+  }
+
+  function play(){
+    stopPlay();
+    if (!runData) return;
+    playTimer = setInterval(() => {
+      if (stageIdx >= runData.perStage.length - 1){ stopPlay(); return; }
+      stageIdx++; renderStage();
+    }, 1500);
+  }
+  function stopPlay(){ if (playTimer){ clearInterval(playTimer); playTimer = null; } }
+
+  function heat(v){
+    const p = Math.min(1, Math.max(0, v));
+    if (p < 0.5){
+      const t = p / 0.5;
+      return lerpHex("#fff7e6", "#fcd68b", t);
+    } else {
+      const t = (p - 0.5) / 0.5;
+      return lerpHex("#fcd68b", "#b77214", t);
+    }
+  }
+  function lerpHex(a, b, t){
+    const ar=parseInt(a.slice(1,3),16),ag=parseInt(a.slice(3,5),16),ab=parseInt(a.slice(5,7),16);
+    const br=parseInt(b.slice(1,3),16),bg=parseInt(b.slice(3,5),16),bb=parseInt(b.slice(5,7),16);
+    return "#" + [Math.round(ar+(br-ar)*t),Math.round(ag+(bg-ag)*t),Math.round(ab+(bb-ab)*t)]
+      .map(n=>n.toString(16).padStart(2,"0")).join("");
+  }
+  function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c])); }
+
+  root.querySelector("[data-gt-prev]").addEventListener("click", () => { stopPlay(); if (stageIdx > 0){ stageIdx--; renderStage(); } });
+  root.querySelector("[data-gt-next]").addEventListener("click", () => { stopPlay(); if (stageIdx < runData.perStage.length - 1){ stageIdx++; renderStage(); } });
+  root.querySelector("[data-gt-play]").addEventListener("click", play);
+  root.querySelectorAll("[data-gt-preset]").forEach(b => {
+    b.addEventListener("click", async () => {
+      stopPlay();
+      root.querySelectorAll("[data-gt-preset]").forEach(x => x.classList.remove("is-active"));
+      b.classList.add("is-active");
+      try { await runForward(PRESETS[parseInt(b.dataset.gtPreset)]); }
+      catch(e){ setStatus("Forward pass failed: " + (e.message || e), "is-error"); }
+    });
+  });
+})();
+</script>

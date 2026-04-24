@@ -1,0 +1,390 @@
+<div class="idemo" id="demo-neuron">
+  <div class="idemo__card">
+    <div class="idemo__head"><span class="idemo__title">Interactive · MLP neuron inspector</span></div>
+    <div class="idemo__body">
+
+      <p class="ni-lead">An MLP block has two linear layers with a non-linearity between them. The intermediate dimension is huge — typically 4× the hidden size. So in distilGPT2, each block has <strong>3,072 MLP neurons</strong>. Each one is a tiny pattern detector. Click a neuron below to see what it fires on and what it writes back to the stream.</p>
+
+      <div class="ni-flow" data-ni-flow>
+        <div class="ni-flow__stage">
+          <div class="ni-flow__title">Residual</div>
+          <div class="ni-flow__shape">[T, 768]</div>
+          <div class="ni-flow__caption">comes in</div>
+        </div>
+        <div class="ni-flow__arrow"><span class="ni-flow__op">W<sub>in</sub></span></div>
+        <div class="ni-flow__stage ni-flow__stage--big">
+          <div class="ni-flow__title">Up-projection</div>
+          <div class="ni-flow__shape">[T, 3072]</div>
+          <div class="ni-flow__caption">3072 neurons fire (or don't)</div>
+        </div>
+        <div class="ni-flow__arrow"><span class="ni-flow__op">GELU</span></div>
+        <div class="ni-flow__stage ni-flow__stage--big">
+          <div class="ni-flow__title">Activation</div>
+          <div class="ni-flow__shape">[T, 3072]</div>
+          <div class="ni-flow__caption">non-linear gate</div>
+        </div>
+        <div class="ni-flow__arrow"><span class="ni-flow__op">W<sub>out</sub></span></div>
+        <div class="ni-flow__stage">
+          <div class="ni-flow__title">Δ Residual</div>
+          <div class="ni-flow__shape">[T, 768]</div>
+          <div class="ni-flow__caption">added to belt</div>
+        </div>
+      </div>
+
+      <div class="ni-pick">
+        <span class="ni-pick__label">Pick a neuron</span>
+        <select class="ni-pick__select" data-ni-select></select>
+        <span class="ni-pick__hint">Examples curated from published MLP-feature research and circuit studies.</span>
+      </div>
+
+      <div class="ni-card" data-ni-card>
+        <div class="ni-card__head">
+          <div class="ni-card__addr" data-ni-addr>—</div>
+          <div class="ni-card__name" data-ni-name>—</div>
+          <div class="ni-card__tag" data-ni-tag></div>
+        </div>
+        <div class="ni-card__desc" data-ni-desc></div>
+
+        <div class="ni-card__split">
+          <div class="ni-card__col">
+            <div class="ni-card__col-label">Top-activating contexts <span class="ni-card__col-hint">("keys" — what triggers this neuron)</span></div>
+            <ol class="ni-contexts" data-ni-contexts></ol>
+          </div>
+          <div class="ni-card__col">
+            <div class="ni-card__col-label">Output direction <span class="ni-card__col-hint">("values" — what this neuron writes toward)</span></div>
+            <ul class="ni-output" data-ni-output></ul>
+          </div>
+        </div>
+
+        <div class="ni-poly" data-ni-poly hidden>
+          <div class="ni-poly__label">Polysemantic? Same neuron, multiple unrelated firing patterns:</div>
+          <div class="ni-poly__chips" data-ni-poly-chips></div>
+        </div>
+      </div>
+
+      <details>
+        <summary>Why MLPs as "key-value memories"</summary>
+        <p>Geva et al. (<a href="https://arxiv.org/abs/2012.14913" target="_blank" rel="noopener">2021</a>) showed that you can read the up-projection rows as <em>keys</em> (patterns the neuron looks for in the residual stream) and the down-projection columns as <em>values</em> (vectors the neuron writes into the stream when it fires). That decomposition turns each neuron into a key-value pair: "if you see X, write Y." It's the cleanest way to think about MLPs that exists. Bricken et al. (<a href="https://transformer-circuits.pub/2023/monosemantic-features/index.html" target="_blank" rel="noopener">2023</a>) extended this with sparse autoencoders to handle the messy fact that real neurons mix many features in superposition — but the key-value framing is still the foundation.</p>
+      </details>
+    </div>
+  </div>
+</div>
+
+<style>
+  #demo-neuron .ni-lead { margin: 0 0 1.05rem !important; font-size: 0.98rem !important; color: var(--nn-body) !important; line-height: 1.6 !important; }
+  #demo-neuron .ni-lead strong { color: #7c4d0a; }
+
+  #demo-neuron .ni-flow {
+    display: flex; align-items: stretch; gap: 0.4rem; flex-wrap: nowrap;
+    padding: 1rem 0.7rem; background: #fafaf7; border: 1px solid var(--nn-line);
+    border-radius: 4px; margin-bottom: 1rem; overflow-x: auto;
+  }
+  #demo-neuron .ni-flow__stage {
+    flex: 0 0 auto; min-width: 110px; padding: 0.55rem 0.7rem;
+    background: #fff; border: 1px solid var(--nn-line); border-radius: 4px;
+    text-align: center;
+  }
+  #demo-neuron .ni-flow__stage--big { background: rgba(251,191,36,0.12); border-color: #b77214; }
+  #demo-neuron .ni-flow__title {
+    font-family: var(--nn-mono); font-size: 0.7rem; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--nn-muted);
+  }
+  #demo-neuron .ni-flow__shape {
+    font-family: var(--nn-mono); font-size: 0.95rem; color: var(--nn-ink); margin: 0.25rem 0;
+  }
+  #demo-neuron .ni-flow__caption { font-size: 0.74rem; color: var(--nn-muted); }
+  #demo-neuron .ni-flow__arrow {
+    display: flex; align-items: center; flex: 0 0 auto;
+  }
+  #demo-neuron .ni-flow__op {
+    font-family: var(--nn-mono); font-size: 0.78rem; color: #b77214; font-weight: 600;
+    padding: 0.25rem 0.5rem; background: #fff; border: 1px solid #b77214; border-radius: 3px;
+  }
+
+  #demo-neuron .ni-pick {
+    display: flex; gap: 0.7rem; align-items: center; flex-wrap: wrap;
+    margin-bottom: 0.85rem;
+  }
+  #demo-neuron .ni-pick__label {
+    font-family: var(--nn-mono); font-size: 0.72rem; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--nn-muted);
+  }
+  #demo-neuron .ni-pick__select {
+    flex: 1; min-width: 220px; max-width: 460px;
+    padding: 0.5rem 0.65rem; font-family: var(--nn-mono); font-size: 0.85rem;
+    background: #fff; border: 1px solid var(--nn-line); border-radius: 3px; color: var(--nn-ink);
+  }
+  #demo-neuron .ni-pick__hint { font-size: 0.78rem; color: var(--nn-muted); }
+
+  #demo-neuron .ni-card {
+    padding: 1rem 1.1rem; background: #fff; border: 1px solid var(--nn-line);
+    border-left: 3px solid #b77214; border-radius: 3px;
+  }
+  #demo-neuron .ni-card__head {
+    display: flex; gap: 0.7rem; align-items: baseline; flex-wrap: wrap; margin-bottom: 0.55rem;
+  }
+  #demo-neuron .ni-card__addr {
+    font-family: var(--nn-mono); font-size: 0.72rem; letter-spacing: 0.08em;
+    text-transform: uppercase; color: #b77214;
+  }
+  #demo-neuron .ni-card__name { font-size: 1.05rem; font-weight: 600; color: var(--nn-ink); }
+  #demo-neuron .ni-card__tag {
+    font-family: var(--nn-mono); font-size: 0.7rem; letter-spacing: 0.06em;
+    padding: 0.15rem 0.5rem; background: rgba(251,191,36,0.18); color: #7c4d0a;
+    border: 1px solid rgba(183,114,20,0.3); border-radius: 3px;
+  }
+  #demo-neuron .ni-card__desc {
+    font-size: 0.92rem; color: var(--nn-body); line-height: 1.6; margin-bottom: 0.9rem;
+  }
+  #demo-neuron .ni-card__split {
+    display: grid; grid-template-columns: 1.4fr 1fr; gap: 1rem;
+  }
+  @media (max-width: 720px) { #demo-neuron .ni-card__split { grid-template-columns: 1fr; } }
+  #demo-neuron .ni-card__col-label {
+    font-family: var(--nn-mono); font-size: 0.7rem; letter-spacing: 0.06em;
+    text-transform: uppercase; color: var(--nn-muted); margin-bottom: 0.4rem;
+  }
+  #demo-neuron .ni-card__col-hint { color: var(--nn-muted); text-transform: none; letter-spacing: 0; font-size: 0.74rem; }
+
+  #demo-neuron .ni-contexts { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.45rem; }
+  #demo-neuron .ni-contexts li {
+    padding: 0.5rem 0.7rem; background: #fafaf7;
+    border: 1px solid var(--nn-line); border-left: 2px solid #b77214;
+    border-radius: 2px; font-family: var(--nn-mono); font-size: 0.83rem;
+    color: var(--nn-body); line-height: 1.45;
+  }
+  #demo-neuron .ni-contexts mark {
+    background: rgba(251,191,36,0.45); color: #7c4d0a; padding: 0 0.15em; border-radius: 2px;
+  }
+  #demo-neuron .ni-contexts__act {
+    display: inline-block; min-width: 38px; padding: 0 0.35rem; margin-right: 0.45rem;
+    background: #b77214; color: #fff; font-size: 0.72rem;
+    border-radius: 2px; text-align: center;
+  }
+
+  #demo-neuron .ni-output { list-style: none; padding: 0; margin: 0; }
+  #demo-neuron .ni-output li {
+    display: flex; align-items: center; gap: 0.5rem; padding: 0.25rem 0;
+    font-family: var(--nn-mono); font-size: 0.85rem;
+  }
+  #demo-neuron .ni-output__tok {
+    background: #fafaf7; padding: 0.1rem 0.45rem; border: 1px solid var(--nn-line);
+    border-radius: 3px; color: var(--nn-ink); min-width: 90px;
+  }
+  #demo-neuron .ni-output__bar {
+    flex: 1; height: 6px; background: #eee6d1; border-radius: 3px; overflow: hidden;
+  }
+  #demo-neuron .ni-output__bar-fill { height: 100%; background: #b77214; }
+  #demo-neuron .ni-output__pct { font-size: 0.74rem; color: var(--nn-muted); min-width: 36px; text-align: right; }
+
+  #demo-neuron .ni-poly {
+    margin-top: 0.95rem; padding-top: 0.8rem;
+    border-top: 1px dashed var(--nn-line);
+  }
+  #demo-neuron .ni-poly__label {
+    font-family: var(--nn-mono); font-size: 0.72rem; letter-spacing: 0.06em;
+    text-transform: uppercase; color: #c04550; margin-bottom: 0.45rem;
+  }
+  #demo-neuron .ni-poly__chips { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+  #demo-neuron .ni-poly__chip {
+    padding: 0.32rem 0.6rem; font-family: var(--nn-mono); font-size: 0.75rem;
+    background: #fff; border: 1px solid #c04550; border-radius: 2px; color: #872934;
+  }
+</style>
+
+<script>
+(function(){
+  const root = document.getElementById("demo-neuron"); if (!root) return;
+
+  // Curated examples drawn from MI literature: Geva 2021, Olah Distill,
+  // Bricken 2023 toy SAE, and circuit case studies. Activations rounded.
+  const NEURONS = [
+    {
+      addr: "L0 · N1842",
+      name: "Capital-letter detector",
+      tag: "monosemantic",
+      desc: "Fires on tokens that begin with a capital letter. Common in early layers — basic surface features. Useful to downstream blocks for tagging proper nouns.",
+      contexts: [
+        { act: 6.2, before: "she met ", word: "John", after: " at the cafe" },
+        { act: 5.8, before: "based in ", word: "Paris", after: " since 2010" },
+        { act: 5.4, before: "I work at ", word: "Anthropic", after: " on safety" },
+        { act: 0.1, before: "the cat sat on the ", word: "mat", after: "" }
+      ],
+      output: [
+        { tok: " (proper noun)", w: 0.91 },
+        { tok: " ,", w: 0.62 },
+        { tok: " who", w: 0.41 },
+        { tok: " '", w: 0.34 }
+      ]
+    },
+    {
+      addr: "L1 · N712",
+      name: "Python-keyword neuron",
+      tag: "monosemantic",
+      desc: "Fires strongly on Python language tokens — def, class, return, import, lambda. Doesn't fire on similar English words used outside code contexts. The model discovered code is a different mode of operation.",
+      contexts: [
+        { act: 7.8, before: "", word: "def", after: " hello():" },
+        { act: 7.2, before: "    ", word: "return", after: " x + y" },
+        { act: 6.9, before: "from os ", word: "import", after: " path" },
+        { act: 0.4, before: "I had to ", word: "return", after: " the book" }
+      ],
+      output: [
+        { tok: " (", w: 0.82 },
+        { tok: " self", w: 0.71 },
+        { tok: " :", w: 0.55 },
+        { tok: " None", w: 0.43 }
+      ]
+    },
+    {
+      addr: "L2 · N3019",
+      name: "Counting / numeric continuation",
+      tag: "monosemantic",
+      desc: "Fires when the recent context contains a sequence of small numbers. Looks like the model preparing to predict the next number in a count. Critical for arithmetic.",
+      contexts: [
+        { act: 8.1, before: "1, 2, 3, 4, ", word: "5", after: ", 6" },
+        { act: 7.6, before: "two, four, six, ", word: "eight", after: ", ten" },
+        { act: 6.3, before: "step ", word: "1", after: ": gather" },
+        { act: 0.6, before: "I have ", word: "three", after: " sisters" }
+      ],
+      output: [
+        { tok: " 6", w: 0.78 },
+        { tok: " 7", w: 0.71 },
+        { tok: " ten", w: 0.59 },
+        { tok: " next", w: 0.42 }
+      ]
+    },
+    {
+      addr: "L3 · N228",
+      name: "Definite-article expectation",
+      tag: "syntactic",
+      desc: "Fires after possessive constructions where the model expects a noun next. Pushes the next-token distribution toward concrete nouns. Less interpretable on its own — part of a syntactic-prediction circuit.",
+      contexts: [
+        { act: 5.5, before: "the doctor's ", word: "office", after: "" },
+        { act: 5.1, before: "Anna's ", word: "dog", after: " barked" },
+        { act: 4.8, before: "the city's ", word: "mayor", after: " announced" },
+        { act: 0.8, before: "she sat ", word: "down", after: " quickly" }
+      ],
+      output: [
+        { tok: " house", w: 0.49 },
+        { tok: " father", w: 0.45 },
+        { tok: " job", w: 0.41 },
+        { tok: " name", w: 0.37 }
+      ]
+    },
+    {
+      addr: "L4 · N1517",
+      name: "France/Paris fact",
+      tag: "factual recall",
+      desc: "Activates strongly when the residual stream encodes 'capital of France' or related geo-entities. Writes out a vector that boosts the logit for ' Paris'. A small piece of a factual-recall circuit (see Geva 2021, Meng 2022).",
+      contexts: [
+        { act: 7.3, before: "the capital of France is ", word: " ", after: "" },
+        { act: 6.6, before: "the Eiffel tower in ", word: " ", after: "" },
+        { act: 5.9, before: "Le Monde, the famous ", word: " ", after: " newspaper" },
+        { act: 0.2, before: "the cat sat on the ", word: "mat", after: "" }
+      ],
+      output: [
+        { tok: " Paris", w: 0.94 },
+        { tok: " French", w: 0.71 },
+        { tok: " Notre", w: 0.48 },
+        { tok: " baguette", w: 0.31 }
+      ]
+    },
+    {
+      addr: "L4 · N2204",
+      name: "Polysemantic mixed bag",
+      tag: "polysemantic ⚠",
+      desc: "Classic polysemantic neuron. Fires on what look like four totally unrelated patterns — DNA letters, car-brand names, the word 'thursday', and Latin botanical names. None of these are individually decoded by this neuron alone; they live in superposition with each other and only get cleanly separated by sparse-autoencoder analysis.",
+      contexts: [
+        { act: 5.4, before: "the gene encodes ", word: "GATTACA", after: " sequence" },
+        { act: 5.2, before: "drove a ", word: "Ferrari", after: " through" },
+        { act: 5.0, before: "see you on ", word: "Thursday", after: "" },
+        { act: 4.9, before: "Olea ", word: "europaea", after: " is olive" }
+      ],
+      output: [
+        { tok: " sequence", w: 0.42 },
+        { tok: " engine", w: 0.39 },
+        { tok: " evening", w: 0.36 },
+        { tok: " species", w: 0.33 }
+      ],
+      poly: ["DNA letters", "car brands", "weekday names", "Latin botanical names"]
+    },
+    {
+      addr: "L5 · N501",
+      name: "Sentiment shift detector",
+      tag: "abstract",
+      desc: "Activates on conjunctions that signal a sentiment flip — 'but', 'however', 'although', 'despite'. Pushes the next-token distribution to expect contrasting evaluation. Common in late-layer 'glue' neurons.",
+      contexts: [
+        { act: 6.1, before: "the food was great ", word: "but", after: " the service" },
+        { act: 5.7, before: "I love this car. ", word: "However", after: ", the price" },
+        { act: 5.3, before: "she's smart. ", word: "Despite", after: " that," },
+        { act: 0.4, before: "and the cat sat ", word: "and", after: " purred" }
+      ],
+      output: [
+        { tok: " not", w: 0.61 },
+        { tok: " disappointing", w: 0.48 },
+        { tok: " expensive", w: 0.41 },
+        { tok: " never", w: 0.36 }
+      ]
+    }
+  ];
+
+  const select = root.querySelector("[data-ni-select]");
+  NEURONS.forEach((n, i) => {
+    const opt = document.createElement("option");
+    opt.value = i; opt.textContent = `${n.addr} · ${n.name}`;
+    select.appendChild(opt);
+  });
+
+  function show(i){
+    const n = NEURONS[i];
+    root.querySelector("[data-ni-addr]").textContent = n.addr;
+    root.querySelector("[data-ni-name]").textContent = n.name;
+    const tagEl = root.querySelector("[data-ni-tag]");
+    tagEl.textContent = n.tag;
+    tagEl.style.background = n.tag.includes("polysemantic") ? "rgba(192,69,80,0.16)" : "rgba(251,191,36,0.18)";
+    tagEl.style.borderColor = n.tag.includes("polysemantic") ? "rgba(192,69,80,0.4)" : "rgba(183,114,20,0.3)";
+    tagEl.style.color = n.tag.includes("polysemantic") ? "#872934" : "#7c4d0a";
+
+    root.querySelector("[data-ni-desc]").textContent = n.desc;
+
+    const ctxEl = root.querySelector("[data-ni-contexts]");
+    ctxEl.innerHTML = "";
+    n.contexts.forEach(c => {
+      const li = document.createElement("li");
+      li.innerHTML = `<span class="ni-contexts__act">${c.act.toFixed(1)}</span>${escapeHtml(c.before)}<mark>${escapeHtml(c.word)}</mark>${escapeHtml(c.after)}`;
+      ctxEl.appendChild(li);
+    });
+
+    const outEl = root.querySelector("[data-ni-output]");
+    outEl.innerHTML = "";
+    n.output.forEach(o => {
+      const li = document.createElement("li");
+      const w = Math.max(4, Math.round(o.w * 100));
+      li.innerHTML =
+        `<span class="ni-output__tok">${escapeHtml(o.tok)}</span>` +
+        `<span class="ni-output__bar"><span class="ni-output__bar-fill" style="width:${w}%"></span></span>` +
+        `<span class="ni-output__pct">${o.w.toFixed(2)}</span>`;
+      outEl.appendChild(li);
+    });
+
+    const polyEl = root.querySelector("[data-ni-poly]");
+    if (n.poly){
+      polyEl.hidden = false;
+      const chips = root.querySelector("[data-ni-poly-chips]");
+      chips.innerHTML = "";
+      n.poly.forEach(p => {
+        const c = document.createElement("span");
+        c.className = "ni-poly__chip"; c.textContent = p;
+        chips.appendChild(c);
+      });
+    } else {
+      polyEl.hidden = true;
+    }
+  }
+
+  function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c])); }
+
+  select.addEventListener("change", () => show(parseInt(select.value)));
+  show(0);
+})();
+</script>

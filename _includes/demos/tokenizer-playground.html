@@ -1,0 +1,282 @@
+<div class="idemo" id="demo-tokenizer">
+  <div class="idemo__card">
+    <div class="idemo__head"><span class="idemo__title">Interactive · Tokenizer playground (GPT-2 BPE, live)</span></div>
+    <div class="idemo__body">
+
+      <p class="tok-lead">Type anything in the box. Watch it get chopped into subword pieces. Notice how a space is part of a token. Notice how numbers split weirdly. Notice how emoji explode into three pieces. This is <em>real</em> BPE, running in your browser.</p>
+
+      <div class="tok-presets" data-tok-presets>
+        <button class="tok-preset" data-tok-preset="The quick brown fox jumps over the lazy dog.">Normal English</button>
+        <button class="tok-preset" data-tok-preset="unhappily">Subwords: 'unhappily'</button>
+        <button class="tok-preset" data-tok-preset="123456789">Long number</button>
+        <button class="tok-preset" data-tok-preset="I ❤️ interpretability 🔬">Emoji chaos</button>
+        <button class="tok-preset" data-tok-preset="def tokenize(text):&#10;    return text.split()">Python code</button>
+        <button class="tok-preset" data-tok-preset="ChatGPT is great but GPT-4 is gr8.">Chat slang</button>
+        <button class="tok-preset" data-tok-preset="こんにちは世界">Japanese (no Unicode merge)</button>
+      </div>
+
+      <textarea class="tok-input" data-tok-input rows="3" spellcheck="false">The cat sat on the mat.</textarea>
+
+      <div class="tok-meta">
+        <div class="tok-meta__item"><span class="tok-meta__val" data-tok-chars>0</span><span class="tok-meta__key">chars</span></div>
+        <div class="tok-meta__item"><span class="tok-meta__val" data-tok-count>0</span><span class="tok-meta__key">tokens</span></div>
+        <div class="tok-meta__item"><span class="tok-meta__val" data-tok-ratio>0</span><span class="tok-meta__key">chars/token</span></div>
+        <div class="tok-meta__item"><span class="tok-meta__val" data-tok-cost>$0.000</span><span class="tok-meta__key">@ $3/M input</span></div>
+      </div>
+
+      <div class="tok-view" data-tok-view>
+        <div class="tok-view__empty">Type something above to see tokens.</div>
+      </div>
+
+      <div class="tok-detail" data-tok-detail hidden>
+        <div class="tok-detail__head">
+          <span class="tok-detail__idx" data-tok-detail-idx>Token 0</span>
+          <span class="tok-detail__text" data-tok-detail-text></span>
+        </div>
+        <div class="tok-detail__rows">
+          <div class="tok-detail__row"><span>ID</span><code data-tok-detail-id>—</code></div>
+          <div class="tok-detail__row"><span>Bytes</span><code data-tok-detail-bytes>—</code></div>
+          <div class="tok-detail__row"><span>Unicode</span><code data-tok-detail-uni>—</code></div>
+        </div>
+      </div>
+
+      <div class="tok-status" data-tok-status>Loading GPT-2 BPE tables…</div>
+
+      <details>
+        <summary>Why this tokenizer isn't a simple whitespace split</summary>
+        <p>This demo uses real <strong>Byte-Pair Encoding (BPE)</strong> — the same algorithm GPT-2 and (close relatives of) GPT-3/4 use. BPE starts from single bytes and learns which byte-pairs to merge based on frequency in the training corpus. The result is a vocabulary of ~50,000 subword pieces: common whole words ("the", "and"), common word-chunks ("ing", "tion"), and everything else falls back to individual bytes. That's why "unhappily" becomes three pieces but "cat" stays whole — "cat" was common enough in the training text to earn its own merge. We run this via the <code>gpt-tokenizer</code> library, fetched lazily. Fallback to an illustrative split if the CDN is unreachable.</p>
+      </details>
+    </div>
+  </div>
+</div>
+
+<style>
+  #demo-tokenizer .tok-lead { margin: 0 0 1rem !important; font-size: 0.98rem !important; color: var(--nn-body) !important; line-height: 1.6 !important; }
+
+  #demo-tokenizer .tok-presets { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-bottom: 0.9rem; }
+  #demo-tokenizer .tok-preset {
+    padding: 0.4rem 0.78rem; font-family: var(--nn-mono); font-size: 0.78rem;
+    background: #fff; border: 1px solid var(--nn-line); border-radius: 3px;
+    color: var(--nn-ink); cursor: pointer; transition: all 120ms;
+  }
+  #demo-tokenizer .tok-preset:hover { border-color: #b77214; background: rgba(251,191,36,0.10); }
+
+  #demo-tokenizer .tok-input {
+    width: 100%; min-height: 70px; padding: 0.85rem 1rem;
+    font-family: var(--nn-mono); font-size: 0.95rem; color: var(--nn-ink);
+    background: #fff; border: 1px solid var(--nn-line); border-radius: 4px;
+    resize: vertical; line-height: 1.5;
+  }
+  #demo-tokenizer .tok-input:focus { outline: 2px solid rgba(251,191,36,0.45); outline-offset: 1px; border-color: #b77214; }
+
+  #demo-tokenizer .tok-meta { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.9rem 0; }
+  #demo-tokenizer .tok-meta__item {
+    display: flex; align-items: baseline; gap: 0.45rem; flex: 1 1 140px;
+    padding: 0.5rem 0.85rem; background: #fff;
+    border: 1px solid var(--nn-line); border-radius: 3px;
+  }
+  #demo-tokenizer .tok-meta__val {
+    font-family: var(--nn-mono); font-weight: 600; font-size: 1.15rem; color: #b77214;
+  }
+  #demo-tokenizer .tok-meta__key {
+    font-family: var(--nn-mono); font-size: 0.72rem; letter-spacing: 0.06em;
+    text-transform: uppercase; color: var(--nn-muted);
+  }
+
+  #demo-tokenizer .tok-view {
+    min-height: 90px; padding: 0.9rem 0.95rem; background: #fff;
+    border: 1px solid var(--nn-line); border-radius: 4px;
+    line-height: 2.1;
+  }
+  #demo-tokenizer .tok-view__empty { color: var(--nn-muted); font-style: italic; }
+  #demo-tokenizer .tok-chip {
+    display: inline-block; padding: 0.2rem 0.5rem; margin: 0 1px;
+    font-family: var(--nn-mono); font-size: 0.85rem;
+    border: 1px solid; border-radius: 3px; cursor: pointer;
+    transition: transform 80ms, box-shadow 80ms;
+    white-space: pre;
+  }
+  #demo-tokenizer .tok-chip:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+  #demo-tokenizer .tok-chip.is-active { box-shadow: 0 0 0 2px #b77214; }
+  #demo-tokenizer .tok-chip__nl { color: #888; }
+
+  #demo-tokenizer .tok-detail {
+    margin-top: 0.9rem; padding: 0.9rem 1.05rem; background: #fafaf7;
+    border: 1px solid var(--nn-line); border-left: 3px solid #b77214;
+    border-radius: 3px;
+  }
+  #demo-tokenizer .tok-detail__head {
+    display: flex; gap: 0.8rem; align-items: baseline; margin-bottom: 0.55rem;
+    flex-wrap: wrap;
+  }
+  #demo-tokenizer .tok-detail__idx {
+    font-family: var(--nn-mono); font-size: 0.7rem; letter-spacing: 0.1em;
+    text-transform: uppercase; color: #b77214;
+  }
+  #demo-tokenizer .tok-detail__text {
+    font-family: var(--nn-mono); font-size: 0.98rem; color: var(--nn-ink);
+    background: #fff; padding: 0.15rem 0.5rem; border: 1px dashed var(--nn-line);
+    border-radius: 3px; white-space: pre;
+  }
+  #demo-tokenizer .tok-detail__rows { display: grid; grid-template-columns: 80px 1fr; gap: 0.3rem 0.9rem; font-size: 0.86rem; }
+  #demo-tokenizer .tok-detail__row { display: contents; }
+  #demo-tokenizer .tok-detail__row > span:first-child {
+    font-family: var(--nn-mono); font-size: 0.72rem; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--nn-muted);
+  }
+  #demo-tokenizer .tok-detail__row code {
+    font-family: var(--nn-mono); color: var(--nn-ink); word-break: break-all;
+  }
+
+  #demo-tokenizer .tok-status {
+    margin-top: 0.6rem; font-family: var(--nn-mono); font-size: 0.74rem; color: var(--nn-muted);
+  }
+  #demo-tokenizer .tok-status.is-ready { color: #2a9e8e; }
+  #demo-tokenizer .tok-status.is-fallback { color: #b77214; }
+</style>
+
+<script>
+(function(){
+  const root = document.getElementById("demo-tokenizer"); if (!root) return;
+
+  const input = root.querySelector("[data-tok-input]");
+  const view = root.querySelector("[data-tok-view]");
+  const detail = root.querySelector("[data-tok-detail]");
+  const status = root.querySelector("[data-tok-status]");
+  const charsEl = root.querySelector("[data-tok-chars]");
+  const countEl = root.querySelector("[data-tok-count]");
+  const ratioEl = root.querySelector("[data-tok-ratio]");
+  const costEl = root.querySelector("[data-tok-cost]");
+
+  // 8 pleasant but distinguishable chip colours
+  const PALETTE = [
+    ["#fde68a", "#b77214"], ["#bfdbfe", "#1d4ed8"], ["#d9f99d", "#3f6212"],
+    ["#fbcfe8", "#9d174d"], ["#c7d2fe", "#3730a3"], ["#fed7aa", "#9a3412"],
+    ["#a5f3fc", "#155e75"], ["#e9d5ff", "#6b21a8"]
+  ];
+
+  let encoder = null;
+  let decoder = null;
+  let mode = "loading"; // loading | bpe | fallback
+
+  // Fallback "looks like BPE" tokenizer for when the CDN is unreachable.
+  // Not accurate — but the *shape* (subwords, space-prefix, byte explode) is right.
+  function fallbackEncode(text){
+    const out = [];
+    const chunks = text.match(/ ?[A-Za-z]+|\s+|\d+|[^A-Za-z\d\s]+/g) || [];
+    let nextId = 1000;
+    for (const ch of chunks){
+      if (/^\s+$/.test(ch)) {
+        // whitespace runs: each char is its own token (like real BPE for unusual whitespace)
+        for (const c of ch) out.push({ text: c, id: c.charCodeAt(0) });
+      } else if (/^ ?[A-Za-z]+$/.test(ch)) {
+        // split long english-ish words into 2-3 pieces
+        if (ch.length <= 4) out.push({ text: ch, id: nextId++ });
+        else {
+          const cut = Math.ceil(ch.length / 2);
+          out.push({ text: ch.slice(0, cut), id: nextId++ });
+          out.push({ text: ch.slice(cut), id: nextId++ });
+        }
+      } else if (/^\d+$/.test(ch)) {
+        // numbers: each digit is its own token
+        for (const c of ch) out.push({ text: c, id: c.charCodeAt(0) });
+      } else {
+        // punctuation/unicode: each char
+        for (const c of ch) out.push({ text: c, id: c.codePointAt(0) });
+      }
+    }
+    return out;
+  }
+
+  function render(){
+    const text = input.value;
+    charsEl.textContent = text.length;
+
+    let tokens = [];
+    if (mode === "bpe" && encoder){
+      try {
+        const ids = encoder(text);
+        tokens = ids.map(id => ({ id, text: decoder([id]) }));
+      } catch (e) {
+        tokens = fallbackEncode(text);
+      }
+    } else {
+      tokens = fallbackEncode(text);
+    }
+
+    countEl.textContent = tokens.length;
+    ratioEl.textContent = tokens.length ? (text.length / tokens.length).toFixed(2) : "0";
+    costEl.textContent = "$" + (tokens.length * 3 / 1e6).toFixed(5);
+
+    // render chips
+    if (!tokens.length){
+      view.innerHTML = '<div class="tok-view__empty">Type something above to see tokens.</div>';
+      detail.hidden = true; return;
+    }
+    view.innerHTML = "";
+    tokens.forEach((t, i) => {
+      const [bg, fg] = PALETTE[i % PALETTE.length];
+      const chip = document.createElement("span");
+      chip.className = "tok-chip";
+      chip.style.background = bg;
+      chip.style.borderColor = fg;
+      chip.style.color = fg;
+      chip.dataset.idx = i;
+      // visualise newlines + leading spaces
+      let display = t.text;
+      display = display.replace(/\n/g, "\\n").replace(/\t/g, "\\t");
+      if (display === "") display = "∅";
+      chip.textContent = display;
+      chip.addEventListener("click", () => showDetail(i, t));
+      view.appendChild(chip);
+    });
+  }
+
+  function showDetail(i, tok){
+    detail.hidden = false;
+    root.querySelectorAll(".tok-chip").forEach((c, j) => c.classList.toggle("is-active", j === i));
+    root.querySelector("[data-tok-detail-idx]").textContent = `Token ${i}`;
+    const disp = tok.text.replace(/\n/g, "↵").replace(/\t/g, "→") || "∅";
+    root.querySelector("[data-tok-detail-text]").textContent = JSON.stringify(tok.text);
+    root.querySelector("[data-tok-detail-id]").textContent = tok.id;
+    // bytes
+    const bytes = new TextEncoder().encode(tok.text);
+    root.querySelector("[data-tok-detail-bytes]").textContent =
+      Array.from(bytes).map(b => b.toString(16).padStart(2, "0")).join(" ") + ` (${bytes.length} bytes)`;
+    // unicode codepoints
+    const cps = Array.from(tok.text).map(c => "U+" + c.codePointAt(0).toString(16).toUpperCase().padStart(4, "0"));
+    root.querySelector("[data-tok-detail-uni]").textContent = cps.join(" ") || "—";
+  }
+
+  // preset buttons
+  root.querySelectorAll("[data-tok-preset]").forEach(b => {
+    b.addEventListener("click", () => { input.value = b.dataset.tokPreset; render(); });
+  });
+
+  // debounce input
+  let t = null;
+  input.addEventListener("input", () => { clearTimeout(t); t = setTimeout(render, 80); });
+
+  // lazy-load gpt-tokenizer from CDN (GPT-2 encoding, ~600KB)
+  async function loadTokenizer(){
+    status.textContent = "Loading GPT-2 BPE tables…";
+    try {
+      const mod = await import("https://cdn.jsdelivr.net/npm/gpt-tokenizer@2.5.2/esm/encoding/r50k_base.js");
+      encoder = mod.encode || mod.default?.encode;
+      decoder = mod.decode || mod.default?.decode;
+      if (typeof encoder !== "function" || typeof decoder !== "function") throw new Error("tokenizer shape");
+      mode = "bpe";
+      status.textContent = "Ready · real GPT-2 BPE (50,257 tokens in vocab).";
+      status.classList.add("is-ready");
+    } catch (e) {
+      mode = "fallback";
+      status.textContent = "Couldn't load the real BPE tables — showing an approximate split. Shape is right; IDs aren't real.";
+      status.classList.add("is-fallback");
+    }
+    render();
+  }
+
+  loadTokenizer();
+  render();
+})();
+</script>

@@ -1,0 +1,325 @@
+<div class="idemo" id="demo-factory">
+  <div class="idemo__card">
+    <div class="idemo__head"><span class="idemo__title">Interactive · The transformer, as a factory floor</span></div>
+    <div class="idemo__body">
+
+      <p class="fac-lead">Six stations. A sentence walks in. A guess at the next word walks out. Tap any station to see what it does and what the token looks like after its shift.</p>
+
+      <div class="fac-input" data-fac-input>
+        <span class="fac-input__label">Input</span>
+        <div class="fac-input__sentence" data-fac-sentence>The cat sat on the <em>_</em></div>
+        <div class="fac-input__pickers" data-fac-pickers>
+          <button class="fac-pick is-active" data-fac-pick="0">The cat sat on the ___</button>
+          <button class="fac-pick" data-fac-pick="1">Paris is the capital of ___</button>
+          <button class="fac-pick" data-fac-pick="2">2 + 2 = ___</button>
+        </div>
+      </div>
+
+      <div class="fac-floor" data-fac-floor>
+        <svg class="fac-svg" viewBox="0 0 920 260" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+          <defs>
+            <linearGradient id="fac-belt" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="#fef3c7"/>
+              <stop offset="100%" stop-color="#fde68a"/>
+            </linearGradient>
+            <filter id="fac-glow" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="3" result="blur"/>
+              <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+          </defs>
+
+          <rect x="30" y="140" width="860" height="28" rx="4" fill="url(#fac-belt)" stroke="#c98c3a" stroke-width="1"/>
+          <g class="fac-belt-ticks" data-fac-ticks></g>
+
+          <g data-fac-stations></g>
+          <g data-fac-token></g>
+        </svg>
+
+        <div class="fac-ctrl">
+          <button class="fac-ctrl__btn" data-fac-play>▶ Play walk-through</button>
+          <button class="fac-ctrl__btn fac-ctrl__btn--ghost" data-fac-reset>Reset</button>
+          <div class="fac-step" data-fac-step>Stopped · click a station or press play</div>
+        </div>
+      </div>
+
+      <div class="fac-info" data-fac-info>
+        <div class="fac-info__head">
+          <span class="fac-info__idx" data-fac-idx>—</span>
+          <span class="fac-info__title" data-fac-title>Click a station</span>
+        </div>
+        <div class="fac-info__desc" data-fac-desc>Each station does one job. Pick one to see what happens to our little traveller token.</div>
+        <div class="fac-info__token" data-fac-token-info></div>
+      </div>
+
+      <details>
+        <summary>What's actually happening inside each station</summary>
+        <p><strong>1. Tokenizer</strong> splits text into numeric IDs (often subword pieces). <strong>2. Embedding</strong> looks up a vector for each ID from a big table. <strong>3. Attention</strong> lets every position peek at every other position and pull in what's relevant. <strong>4. MLP</strong> is a per-position feed-forward network that transforms the vector non-linearly. <strong>5. Repeat</strong> stacks attention+MLP dozens of times. <strong>6. Unembedding</strong> projects the final vector into a probability over the vocabulary. The belt you see is the <em>residual stream</em> — the running total that every block reads from and writes to.</p>
+      </details>
+    </div>
+  </div>
+</div>
+
+<style>
+  #demo-factory .fac-lead { margin: 0 0 1.1rem !important; font-size: 0.98rem !important; color: var(--nn-body) !important; line-height: 1.6 !important; }
+
+  #demo-factory .fac-input {
+    display: flex; flex-direction: column; gap: 0.55rem;
+    padding: 0.9rem 1rem; margin-bottom: 1.1rem;
+    background: #fff; border: 1px solid var(--nn-line); border-radius: 4px;
+  }
+  #demo-factory .fac-input__label {
+    font-family: var(--nn-mono); font-size: 0.68rem; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--nn-muted);
+  }
+  #demo-factory .fac-input__sentence {
+    font-family: var(--nn-mono); font-size: 1.02rem; color: var(--nn-ink); letter-spacing: 0.01em;
+  }
+  #demo-factory .fac-input__sentence em {
+    display: inline-block; min-width: 1.8em; padding: 0 0.3em;
+    color: #b77214; background: rgba(251,191,36,0.18);
+    border-radius: 3px; font-style: normal;
+  }
+  #demo-factory .fac-input__pickers { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.2rem; }
+  #demo-factory .fac-pick {
+    padding: 0.38rem 0.75rem; font-family: var(--nn-mono); font-size: 0.8rem;
+    background: #fff; border: 1px solid var(--nn-line); border-radius: 3px;
+    color: var(--nn-ink); cursor: pointer; transition: all 120ms;
+  }
+  #demo-factory .fac-pick:hover { border-color: #b77214; }
+  #demo-factory .fac-pick.is-active { background: rgba(251,191,36,0.18); border-color: #b77214; color: #7c4d0a; }
+
+  #demo-factory .fac-floor {
+    background: #fafaf7; border: 1px solid var(--nn-line); border-radius: 4px;
+    padding: 0.9rem 0.8rem 0.85rem; margin-bottom: 1rem;
+  }
+  #demo-factory .fac-svg { display: block; width: 100%; height: auto; }
+  #demo-factory .fac-ctrl {
+    display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;
+    margin-top: 0.4rem; padding-top: 0.7rem; border-top: 1px dashed var(--nn-line);
+  }
+  #demo-factory .fac-ctrl__btn {
+    padding: 0.42rem 0.95rem; font-family: var(--nn-mono); font-size: 0.78rem;
+    background: #b77214; color: #fff; border: none; border-radius: 3px;
+    cursor: pointer; font-weight: 600;
+  }
+  #demo-factory .fac-ctrl__btn:hover { background: #7c4d0a; }
+  #demo-factory .fac-ctrl__btn--ghost { background: transparent; color: var(--nn-ink); border: 1px solid var(--nn-line); }
+  #demo-factory .fac-ctrl__btn--ghost:hover { border-color: #b77214; color: #b77214; background: transparent; }
+  #demo-factory .fac-step {
+    margin-left: auto; font-family: var(--nn-mono); font-size: 0.75rem;
+    color: var(--nn-muted); letter-spacing: 0.03em;
+  }
+
+  #demo-factory .fac-info {
+    padding: 1rem 1.1rem; background: #fff;
+    border: 1px solid var(--nn-line); border-left: 3px solid #b77214;
+    border-radius: 3px;
+  }
+  #demo-factory .fac-info__head { display: flex; gap: 0.7rem; align-items: baseline; margin-bottom: 0.45rem; }
+  #demo-factory .fac-info__idx {
+    font-family: var(--nn-mono); font-size: 0.7rem; letter-spacing: 0.12em;
+    text-transform: uppercase; color: #b77214;
+  }
+  #demo-factory .fac-info__title { font-size: 1.02rem; font-weight: 600; color: var(--nn-ink); }
+  #demo-factory .fac-info__desc { font-size: 0.92rem; color: var(--nn-body); line-height: 1.58; }
+  #demo-factory .fac-info__token {
+    margin-top: 0.7rem; padding: 0.55rem 0.75rem; background: #fafaf7;
+    border: 1px solid var(--nn-line); border-radius: 3px;
+    font-family: var(--nn-mono); font-size: 0.78rem; color: var(--nn-body);
+    word-break: break-word;
+  }
+
+  #demo-factory .fac-svg .fac-box {
+    fill: #fff; stroke: var(--nn-line); stroke-width: 1.3;
+    transition: fill 180ms, stroke 180ms;
+    cursor: pointer;
+  }
+  #demo-factory .fac-svg .fac-box.is-active { fill: #fff6e0; stroke: #b77214; stroke-width: 2; }
+  #demo-factory .fac-svg .fac-box.is-visited { fill: #fff9ea; stroke: #c98c3a; }
+  #demo-factory .fac-svg .fac-box-label {
+    font-family: var(--nn-mono); font-size: 10px; fill: var(--nn-ink);
+    text-anchor: middle; pointer-events: none;
+  }
+  #demo-factory .fac-svg .fac-box-idx {
+    font-family: var(--nn-mono); font-size: 9px; fill: var(--nn-muted);
+    text-anchor: middle; pointer-events: none;
+  }
+  #demo-factory .fac-svg .fac-token-circle {
+    fill: #b77214; filter: url(#fac-glow);
+    transition: cx 700ms cubic-bezier(.4,.05,.2,1);
+  }
+  #demo-factory .fac-svg .fac-token-label {
+    font-family: var(--nn-mono); font-size: 10px; fill: #fff;
+    text-anchor: middle; pointer-events: none; font-weight: 600;
+    transition: x 700ms cubic-bezier(.4,.05,.2,1);
+  }
+
+  @media (max-width: 620px) {
+    #demo-factory .fac-info__head { flex-direction: column; gap: 0.15rem; }
+    #demo-factory .fac-step { width: 100%; margin-left: 0; }
+  }
+</style>
+
+<script>
+(function(){
+  const root = document.getElementById("demo-factory"); if (!root) return;
+
+  const STATIONS = [
+    {
+      idx: "01",
+      label: "Tokenizer",
+      desc: "Splits your text into subword pieces and converts each to an integer ID. 'sat' → 7205. Not words. Not characters. Somewhere in between.",
+      tokenView: (s) => `IDs: [${s.ids.join(", ")}]`
+    },
+    {
+      idx: "02",
+      label: "Embedding",
+      desc: "Each ID looks up a fat vector (768 numbers in GPT-2 small). Similar-meaning tokens get similar vectors. This is the model's first guess at what each word 'means'.",
+      tokenView: () => `Vectors · 768-d each · 'sat' ≈ [0.12, −0.41, 0.88, 0.03, ...]`
+    },
+    {
+      idx: "03",
+      label: "Attention",
+      desc: "Every position looks at every other position and pulls in relevant info. 'sat' notices 'cat' — that's the subject it should agree with. This is how context flows.",
+      tokenView: () => `Mixed vectors · 'sat' now also carries info about 'cat' and 'the'`
+    },
+    {
+      idx: "04",
+      label: "MLP",
+      desc: "A per-position feed-forward network. Transforms each vector non-linearly. Think of it as the model doing a little thinking in place — factual recall, transformation, all of it lives here.",
+      tokenView: () => `Transformed vectors · same shape, new meaning embedded`
+    },
+    {
+      idx: "05",
+      label: "Repeat · 12× blocks",
+      desc: "Attention + MLP is one block. Stack twelve of them (for GPT-2 small). Each block reads from and writes to the shared 'residual stream' — the belt. The stream accumulates meaning.",
+      tokenView: () => `After 12 blocks · vector now encodes 'something that probably follows sat on the'`
+    },
+    {
+      idx: "06",
+      label: "Unembedding",
+      desc: "Project the final vector against every word in the vocabulary. The word with the highest dot-product wins. Out comes a probability distribution — 'mat' 41%, 'floor' 18%, 'couch' 9%...",
+      tokenView: (s) => `Top guess: '${s.guess}' (${s.prob})`
+    }
+  ];
+
+  const PRESETS = [
+    { text: "The cat sat on the ___", ids: [464, 3797, 3332, 319, 262], guess: "mat", prob: "41%" },
+    { text: "Paris is the capital of ___", ids: [40313, 318, 262, 3139, 286], guess: "France", prob: "94%" },
+    { text: "2 + 2 = ___", ids: [17, 1343, 362, 796], guess: "4", prob: "88%" }
+  ];
+
+  let activeStation = -1;
+  let playTimer = null;
+  let presetIdx = 0;
+
+  const svg = root.querySelector(".fac-svg");
+  const stationsG = svg.querySelector("[data-fac-stations]");
+  const tokenG = svg.querySelector("[data-fac-token]");
+  const ticksG = svg.querySelector("[data-fac-ticks]");
+  const infoIdx = root.querySelector("[data-fac-idx]");
+  const infoTitle = root.querySelector("[data-fac-title]");
+  const infoDesc = root.querySelector("[data-fac-desc]");
+  const infoToken = root.querySelector("[data-fac-token-info]");
+  const stepLabel = root.querySelector("[data-fac-step]");
+  const sentenceEl = root.querySelector("[data-fac-sentence]");
+
+  function drawStations(){
+    stationsG.innerHTML = "";
+    const x0 = 30, w = 860, y = 80, h = 60;
+    STATIONS.forEach((s, i) => {
+      const bx = x0 + (w / STATIONS.length) * i + 8;
+      const bw = (w / STATIONS.length) - 16;
+      const box = document.createElementNS("http://www.w3.org/2000/svg", "g");
+      box.innerHTML =
+        `<rect class="fac-box" data-station="${i}" x="${bx}" y="${y}" width="${bw}" height="${h}" rx="5"/>` +
+        `<text class="fac-box-idx" x="${bx + bw/2}" y="${y + 17}">${s.idx}</text>` +
+        `<text class="fac-box-label" x="${bx + bw/2}" y="${y + 40}">${s.label}</text>`;
+      stationsG.appendChild(box);
+    });
+    ticksG.innerHTML = "";
+    for (let i = 0; i <= STATIONS.length; i++){
+      const tx = x0 + (w / STATIONS.length) * i;
+      ticksG.innerHTML += `<line x1="${tx}" y1="168" x2="${tx}" y2="176" stroke="#c98c3a" stroke-width="1"/>`;
+    }
+    stationsG.querySelectorAll(".fac-box").forEach(b => {
+      b.addEventListener("click", () => select(parseInt(b.dataset.station)));
+    });
+  }
+
+  function drawToken(station){
+    const x0 = 30, w = 860;
+    const colW = w / STATIONS.length;
+    const cx = station < 0 ? x0 + 10 : x0 + colW * station + colW / 2;
+    tokenG.innerHTML =
+      `<circle class="fac-token-circle" cx="${cx}" cy="154" r="16"/>` +
+      `<text class="fac-token-label" x="${cx}" y="157">sat</text>`;
+  }
+
+  function updateInfo(station){
+    if (station < 0) {
+      infoIdx.textContent = "—";
+      infoTitle.textContent = "Click a station";
+      infoDesc.textContent = "Each station does one job. Pick one to see what happens to our little traveller token.";
+      infoToken.textContent = "";
+      return;
+    }
+    const s = STATIONS[station];
+    infoIdx.textContent = `Station ${s.idx}`;
+    infoTitle.textContent = s.label;
+    infoDesc.textContent = s.desc;
+    infoToken.textContent = s.tokenView(PRESETS[presetIdx]);
+  }
+
+  function select(station){
+    stopPlay();
+    activeStation = station;
+    stationsG.querySelectorAll(".fac-box").forEach((b, i) => {
+      b.classList.toggle("is-active", i === station);
+      b.classList.toggle("is-visited", i < station);
+    });
+    drawToken(station);
+    updateInfo(station);
+    stepLabel.textContent = `Step ${station + 1} / ${STATIONS.length}`;
+  }
+
+  function play(){
+    stopPlay();
+    let i = 0;
+    select(i);
+    playTimer = setInterval(() => {
+      i++;
+      if (i >= STATIONS.length){ stopPlay(); stepLabel.textContent = "Done · try another sentence"; return; }
+      select(i);
+    }, 1600);
+  }
+  function stopPlay(){ if (playTimer){ clearInterval(playTimer); playTimer = null; } }
+
+  function reset(){
+    stopPlay();
+    activeStation = -1;
+    stationsG.querySelectorAll(".fac-box").forEach(b => { b.classList.remove("is-active","is-visited"); });
+    drawToken(-1);
+    updateInfo(-1);
+    stepLabel.textContent = "Stopped · click a station or press play";
+  }
+
+  function pickPreset(i){
+    presetIdx = i;
+    root.querySelectorAll("[data-fac-pick]").forEach(b => b.classList.toggle("is-active", parseInt(b.dataset.facPick) === i));
+    const p = PRESETS[i];
+    sentenceEl.innerHTML = p.text.replace("___", "<em>_</em>");
+    if (activeStation >= 0) updateInfo(activeStation);
+  }
+
+  root.querySelector("[data-fac-play]").addEventListener("click", play);
+  root.querySelector("[data-fac-reset]").addEventListener("click", reset);
+  root.querySelectorAll("[data-fac-pick]").forEach(b => {
+    b.addEventListener("click", () => pickPreset(parseInt(b.dataset.facPick)));
+  });
+
+  drawStations();
+  drawToken(-1);
+  updateInfo(-1);
+})();
+</script>
