@@ -1,0 +1,115 @@
+<div class="demo demo-init" id="demo-init">
+  <div class="init__head">
+    <div class="init__title">Weight initialization lab</div>
+    <div class="init__sub">Run a fresh 6-layer net with the chosen scheme. See whether activations stay alive — or die — as signal travels through depth.</div>
+  </div>
+  <div class="init__tabs" data-init-tabs>
+    <button class="init__tab is-active" data-scheme="zeros">Zeros</button>
+    <button class="init__tab" data-scheme="uniform">Uniform [-1,1]</button>
+    <button class="init__tab" data-scheme="small">Tiny normal (0.01)</button>
+    <button class="init__tab" data-scheme="xavier">Xavier</button>
+    <button class="init__tab" data-scheme="he">He (Kaiming)</button>
+    <button class="init__tab" data-scheme="big">Wild (std=3)</button>
+  </div>
+  <div class="init__row">
+    <div class="init__panel">
+      <div class="init__plabel">Activation magnitude per layer (log scale)</div>
+      <canvas id="init-act" width="400" height="220"></canvas>
+    </div>
+    <div class="init__panel">
+      <div class="init__plabel">Weight histogram (layer 3)</div>
+      <canvas id="init-hist" width="400" height="220"></canvas>
+    </div>
+  </div>
+  <div class="init__diag" id="init-diag">—</div>
+  <div class="init__actions">
+    <button data-init-act="reseed">Reseed (new random sample)</button>
+  </div>
+</div>
+<style>
+  .demo-init{border:1px solid var(--nn-line,#e7e2da);border-radius:14px;padding:18px;margin:18px 0;background:#fffaf3;font-family:var(--nn-body,system-ui)}
+  .demo-init .init__title{font-weight:700;color:#7c4d0a;font-size:15px}
+  .demo-init .init__sub{font-size:13px;color:var(--nn-muted,#7a6a52);margin-top:3px}
+  .demo-init .init__tabs{display:flex;gap:6px;flex-wrap:wrap;margin:14px 0 10px}
+  .demo-init .init__tab{border:1px solid #ddb88e;background:#fff6e0;color:#7c4d0a;padding:6px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+  .demo-init .init__tab.is-active{background:#fbbf24;color:#3a2106;border-color:#b77214}
+  .demo-init .init__row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .demo-init .init__panel{background:#fffefb;border:1px solid #ecdbc0;border-radius:8px;padding:10px}
+  .demo-init .init__plabel{font-size:11px;color:#7c4d0a;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;font-weight:700}
+  .demo-init canvas{width:100%;height:auto;display:block}
+  .demo-init .init__diag{margin-top:10px;font-family:ui-monospace,Menlo,monospace;font-size:12px;color:#5a3d12;background:#fff6e0;border:1px dashed #ddb88e;padding:8px 12px;border-radius:8px;line-height:1.55}
+  .demo-init .init__actions{margin-top:8px}
+  .demo-init .init__actions button{border:1px solid #ddb88e;background:#fff6e0;color:#7c4d0a;padding:6px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+  .demo-init .init__actions button:hover{background:#fbbf24;color:#3a2106}
+  @media (max-width:560px){.demo-init .init__row{grid-template-columns:1fr}}
+</style>
+<script>
+(function(){
+  const root=document.getElementById('demo-init'); if(!root) return;
+  const tabs=root.querySelectorAll('[data-scheme]');
+  const actC=root.querySelector('#init-act'), aCtx=actC.getContext('2d');
+  const histC=root.querySelector('#init-hist'), hCtx=histC.getContext('2d');
+  const diag=root.querySelector('#init-diag');
+  const N=64, L=6; let scheme='zeros';
+  function gauss(){let u=0,v=0; while(!u)u=Math.random(); while(!v)v=Math.random(); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+  function makeW(s){
+    const fanIn=N;
+    const sample=()=>{ if(s==='zeros')return 0; if(s==='uniform')return (Math.random()*2-1); if(s==='small')return gauss()*0.01; if(s==='xavier')return gauss()*Math.sqrt(1/fanIn); if(s==='he')return gauss()*Math.sqrt(2/fanIn); if(s==='big')return gauss()*3;};
+    const W=[]; for(let l=0;l<L;l++){const m=Array.from({length:N},()=>Array.from({length:N},sample)); W.push(m);} return W;
+  }
+  function relu(x){return Math.max(0,x);}
+  function forward(W){
+    let x=Array.from({length:N},()=>gauss());
+    const norms=[]; const xs=[x.slice()]; norms.push(rms(x));
+    for(let l=0;l<L;l++){
+      const m=W[l]; const nx=new Array(N);
+      for(let i=0;i<N;i++){let s=0; for(let j=0;j<N;j++) s+=m[i][j]*x[j]; nx[i]=relu(s);}
+      x=nx; xs.push(x.slice()); norms.push(rms(x));
+    }
+    return {norms, xs, W};
+  }
+  function rms(v){let s=0; for(const x of v)s+=x*x; return Math.sqrt(s/v.length);}
+  function drawAct(norms){
+    const W=actC.width,H=actC.height; aCtx.clearRect(0,0,W,H);
+    const pad={l:48,r:14,t:14,b:24}; const gw=W-pad.l-pad.r, gh=H-pad.t-pad.b;
+    const yMin=-3, yMax=3;
+    aCtx.strokeStyle='#f0e3cc'; aCtx.lineWidth=1;
+    for(let v=yMin;v<=yMax;v++){const Y=pad.t+(yMax-v)/(yMax-yMin)*gh; aCtx.beginPath();aCtx.moveTo(pad.l,Y);aCtx.lineTo(W-pad.r,Y);aCtx.stroke(); aCtx.fillStyle='#7c4d0a'; aCtx.font='10px ui-monospace,Menlo,monospace'; aCtx.fillText('10^'+v,8,Y+3);}
+    aCtx.strokeStyle='#fbbf24'; aCtx.lineWidth=2.2; aCtx.beginPath();
+    norms.forEach((n,i)=>{const X=pad.l+(i/(norms.length-1))*gw; const ly=Math.log10(Math.max(1e-30,n)); const Y=pad.t+(yMax-ly)/(yMax-yMin)*gh; if(i===0)aCtx.moveTo(X,Y); else aCtx.lineTo(X,Y);});
+    aCtx.stroke();
+    norms.forEach((n,i)=>{const X=pad.l+(i/(norms.length-1))*gw; const ly=Math.log10(Math.max(1e-30,n)); const Y=pad.t+(yMax-ly)/(yMax-yMin)*gh; aCtx.fillStyle='#b77214'; aCtx.beginPath(); aCtx.arc(X,Y,3.4,0,Math.PI*2); aCtx.fill();});
+    aCtx.fillStyle='#7c4d0a'; aCtx.font='10px ui-monospace,Menlo,monospace';
+    norms.forEach((n,i)=>{const X=pad.l+(i/(norms.length-1))*gw; aCtx.fillText('L'+i,X-6,H-8);});
+  }
+  function drawHist(W){
+    const w=W[2]; const flat=[]; for(const r of w) for(const v of r) flat.push(v);
+    const Wp=histC.width,Hp=histC.height; hCtx.clearRect(0,0,Wp,Hp);
+    const pad={l:14,r:14,t:14,b:24}; const gw=Wp-pad.l-pad.r, gh=Hp-pad.t-pad.b;
+    let mx=0; for(const v of flat) if(Math.abs(v)>mx) mx=Math.abs(v); mx=Math.max(mx,0.001);
+    const bins=24; const cnt=new Array(bins).fill(0);
+    for(const v of flat){const b=Math.min(bins-1,Math.max(0,Math.floor((v+mx)/(2*mx)*bins))); cnt[b]++;}
+    const cmx=Math.max(...cnt,1);
+    cnt.forEach((c,i)=>{const bw=gw/bins; const X=pad.l+i*bw; const h=(c/cmx)*gh; hCtx.fillStyle='#fbbf24'; hCtx.fillRect(X+1,Hp-pad.b-h,bw-2,h);});
+    hCtx.strokeStyle='#7c4d0a'; hCtx.lineWidth=1; hCtx.beginPath(); hCtx.moveTo(pad.l,Hp-pad.b); hCtx.lineTo(Wp-pad.r,Hp-pad.b); hCtx.stroke();
+    hCtx.fillStyle='#7c4d0a'; hCtx.font='10px ui-monospace,Menlo,monospace';
+    hCtx.fillText('-'+mx.toFixed(2),pad.l,Hp-8); hCtx.fillText(mx.toFixed(2),Wp-pad.r-26,Hp-8); hCtx.fillText('0',Wp/2-3,Hp-8);
+  }
+  function diagnose(s,norms){
+    const last=norms[norms.length-1]; const first=norms[0]; const ratio=last/Math.max(1e-30,first);
+    const verdict={
+      zeros:'Every neuron computes the same thing — symmetry never breaks. Training would do nothing.',
+      uniform:'Variance grows / shrinks unpredictably. Some layers saturate, others vanish.',
+      small:'Signal dies fast. By the last layer, activations are near zero — gradients vanish too.',
+      xavier:'Signal preserved across layers (designed for tanh / sigmoid).',
+      he:'Best for ReLU networks: variance stays in a healthy range.',
+      big:'Activations explode. Loss = NaN within a few steps.'
+    }[s];
+    diag.innerHTML=`<b>${s.toUpperCase()}</b> · activation RMS L0 → L${L} : ${first.toExponential(2)} → ${last.toExponential(2)} (ratio ${ratio.toExponential(2)}) <br>${verdict}`;
+  }
+  function run(){const W=makeW(scheme); const r=forward(W); drawAct(r.norms); drawHist(W); diagnose(scheme,r.norms);}
+  tabs.forEach(t=>t.addEventListener('click',()=>{tabs.forEach(x=>x.classList.remove('is-active')); t.classList.add('is-active'); scheme=t.dataset.scheme; run();}));
+  root.querySelector('[data-init-act="reseed"]').addEventListener('click',run);
+  run();
+})();
+</script>

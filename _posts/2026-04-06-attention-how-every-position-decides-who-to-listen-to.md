@@ -1,7 +1,7 @@
 ---
 layout: post-article
 title: "Attention: How Every Position Decides Who to Listen To"
-date: 2026-05-26
+date: 2026-04-06
 permalink: /posts/attention-how-every-position-decides-who-to-listen-to/
 excerpt: "Attention is a dot-product-based routing mechanism. Each head decomposes into a QK circuit (where to attend) and an OV circuit (what to write back), enabling head-level interpretability."
 read_time_label: "15 min read"

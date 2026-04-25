@@ -1,7 +1,7 @@
 ---
 layout: post-article
 title: "Weights & Connections: Where Knowledge Actually Lives"
-date: 2026-03-19
+date: 2026-02-11
 permalink: /posts/weights-and-connections/
 excerpt: "Every fact, every grammar rule, every pattern a model ever learned is compressed into a pile of numbers. Nobody designed a single one of them."
 read_time_label: "10 min read"
@@ -59,6 +59,10 @@ Random weights, before training: all small, roughly centred on zero. The network
 
 After training on language: the weights organise into structure. Not structure we designed. Structure that reflects the regularities in language.
 
+{% include demos/weight-init-lab.html %}
+
+The "small and centred on zero" part isn't aesthetic — it's load-bearing. Pick the wrong starting distribution and the signal either dies before it reaches the output or explodes before the first gradient step. He and Xavier initialization aren't tricks; they're the only reason deep networks train at all.
+
 ### Word embeddings
 
 Words get encoded as high-dimensional vectors. The weights arrange these vectors so that:
@@ -111,6 +115,10 @@ For MI: most research looks at activations (what's the model thinking about *thi
 One sentence on how they got this way: during training, the model sees an example, makes a prediction, measures how wrong it was, and nudges every weight slightly in the direction that would've made it less wrong.
 
 Do that billions of times, across trillions of words. Yes, literally trillions. Yes, it feels absurd. It also works.
+
+{% include demos/backprop-flow.html %}
+
+That's gradient descent in miniature. Every weight in a 70B-parameter model gets updated by the exact same logic: forward to compute loss, backward to compute who's responsible, then nudge each weight downhill. The "trillions of nudges" is just this loop, looped a *lot*.
 
 The weights that emerge encode the statistical regularities of everything the model was trained on. Grammar. Facts. Logic. Poetry. Chemistry. Slang. All of it. Compressed into numbers.
 

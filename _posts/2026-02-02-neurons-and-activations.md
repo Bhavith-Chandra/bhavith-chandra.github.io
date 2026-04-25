@@ -1,7 +1,7 @@
 ---
 layout: post-article
 title: "Neurons & Activations: The On/Off Switch That Isn't"
-date: 2026-03-01
+date: 2026-02-02
 permalink: /posts/neurons-and-activations/
 excerpt: "Your brain has 86 billion neurons. GPT-4 has about 1.8 trillion. Same word, not remotely the same thing. And the AI version is stunningly simple."
 read_time_label: "9 min read"
@@ -51,6 +51,10 @@ Three you'll meet:
 
 ReLU's simplicity is the superpower. Doesn't saturate. Doesn't vanish. And when a ReLU neuron outputs zero, it's not half-committed. It's *silent*. A clean, readable state. Which turns out to matter a lot when you're trying to reverse-engineer what the thing is doing.
 
+{% include demos/activation-zoo.html %}
+
+The dashed line above is the *derivative* of the activation, which is the number backprop multiplies by to push gradient through the neuron. Where the curve is flat, the derivative is zero, and learning stops in its tracks. That single observation is why ReLU beat sigmoid and why every training failure of the 2000s now has a name.
+
 <aside class="callout callout--analogy">
   <div class="callout__label">Analogy</div>
   <p>Sigmoid is a dimmer switch with friction. It resists going all the way on or off. ReLU is a gate: nothing, then a straight open pipe. Gates are easier to reason about. That's most of why ReLU won.</p>
@@ -78,6 +82,10 @@ One neuron doesn't do much. A layer of them (512, 1024, 4096 neurons all looking
 Think of a layer as a panel of critics watching the same movie. One obsesses over pacing. One about dialogue. One only cares about cinematography. Each outputs a score. Together their scores paint a richer picture than any single critic could.
 
 The next layer reads the scores and forms *opinions about opinions*. Each layer summarises the one below it into something more compact and more meaningful. That's how depth becomes abstraction.
+
+{% include demos/neuron-firing-grid.html %}
+
+Move the inputs around. Each unique combination produces a different *fingerprint* across the 36 neurons. That fingerprint is what later layers actually see — not the raw inputs, not even the individual neurons, but the *shape* of the firing pattern across the whole layer. Concept = pattern. Pattern = vector. That's the whole game.
 
 ## Bias, the neuron's default mood
 

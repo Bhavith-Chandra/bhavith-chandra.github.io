@@ -1,7 +1,7 @@
 ---
 layout: post-article
 title: "How Training Works: The Ball Rolling Downhill"
-date: 2026-04-23
+date: 2026-03-01
 permalink: /posts/how-training-works/
 excerpt: "Every weight started life as a random number. All the grammar, all the facts, learned by being wrong billions of times. This has a name, and it's the closest thing AI has to a creation story."
 read_time_label: "12 min read"
@@ -84,6 +84,10 @@ The learning rate is one of the most important numbers in training. Controls how
 
 Finding the right LR is part science, part art. Modern training uses *adaptive* learning rates. Algorithms like **Adam** adjust the step size for each weight individually based on how the gradient has been behaving.
 
+{% include demos/lr-explorer.html %}
+
+Drag the slider all the way down — the ball creeps and gives up before reaching zero. Drag it past 1.0 — the ball bounces off both walls of the bowl. Drag it past 2.0 — the ball escapes the canvas entirely. There's no good rule for "the right" learning rate. Every modern optimizer is essentially a different way of guessing it from local geometry.
+
 ## Backpropagation, computing the gradient efficiently
 
 Problem: a model has billions of weights. Computing the gradient for all of them by testing each one (*"what if I nudged this weight up a tiny bit?"*) would take forever.
@@ -111,6 +115,10 @@ One **epoch** = one full pass through the entire training dataset. Models are ty
 - **Batch gradient descent.** Use the full dataset. Too slow for large datasets.
 
 Modern training uses mini-batches with Adam. An improved version of SGD with adaptive learning rates and momentum.
+
+{% include demos/optimizer-race.html %}
+
+Three runners, same start. Plain SGD only knows local slope, so on a long thin valley it ricochets between walls. Momentum carries velocity through small bumps and accelerates downhill. Adam adapts each direction's step size independently and tends to find the basin even on weird surfaces. Click anywhere on the canvas to teleport the start — every optimizer's character changes with the terrain.
 
 ## Overfitting
 

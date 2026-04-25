@@ -1,7 +1,7 @@
 ---
 layout: post-article
 title: "The Transformer, Demystified: A Factory Floor That Runs on Language"
-date: 2026-04-24
+date: 2026-03-10
 permalink: /posts/the-transformer-demystified/
 excerpt: "A decoder-only transformer is a stack of N identical blocks operating on a residual stream of token vectors. Six stations, one conveyor belt, one probability distribution per step."
 read_time_label: "12 min read"

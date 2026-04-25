@@ -1,0 +1,94 @@
+<div class="demo demo-fh" id="demo-fh">
+  <div class="fh__head">
+    <div class="fh__title">Feature hierarchy: what each layer “sees”</div>
+    <div class="fh__sub">Click any tile to inspect a unit. Layer 1 finds edges; layer 4 has assembled them into a face.</div>
+  </div>
+  <div class="fh__board">
+    <div class="fh__layer" data-layer="1"><div class="fh__llabel">Layer 1 · edges</div><div class="fh__row" data-row="1"></div></div>
+    <div class="fh__layer" data-layer="2"><div class="fh__llabel">Layer 2 · textures</div><div class="fh__row" data-row="2"></div></div>
+    <div class="fh__layer" data-layer="3"><div class="fh__llabel">Layer 3 · parts</div><div class="fh__row" data-row="3"></div></div>
+    <div class="fh__layer" data-layer="4"><div class="fh__llabel">Layer 4 · objects</div><div class="fh__row" data-row="4"></div></div>
+  </div>
+  <div class="fh__inspector">
+    <div class="fh__plabel">Selected unit</div>
+    <div class="fh__inspector-row">
+      <canvas id="fh-zoom" width="180" height="180"></canvas>
+      <div class="fh__info" id="fh-info">Click any tile above to read what activates this unit and which earlier-layer features feed it.</div>
+    </div>
+  </div>
+</div>
+<style>
+  .demo-fh{border:1px solid var(--nn-line,#e7e2da);border-radius:14px;padding:18px;margin:18px 0;background:#fffaf3;font-family:var(--nn-body,system-ui)}
+  .demo-fh .fh__title{font-weight:700;color:#7c4d0a;font-size:15px}
+  .demo-fh .fh__sub{font-size:13px;color:var(--nn-muted,#7a6a52);margin-top:3px}
+  .demo-fh .fh__board{display:flex;flex-direction:column;gap:10px;margin:14px 0 16px}
+  .demo-fh .fh__layer{background:#fffefb;border:1px solid #ecdbc0;border-radius:8px;padding:10px}
+  .demo-fh .fh__llabel{font-size:11px;color:#7c4d0a;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;font-weight:700}
+  .demo-fh .fh__row{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
+  .demo-fh .fh__tile{aspect-ratio:1;border:1px solid #e0c89e;border-radius:6px;cursor:pointer;background:#fff6e0;overflow:hidden;position:relative;transition:transform 0.12s}
+  .demo-fh .fh__tile:hover{transform:translateY(-2px);border-color:#b77214}
+  .demo-fh .fh__tile.is-active{border:2px solid #b77214;box-shadow:0 0 0 2px #fde9bf}
+  .demo-fh .fh__tile canvas{width:100%;height:100%;display:block}
+  .demo-fh .fh__inspector{background:#fff6e0;border:1px dashed #ddb88e;border-radius:8px;padding:12px}
+  .demo-fh .fh__plabel{font-size:11px;color:#7c4d0a;text-transform:uppercase;letter-spacing:0.06em;font-weight:700;margin-bottom:8px}
+  .demo-fh .fh__inspector-row{display:flex;gap:14px;align-items:flex-start}
+  .demo-fh #fh-zoom{flex-shrink:0;border:1px solid #ecdbc0;border-radius:6px;background:#fffefb}
+  .demo-fh .fh__info{font-family:ui-monospace,Menlo,monospace;font-size:12px;color:#5a3d12;line-height:1.55}
+  .demo-fh .fh__info b{color:#7c4d0a}
+  @media (max-width:560px){.demo-fh .fh__row{grid-template-columns:repeat(3,1fr)}.demo-fh .fh__inspector-row{flex-direction:column}}
+</style>
+<script>
+(function(){
+  const root=document.getElementById('demo-fh'); if(!root) return;
+  const palettes={
+    1:[{name:'horizontal edge',drawer:edgeDrawer(0)},{name:'vertical edge',drawer:edgeDrawer(90)},{name:'diagonal /',drawer:edgeDrawer(45)},{name:'diagonal \\',drawer:edgeDrawer(135)},{name:'thin line',drawer:edgeDrawer(20,1)},{name:'curve',drawer:curveDrawer()}],
+    2:[{name:'corner',drawer:cornerDrawer()},{name:'cross-hatch',drawer:hatchDrawer()},{name:'dot grid',drawer:dotsDrawer()},{name:'stripes',drawer:stripesDrawer()},{name:'gradient',drawer:gradDrawer()},{name:'checker',drawer:checkerDrawer()}],
+    3:[{name:'eye',drawer:eyeDrawer()},{name:'circle',drawer:circleDrawer()},{name:'T-junction',drawer:tDrawer()},{name:'paw',drawer:pawDrawer()},{name:'leaf',drawer:leafDrawer()},{name:'wheel',drawer:wheelDrawer()}],
+    4:[{name:'face',drawer:faceDrawer()},{name:'dog',drawer:dogDrawer()},{name:'tree',drawer:treeDrawer()},{name:'car',drawer:carDrawer()},{name:'house',drawer:houseDrawer()},{name:'flower',drawer:flowerDrawer()}]
+  };
+  const wires={
+    1:'raw pixels',
+    2:'edges from layer 1',
+    3:'textures and corners from layer 2',
+    4:'parts (eyes, circles, T-junctions) from layer 3'
+  };
+  for(let l=1;l<=4;l++){
+    const row=root.querySelector(`[data-row="${l}"]`);
+    palettes[l].forEach((unit,idx)=>{
+      const tile=document.createElement('div'); tile.className='fh__tile';
+      const c=document.createElement('canvas'); c.width=120; c.height=120;
+      tile.appendChild(c); unit.drawer(c.getContext('2d'),120);
+      tile.addEventListener('click',()=>{
+        root.querySelectorAll('.fh__tile').forEach(t=>t.classList.remove('is-active'));
+        tile.classList.add('is-active');
+        select(l,idx,unit);
+      });
+      row.appendChild(tile);
+    });
+  }
+  function select(l,idx,unit){
+    const z=root.querySelector('#fh-zoom').getContext('2d'); z.clearRect(0,0,180,180); unit.drawer(z,180);
+    root.querySelector('#fh-info').innerHTML=`Layer <b>${l}</b>, unit ${idx+1} · prefers <b>${unit.name}</b>.<br>Reads from <b>${wires[l]}</b>.<br><span style="color:#7a6a52">Lower-level features compose into this one — the same dot pattern is used to recognize an entire image at the top.</span>`;
+  }
+  function edgeDrawer(angle,thin){return (g,s)=>{g.fillStyle='#fff6e0'; g.fillRect(0,0,s,s); g.save(); g.translate(s/2,s/2); g.rotate(angle*Math.PI/180); g.fillStyle='#7c4d0a'; const t=thin?2:s*0.18; g.fillRect(-s,-t/2,s*2,t); g.restore();}}
+  function curveDrawer(){return (g,s)=>{g.fillStyle='#fff6e0'; g.fillRect(0,0,s,s); g.strokeStyle='#7c4d0a'; g.lineWidth=s*0.16; g.beginPath(); g.arc(s*0.65,s*0.65,s*0.45,Math.PI,1.5*Math.PI); g.stroke();}}
+  function cornerDrawer(){return (g,s)=>{g.fillStyle='#fff6e0'; g.fillRect(0,0,s,s); g.fillStyle='#7c4d0a'; g.fillRect(s*0.15,s*0.15,s*0.7,s*0.16); g.fillRect(s*0.15,s*0.15,s*0.16,s*0.7);}}
+  function hatchDrawer(){return (g,s)=>{g.fillStyle='#fff6e0'; g.fillRect(0,0,s,s); g.strokeStyle='#7c4d0a'; g.lineWidth=2; for(let i=-s;i<s*2;i+=s*0.18){g.beginPath();g.moveTo(i,0);g.lineTo(i+s,s);g.stroke(); g.beginPath();g.moveTo(i+s,0);g.lineTo(i,s);g.stroke();}}}
+  function dotsDrawer(){return (g,s)=>{g.fillStyle='#fff6e0'; g.fillRect(0,0,s,s); g.fillStyle='#7c4d0a'; for(let x=s*0.18;x<s;x+=s*0.22) for(let y=s*0.18;y<s;y+=s*0.22){g.beginPath(); g.arc(x,y,s*0.05,0,Math.PI*2); g.fill();}}}
+  function stripesDrawer(){return (g,s)=>{g.fillStyle='#fff6e0'; g.fillRect(0,0,s,s); g.fillStyle='#7c4d0a'; for(let y=0;y<s;y+=s*0.2) g.fillRect(0,y,s,s*0.1);}}
+  function gradDrawer(){return (g,s)=>{const grd=g.createLinearGradient(0,0,s,s); grd.addColorStop(0,'#fff6e0'); grd.addColorStop(1,'#7c4d0a'); g.fillStyle=grd; g.fillRect(0,0,s,s);}}
+  function checkerDrawer(){return (g,s)=>{const n=4; const t=s/n; for(let i=0;i<n;i++) for(let j=0;j<n;j++){g.fillStyle=(i+j)%2?'#7c4d0a':'#fff6e0'; g.fillRect(i*t,j*t,t,t);}}}
+  function eyeDrawer(){return (g,s)=>{g.fillStyle='#fff6e0'; g.fillRect(0,0,s,s); g.fillStyle='#fffefb'; g.beginPath(); g.ellipse(s/2,s/2,s*0.38,s*0.22,0,0,Math.PI*2); g.fill(); g.strokeStyle='#7c4d0a'; g.lineWidth=2; g.stroke(); g.fillStyle='#7c4d0a'; g.beginPath(); g.arc(s/2,s/2,s*0.13,0,Math.PI*2); g.fill();}}
+  function circleDrawer(){return (g,s)=>{g.fillStyle='#fff6e0'; g.fillRect(0,0,s,s); g.strokeStyle='#7c4d0a'; g.lineWidth=s*0.08; g.beginPath(); g.arc(s/2,s/2,s*0.32,0,Math.PI*2); g.stroke();}}
+  function tDrawer(){return (g,s)=>{g.fillStyle='#fff6e0'; g.fillRect(0,0,s,s); g.fillStyle='#7c4d0a'; g.fillRect(s*0.18,s*0.32,s*0.64,s*0.12); g.fillRect(s*0.44,s*0.32,s*0.12,s*0.5);}}
+  function pawDrawer(){return (g,s)=>{g.fillStyle='#fff6e0'; g.fillRect(0,0,s,s); g.fillStyle='#7c4d0a'; g.beginPath(); g.ellipse(s/2,s*0.62,s*0.22,s*0.17,0,0,Math.PI*2); g.fill(); [[0.32,0.32],[0.5,0.24],[0.68,0.32],[0.78,0.5]].forEach(([x,y])=>{g.beginPath(); g.arc(s*x,s*y,s*0.07,0,Math.PI*2); g.fill();});}}
+  function leafDrawer(){return (g,s)=>{g.fillStyle='#fff6e0'; g.fillRect(0,0,s,s); g.fillStyle='#0d6b3a'; g.beginPath(); g.moveTo(s*0.5,s*0.15); g.quadraticCurveTo(s*0.85,s*0.5,s*0.5,s*0.85); g.quadraticCurveTo(s*0.15,s*0.5,s*0.5,s*0.15); g.fill();}}
+  function wheelDrawer(){return (g,s)=>{g.fillStyle='#fff6e0'; g.fillRect(0,0,s,s); g.fillStyle='#1a1a1a'; g.beginPath(); g.arc(s/2,s/2,s*0.36,0,Math.PI*2); g.fill(); g.fillStyle='#7c4d0a'; g.beginPath(); g.arc(s/2,s/2,s*0.13,0,Math.PI*2); g.fill();}}
+  function faceDrawer(){return (g,s)=>{g.fillStyle='#fff6e0'; g.fillRect(0,0,s,s); g.fillStyle='#fde9bf'; g.beginPath(); g.arc(s/2,s/2,s*0.36,0,Math.PI*2); g.fill(); g.strokeStyle='#7c4d0a'; g.lineWidth=2; g.stroke(); g.fillStyle='#7c4d0a'; g.beginPath(); g.arc(s*0.4,s*0.45,s*0.04,0,Math.PI*2); g.fill(); g.beginPath(); g.arc(s*0.6,s*0.45,s*0.04,0,Math.PI*2); g.fill(); g.beginPath(); g.arc(s/2,s*0.6,s*0.12,0.1*Math.PI,0.9*Math.PI); g.stroke();}}
+  function dogDrawer(){return (g,s)=>{g.fillStyle='#fff6e0'; g.fillRect(0,0,s,s); g.fillStyle='#a87844'; g.beginPath(); g.ellipse(s/2,s*0.55,s*0.28,s*0.22,0,0,Math.PI*2); g.fill(); g.beginPath(); g.ellipse(s*0.32,s*0.32,s*0.1,s*0.16,0,0,Math.PI*2); g.fill(); g.beginPath(); g.ellipse(s*0.68,s*0.32,s*0.1,s*0.16,0,0,Math.PI*2); g.fill(); g.fillStyle='#1a1a1a'; g.beginPath(); g.arc(s*0.42,s*0.55,s*0.03,0,Math.PI*2); g.fill(); g.beginPath(); g.arc(s*0.58,s*0.55,s*0.03,0,Math.PI*2); g.fill(); g.beginPath(); g.arc(s/2,s*0.65,s*0.04,0,Math.PI*2); g.fill();}}
+  function treeDrawer(){return (g,s)=>{g.fillStyle='#fff6e0'; g.fillRect(0,0,s,s); g.fillStyle='#7c4d0a'; g.fillRect(s*0.46,s*0.5,s*0.08,s*0.4); g.fillStyle='#0d6b3a'; g.beginPath(); g.arc(s/2,s*0.4,s*0.3,0,Math.PI*2); g.fill();}}
+  function carDrawer(){return (g,s)=>{g.fillStyle='#fff6e0'; g.fillRect(0,0,s,s); g.fillStyle='#b25c2c'; g.fillRect(s*0.12,s*0.5,s*0.76,s*0.22); g.beginPath(); g.moveTo(s*0.22,s*0.5); g.lineTo(s*0.32,s*0.32); g.lineTo(s*0.68,s*0.32); g.lineTo(s*0.78,s*0.5); g.closePath(); g.fill(); g.fillStyle='#1a1a1a'; g.beginPath(); g.arc(s*0.28,s*0.74,s*0.07,0,Math.PI*2); g.fill(); g.beginPath(); g.arc(s*0.72,s*0.74,s*0.07,0,Math.PI*2); g.fill();}}
+  function houseDrawer(){return (g,s)=>{g.fillStyle='#fff6e0'; g.fillRect(0,0,s,s); g.fillStyle='#fde9bf'; g.fillRect(s*0.22,s*0.45,s*0.56,s*0.4); g.fillStyle='#b25c2c'; g.beginPath(); g.moveTo(s*0.16,s*0.45); g.lineTo(s/2,s*0.18); g.lineTo(s*0.84,s*0.45); g.closePath(); g.fill(); g.fillStyle='#7c4d0a'; g.fillRect(s*0.45,s*0.6,s*0.1,s*0.25);}}
+  function flowerDrawer(){return (g,s)=>{g.fillStyle='#fff6e0'; g.fillRect(0,0,s,s); for(let i=0;i<6;i++){const a=i/6*Math.PI*2; g.fillStyle='#fbbf24'; g.beginPath(); g.ellipse(s/2+Math.cos(a)*s*0.2,s*0.45+Math.sin(a)*s*0.2,s*0.1,s*0.16,a,0,Math.PI*2); g.fill();} g.fillStyle='#b25c2c'; g.beginPath(); g.arc(s/2,s*0.45,s*0.08,0,Math.PI*2); g.fill(); g.fillStyle='#0d6b3a'; g.fillRect(s*0.48,s*0.5,s*0.04,s*0.4);}}
+})();
+</script>

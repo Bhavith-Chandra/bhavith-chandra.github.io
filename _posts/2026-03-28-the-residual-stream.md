@@ -1,7 +1,7 @@
 ---
 layout: post-article
 title: "The Residual Stream: The Belt That Runs the Whole Factory"
-date: 2026-05-12
+date: 2026-03-28
 permalink: /posts/the-residual-stream/
 excerpt: "The residual stream is a per-position running sum that every block reads from and writes to. Because it is additive and lives in a single coordinate frame, it admits direct linear decomposition: the foundation of the logit lens, direct logit attribution, and activation patching."
 read_time_label: "13 min read"

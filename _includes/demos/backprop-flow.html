@@ -1,0 +1,108 @@
+<div class="demo demo-backprop" id="demo-backprop">
+  <div class="bp__head">
+    <div class="bp__title">Backprop, frame by frame</div>
+    <div class="bp__sub">Forward sends activations left → right. Backward sends gradients right → left, multiplying along the way. Press the buttons and watch the chain rule.</div>
+  </div>
+  <div class="bp__controls">
+    <button data-bp="fwd">▶ Forward</button>
+    <button data-bp="bwd">◀ Backward</button>
+    <button data-bp="step">Step weights</button>
+    <button data-bp="reset">Reset</button>
+    <span class="bp__loss">loss = <b id="bp-loss">—</b> · target y* = <b>1.0</b></span>
+  </div>
+  <div class="bp__stage">
+    <canvas id="bp-canvas" width="720" height="320"></canvas>
+  </div>
+  <div class="bp__readout" id="bp-readout">Press <b>Forward</b> to push the inputs through the network.</div>
+</div>
+<style>
+  .demo-backprop{border:1px solid var(--nn-line,#e7e2da);border-radius:14px;padding:18px;margin:18px 0;background:#fffaf3;font-family:var(--nn-body,system-ui)}
+  .demo-backprop .bp__title{font-weight:700;color:#7c4d0a;font-size:15px}
+  .demo-backprop .bp__sub{font-size:13px;color:var(--nn-muted,#7a6a52);margin-top:3px}
+  .demo-backprop .bp__controls{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0;align-items:center}
+  .demo-backprop .bp__controls button{border:1px solid #ddb88e;background:#fff6e0;color:#7c4d0a;padding:6px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+  .demo-backprop .bp__controls button:hover{background:#fbbf24;color:#3a2106}
+  .demo-backprop .bp__loss{margin-left:auto;font-family:ui-monospace,Menlo,monospace;font-size:12px;color:#5a3d12}
+  .demo-backprop canvas{width:100%;height:auto;background:#fffefb;border:1px solid #ecdbc0;border-radius:8px;display:block}
+  .demo-backprop .bp__readout{margin-top:10px;font-family:ui-monospace,Menlo,monospace;font-size:12px;color:#5a3d12;background:#fff6e0;border:1px dashed #ddb88e;padding:8px 12px;border-radius:8px;min-height:18px}
+</style>
+<script>
+(function(){
+  const root=document.getElementById('demo-backprop'); if(!root) return;
+  const cvs=root.querySelector('#bp-canvas'); const ctx=cvs.getContext('2d');
+  const lossOut=root.querySelector('#bp-loss'); const readout=root.querySelector('#bp-readout');
+  const tgt=1.0;
+  let inputs=[0.6,-0.4,0.8];
+  let W1=[[0.5,-0.3,0.2],[0.4,0.1,-0.5]];
+  let W2=[0.7,-0.6];
+  let h=[0,0], y=0, loss=0;
+  let dy=0, dW2=[0,0], dh=[0,0], dz=[0,0], dW1=[[0,0,0],[0,0,0]];
+  let phase='idle', tAnim=0, raf=null;
+  function relu(x){return Math.max(0,x);} function dReLU(x){return x>0?1:0;}
+  function fwd(){
+    const z=[0,0]; for(let i=0;i<2;i++){let s=0; for(let j=0;j<3;j++)s+=W1[i][j]*inputs[j]; z[i]=s; h[i]=relu(s);}
+    y=W2[0]*h[0]+W2[1]*h[1]; loss=0.5*(y-tgt)*(y-tgt);
+    return z;
+  }
+  function bwd(){
+    const z=fwd(); dy=y-tgt;
+    dW2=[dy*h[0],dy*h[1]];
+    dh=[dy*W2[0],dy*W2[1]];
+    dz=[dh[0]*dReLU(z[0]),dh[1]*dReLU(z[1])];
+    dW1=[[dz[0]*inputs[0],dz[0]*inputs[1],dz[0]*inputs[2]],[dz[1]*inputs[0],dz[1]*inputs[1],dz[1]*inputs[2]]];
+  }
+  function step(){bwd(); const lr=0.2; for(let i=0;i<2;i++){W2[i]-=lr*dW2[i]; for(let j=0;j<3;j++)W1[i][j]-=lr*dW1[i][j];}}
+  function reset(){W1=[[0.5,-0.3,0.2],[0.4,0.1,-0.5]]; W2=[0.7,-0.6]; phase='idle'; tAnim=0; draw(); readout.textContent='Reset to initial weights.';}
+  function nodes(){
+    return {
+      i:[{x:90,y:80,t:'x₁='+inputs[0].toFixed(2)},{x:90,y:160,t:'x₂='+inputs[1].toFixed(2)},{x:90,y:240,t:'x₃='+inputs[2].toFixed(2)}],
+      h:[{x:340,y:120,t:'h₁='+h[0].toFixed(2)},{x:340,y:200,t:'h₂='+h[1].toFixed(2)}],
+      o:[{x:600,y:160,t:'y='+y.toFixed(2)}]
+    };
+  }
+  function draw(){
+    fwd();
+    const W=cvs.width,H=cvs.height; ctx.clearRect(0,0,W,H);
+    const nd=nodes();
+    function edge(a,b,w,grad,idx){
+      const a0=a.x+24,a1=a.y, b0=b.x-24,b1=b.y;
+      const isFwd=phase==='fwd', isBwd=phase==='bwd';
+      let prog=tAnim;
+      ctx.strokeStyle='#ddb88e'; ctx.lineWidth=1+Math.min(3,Math.abs(w)*2.4);
+      ctx.beginPath(); ctx.moveTo(a0,a1); ctx.lineTo(b0,b1); ctx.stroke();
+      if(isFwd){ctx.strokeStyle='#fbbf24'; ctx.lineWidth=3.2; ctx.beginPath(); ctx.moveTo(a0,a1); ctx.lineTo(a0+(b0-a0)*prog,a1+(b1-a1)*prog); ctx.stroke();
+        const px=a0+(b0-a0)*prog,py=a1+(b1-a1)*prog; ctx.fillStyle='#fbbf24'; ctx.beginPath(); ctx.arc(px,py,5,0,Math.PI*2); ctx.fill();
+      }
+      if(isBwd){ctx.strokeStyle='#b25c2c'; ctx.lineWidth=3.2; ctx.beginPath(); ctx.moveTo(b0,b1); ctx.lineTo(b0+(a0-b0)*prog,b1+(a1-b1)*prog); ctx.stroke();
+        const px=b0+(a0-b0)*prog,py=b1+(a1-b1)*prog; ctx.fillStyle='#b25c2c'; ctx.beginPath(); ctx.arc(px,py,5,0,Math.PI*2); ctx.fill();
+      }
+      ctx.fillStyle='#5a3d12'; ctx.font='11px ui-monospace,Menlo,monospace';
+      const mx=(a0+b0)/2, my=(a1+b1)/2; ctx.fillText('w='+w.toFixed(2),mx-22,my-6);
+      if(grad!==null && (isBwd||phase==='done')){ctx.fillStyle='#b25c2c'; ctx.fillText('∂='+grad.toFixed(2),mx-22,my+10);}
+    }
+    for(let i=0;i<3;i++) for(let k=0;k<2;k++) edge(nd.i[i],nd.h[k],W1[k][i],dW1[k][i]);
+    for(let k=0;k<2;k++) edge(nd.h[k],nd.o[0],W2[k],dW2[k]);
+    function nodeC(p,fill){ctx.fillStyle=fill; ctx.strokeStyle='#7c4d0a'; ctx.lineWidth=1.4; ctx.beginPath(); ctx.arc(p.x,p.y,24,0,Math.PI*2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle='#3a2106'; ctx.font='600 11px ui-monospace,Menlo,monospace'; ctx.textAlign='center'; ctx.fillText(p.t,p.x,p.y+4); ctx.textAlign='start';}
+    nd.i.forEach(p=>nodeC(p,'#fff6e0')); nd.h.forEach(p=>nodeC(p,'#fde9bf')); nd.o.forEach(p=>nodeC(p,phase==='bwd'||phase==='done'?'#fbcaa1':'#fbbf24'));
+    ctx.fillStyle='#7c4d0a'; ctx.font='600 12px ui-monospace,Menlo,monospace';
+    ctx.fillText('inputs',75,40); ctx.fillText('hidden (ReLU)',290,40); ctx.fillText('output',580,40);
+    if(phase==='bwd'||phase==='done'){ctx.fillStyle='#b25c2c'; ctx.fillText('∂L/∂y='+dy.toFixed(2),540,295);}
+    lossOut.textContent=loss.toFixed(3);
+  }
+  function animate(p){
+    cancelAnimationFrame(raf); phase=p; tAnim=0;
+    const start=performance.now(); const dur=900;
+    function tick(now){tAnim=Math.min(1,(now-start)/dur); draw(); if(tAnim<1) raf=requestAnimationFrame(tick); else {phase='done'; draw();}}
+    raf=requestAnimationFrame(tick);
+  }
+  root.querySelectorAll('[data-bp]').forEach(b=>b.addEventListener('click',()=>{
+    const a=b.dataset.bp;
+    if(a==='fwd'){animate('fwd'); readout.innerHTML='Forward: x → h = ReLU(W₁x) → y = W₂h. Loss = ½(y − y*)².';}
+    if(a==='bwd'){bwd(); animate('bwd'); readout.innerHTML='Backward: ∂L/∂y → ∂L/∂W₂ → ∂L/∂h → ∂L/∂z (kill where ReLU was off) → ∂L/∂W₁. Each edge multiplies along the path.';}
+    if(a==='step'){step(); draw(); readout.innerHTML='One gradient-descent step: W ← W − η·∂L/∂W with η=0.2. Loss = <b>'+loss.toFixed(3)+'</b>.';}
+    if(a==='reset')reset();
+  }));
+  draw();
+})();
+</script>

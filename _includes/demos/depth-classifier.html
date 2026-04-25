@@ -1,0 +1,108 @@
+<div class="demo demo-depth" id="demo-depth">
+  <div class="depth__head">
+    <div class="depth__title">Why depth matters: 2D classifier playground</div>
+    <div class="depth__sub">Pick a dataset. Add hidden layers. Watch the boundary go from a straight line to spirals — and see when it overfits.</div>
+  </div>
+  <div class="depth__controls">
+    <div class="depth__group">
+      <span class="depth__plabel">Dataset</span>
+      <button class="depth__btn is-active" data-ds="lin">Linear</button>
+      <button class="depth__btn" data-ds="moons">Moons</button>
+      <button class="depth__btn" data-ds="circles">Circles</button>
+      <button class="depth__btn" data-ds="spiral">Spiral</button>
+    </div>
+    <div class="depth__group">
+      <label>Hidden layers <input type="range" id="depth-L" min="0" max="5" step="1" value="1"><span data-Lout>1</span></label>
+      <label>Width <input type="range" id="depth-W" min="2" max="16" step="1" value="6"><span data-Wout>6</span></label>
+    </div>
+  </div>
+  <div class="depth__row">
+    <canvas id="depth-canvas" width="380" height="380"></canvas>
+    <div class="depth__panel">
+      <div class="depth__plabel">Training</div>
+      <canvas id="depth-loss" width="320" height="160"></canvas>
+      <div class="depth__buttons">
+        <button data-act="train">▶ Train 1500 steps</button>
+        <button data-act="reset">Reset weights</button>
+      </div>
+      <div class="depth__readout" id="depth-readout">Train accuracy <b>—</b> · final loss <b>—</b></div>
+    </div>
+  </div>
+</div>
+<style>
+  .demo-depth{border:1px solid var(--nn-line,#e7e2da);border-radius:14px;padding:18px;margin:18px 0;background:#fffaf3;font-family:var(--nn-body,system-ui)}
+  .demo-depth .depth__title{font-weight:700;color:#7c4d0a;font-size:15px}
+  .demo-depth .depth__sub{font-size:13px;color:var(--nn-muted,#7a6a52);margin-top:3px}
+  .demo-depth .depth__controls{display:flex;flex-wrap:wrap;gap:14px;margin:14px 0 10px;align-items:center}
+  .demo-depth .depth__group{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+  .demo-depth .depth__plabel{font-size:11px;color:#7c4d0a;text-transform:uppercase;letter-spacing:0.06em;font-weight:700;margin-right:4px}
+  .demo-depth .depth__btn{border:1px solid #ddb88e;background:#fff6e0;color:#7c4d0a;padding:5px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit}
+  .demo-depth .depth__btn.is-active{background:#fbbf24;color:#3a2106;border-color:#b77214}
+  .demo-depth .depth__group label{font-size:12px;color:#7c4d0a;display:flex;align-items:center;gap:6px;font-weight:600}
+  .demo-depth .depth__group input[type=range]{accent-color:#b77214;width:100px}
+  .demo-depth .depth__group span{font-family:ui-monospace,Menlo,monospace;width:24px;text-align:right;color:#5a3d12}
+  .demo-depth .depth__row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .demo-depth canvas{width:100%;height:auto;background:#fffefb;border:1px solid #ecdbc0;border-radius:8px;display:block}
+  .demo-depth .depth__panel{display:flex;flex-direction:column;gap:8px}
+  .demo-depth .depth__buttons{display:flex;gap:6px}
+  .demo-depth .depth__buttons button{border:1px solid #ddb88e;background:#fff6e0;color:#7c4d0a;padding:6px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;flex:1}
+  .demo-depth .depth__buttons button:hover{background:#fbbf24;color:#3a2106}
+  .demo-depth .depth__readout{font-family:ui-monospace,Menlo,monospace;font-size:12px;color:#5a3d12;background:#fff6e0;border:1px dashed #ddb88e;padding:6px 10px;border-radius:8px}
+  @media (max-width:560px){.demo-depth .depth__row{grid-template-columns:1fr}}
+</style>
+<script>
+(function(){
+  const root=document.getElementById('demo-depth'); if(!root) return;
+  const cvs=root.querySelector('#depth-canvas'), ctx=cvs.getContext('2d');
+  const lcv=root.querySelector('#depth-loss'), lctx=lcv.getContext('2d');
+  const Lin=root.querySelector('#depth-L'), Win=root.querySelector('#depth-W');
+  const Lout=root.querySelector('[data-Lout]'), Wout=root.querySelector('[data-Wout]');
+  const readout=root.querySelector('#depth-readout');
+  let dataset='lin', data=[], net=null, lossHist=[];
+  function genData(){data=[];
+    if(dataset==='lin'){for(let i=0;i<160;i++){const x=Math.random()*2-1, y=Math.random()*2-1; data.push([x,y, (x+y>0)?1:0]);}}
+    if(dataset==='moons'){for(let i=0;i<160;i++){const t=Math.random()*Math.PI; const c=i<80?0:1; const cx=c?0.3:-0.3, cy=c?-0.15:0.15; const x=Math.cos(t)*0.5*(c?1:-1)+cx+(Math.random()-0.5)*0.12; const y=Math.sin(t)*0.5*(c?1:-1)+cy+(Math.random()-0.5)*0.12; data.push([x,y,c]);}}
+    if(dataset==='circles'){for(let i=0;i<160;i++){const c=i<80?0:1; const r=c?0.7:0.3; const t=Math.random()*Math.PI*2; const x=Math.cos(t)*r+(Math.random()-0.5)*0.08; const y=Math.sin(t)*r+(Math.random()-0.5)*0.08; data.push([x,y,c]);}}
+    if(dataset==='spiral'){for(let i=0;i<160;i++){const c=i%2; const t=(i/160)*4*Math.PI+c*Math.PI; const r=t/(4*Math.PI)*0.85; const x=Math.cos(t)*r+(Math.random()-0.5)*0.06; const y=Math.sin(t)*r+(Math.random()-0.5)*0.06; data.push([x,y,c]);}}
+  }
+  function buildNet(){const L=parseInt(Lin.value), W=parseInt(Win.value);
+    const dims=[2]; for(let i=0;i<L;i++) dims.push(W); dims.push(1);
+    net={dims, Ws:[], Bs:[]};
+    for(let l=0;l<dims.length-1;l++){const Wm=[]; for(let i=0;i<dims[l+1];i++){const r=[]; for(let j=0;j<dims[l];j++) r.push((Math.random()*2-1)*Math.sqrt(2/dims[l])); Wm.push(r);} net.Ws.push(Wm); net.Bs.push(new Array(dims[l+1]).fill(0));}
+    lossHist=[];
+  }
+  function tanh(x){return Math.tanh(x);} function dtanh(y){return 1-y*y;}
+  function sig(x){return 1/(1+Math.exp(-x));}
+  function fwd(x){const acts=[x.slice()]; for(let l=0;l<net.Ws.length;l++){const Wm=net.Ws[l],b=net.Bs[l]; const a=new Array(Wm.length); for(let i=0;i<Wm.length;i++){let s=b[i]; for(let j=0;j<x.length;j++)s+=Wm[i][j]*x[j]; a[i]=(l===net.Ws.length-1)?sig(s):tanh(s);} x=a; acts.push(a.slice());} return acts;}
+  function trainStep(){let totalLoss=0; const lr=0.05; for(const pt of data){const x=[pt[0],pt[1]],y=pt[2]; const acts=fwd(x); const yhat=acts[acts.length-1][0]; const loss=-(y*Math.log(yhat+1e-9)+(1-y)*Math.log(1-yhat+1e-9)); totalLoss+=loss;
+    let delta=[yhat-y];
+    for(let l=net.Ws.length-1;l>=0;l--){const aPrev=acts[l],a=acts[l+1],Wm=net.Ws[l],b=net.Bs[l]; const newDelta=new Array(aPrev.length).fill(0);
+      for(let i=0;i<Wm.length;i++){for(let j=0;j<aPrev.length;j++){newDelta[j]+=Wm[i][j]*delta[i]; Wm[i][j]-=lr*delta[i]*aPrev[j];} b[i]-=lr*delta[i];}
+      if(l>0){const tDelta=new Array(aPrev.length); for(let j=0;j<aPrev.length;j++) tDelta[j]=newDelta[j]*dtanh(aPrev[j]); delta=tDelta;}
+    }} return totalLoss/data.length;}
+  function drawBoundary(){const W=cvs.width,H=cvs.height; const img=ctx.createImageData(W,H); const step=4;
+    for(let py=0;py<H;py+=step) for(let px=0;px<W;px+=step){const x=(px/W)*2-1, y=1-(py/H)*2; const out=fwd([x,y]); const p=out[out.length-1][0];
+      const r=Math.round(255-(255-251)*p), g=Math.round(246-(246-191)*p), b=Math.round(224-(224-36)*p);
+      for(let dy=0;dy<step;dy++) for(let dx=0;dx<step;dx++){const idx=((py+dy)*W+(px+dx))*4; img.data[idx]=r; img.data[idx+1]=g; img.data[idx+2]=b; img.data[idx+3]=255;}}
+    ctx.putImageData(img,0,0);
+    data.forEach(p=>{const px=(p[0]+1)/2*W, py=(1-p[1])/2*H; ctx.fillStyle=p[2]?'#7c4d0a':'#fff'; ctx.strokeStyle='#3a2106'; ctx.lineWidth=1.2; ctx.beginPath(); ctx.arc(px,py,4,0,Math.PI*2); ctx.fill(); ctx.stroke();});
+  }
+  function drawLoss(){const W=lcv.width,H=lcv.height; lctx.clearRect(0,0,W,H); const pad={l:34,r:8,t:8,b:18}; const gw=W-pad.l-pad.r,gh=H-pad.t-pad.b;
+    if(!lossHist.length){lctx.fillStyle='#a08562'; lctx.font='12px ui-monospace,Menlo,monospace'; lctx.fillText('train to see loss',pad.l+20,H/2); return;}
+    const mx=Math.max(...lossHist), mn=Math.min(...lossHist);
+    lctx.strokeStyle='#fbbf24'; lctx.lineWidth=2; lctx.beginPath();
+    lossHist.forEach((v,i)=>{const x=pad.l+(i/(lossHist.length-1))*gw; const y=pad.t+(1-(v-mn)/(mx-mn+1e-6))*gh; if(i===0)lctx.moveTo(x,y); else lctx.lineTo(x,y);}); lctx.stroke();
+    lctx.fillStyle='#7c4d0a'; lctx.font='10px ui-monospace,Menlo,monospace'; lctx.fillText(mx.toFixed(2),4,pad.t+8); lctx.fillText(mn.toFixed(2),4,H-pad.b);
+  }
+  function evalAcc(){let c=0; for(const pt of data){const out=fwd([pt[0],pt[1]]); const p=out[out.length-1][0]; if((p>0.5?1:0)===pt[2]) c++;} return c/data.length;}
+  function train(){const N=1500; for(let i=0;i<N;i++){const l=trainStep(); if(i%30===0) lossHist.push(l);} drawBoundary(); drawLoss();
+    readout.innerHTML=`Train accuracy <b>${(evalAcc()*100).toFixed(1)}%</b> · final loss <b>${lossHist[lossHist.length-1].toFixed(3)}</b> · ${parseInt(Lin.value)} hidden layer${Lin.value==='1'?'':'s'}, width ${Win.value}`;}
+  function rebuild(){buildNet(); drawBoundary(); drawLoss(); readout.innerHTML='Untrained network. Press <b>Train</b>.';}
+  root.querySelectorAll('[data-ds]').forEach(b=>b.addEventListener('click',()=>{root.querySelectorAll('[data-ds]').forEach(x=>x.classList.remove('is-active')); b.classList.add('is-active'); dataset=b.dataset.ds; genData(); rebuild();}));
+  Lin.addEventListener('input',()=>{Lout.textContent=Lin.value; rebuild();});
+  Win.addEventListener('input',()=>{Wout.textContent=Win.value; rebuild();});
+  root.querySelector('[data-act="train"]').addEventListener('click',train);
+  root.querySelector('[data-act="reset"]').addEventListener('click',rebuild);
+  genData(); rebuild();
+})();
+</script>

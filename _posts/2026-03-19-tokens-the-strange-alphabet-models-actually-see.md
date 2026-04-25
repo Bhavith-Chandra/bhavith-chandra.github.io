@@ -1,7 +1,7 @@
 ---
 layout: post-article
 title: "Tokens: The Strange Alphabet Models Actually See"
-date: 2026-05-01
+date: 2026-03-19
 permalink: /posts/tokens-the-strange-alphabet-models-actually-see/
 excerpt: "A token is a subword unit drawn from a fixed vocabulary of 30K, 200K entries. Tokenization shapes capability: arithmetic, multilingual coverage, character-level reasoning all depend on it."
 read_time_label: "10 min read"

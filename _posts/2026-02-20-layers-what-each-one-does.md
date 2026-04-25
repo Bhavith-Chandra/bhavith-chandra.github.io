@@ -1,7 +1,7 @@
 ---
 layout: post-article
 title: "Layers: What Each Floor of the Building Does"
-date: 2026-04-06
+date: 2026-02-20
 permalink: /posts/layers-what-each-one-does/
 excerpt: "Layer 1 sees edges. Layer 5 sees this specific person. Same pixels, different lens at every level. That's why deep learning is deep."
 read_time_label: "11 min read"
@@ -71,6 +71,10 @@ Full objects, faces, specific categories. High-level human concepts represented 
 
 This progression is called **hierarchical feature extraction**, and it appears in every deep network trained on natural data. Images, text, audio. The depth lets the model compose simple features into complex ones, repeatedly.
 
+{% include demos/feature-hierarchy.html %}
+
+Click an object in the bottom row, then trace your way up. Every face is a composition of eye-detectors and mouth-detectors. Every eye-detector is a composition of curve-detectors and edge-detectors. The whole thing is recursive: one small library of features, reused at every level of detail.
+
 ## What layers do in language models
 
 In text transformers, the same hierarchy exists, but it's harder to see because language doesn't have the obvious spatial structure of images.
@@ -100,6 +104,10 @@ Width gives the model more capacity to represent complex things at each level of
 Modern networks are both wide and deep. GPT-4 is estimated to have around 120 layers. Many of those layers have ~25,000 neurons each. Which, you know, is a lot.
 
 For interpretability: more layers means more places for information to transform. Also means there's more "room" for information to be stored in intermediate representations. Which is one reason large models are more capable but also harder to interpret.
+
+{% include demos/depth-classifier.html %}
+
+Try the **Spiral** dataset with **0** hidden layers — a single linear boundary can't separate it, no matter how long you train. Now bump depth up to 3 and watch the boundary curl. Every additional layer is one extra fold the network can put into space. Width adds patience; depth adds expressiveness.
 
 ## Skip connections, the highway system
 

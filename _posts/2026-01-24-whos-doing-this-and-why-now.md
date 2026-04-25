@@ -1,7 +1,7 @@
 ---
 layout: post-article
 title: "Who's Doing This, and Why Now?"
-date: 2026-02-11
+date: 2026-01-24
 permalink: /posts/whos-doing-this-and-why-now/
 excerpt: "A quick tour of the labs, the people, and the 8-year sprint that took mechanistic interpretability from a weird hobby to a central safety bet."
 read_time_label: "12 min read"

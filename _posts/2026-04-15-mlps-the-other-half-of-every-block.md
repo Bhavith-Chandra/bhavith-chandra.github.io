@@ -1,7 +1,7 @@
 ---
 layout: post-article
 title: "MLPs: The Other Half of Every Block"
-date: 2026-06-08
+date: 2026-04-15
 permalink: /posts/mlps-the-other-half-of-every-block/
 excerpt: "MLPs hold ~⅔ of a transformer's parameters and act as key-value memories: each neuron is a learned (key, value) pair that adds to the residual stream when the key matches. Where most factual knowledge lives."
 read_time_label: "12 min read"

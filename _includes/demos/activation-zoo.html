@@ -1,0 +1,86 @@
+<div class="demo demo-actzoo" id="demo-actzoo">
+  <div class="actzoo__head">
+    <div class="actzoo__title">Activation function zoo</div>
+    <div class="actzoo__sub">Pick a function. The derivative is what backprop multiplies by — flat regions kill learning.</div>
+  </div>
+  <div class="actzoo__tabs" data-actzoo-tabs>
+    <button class="actzoo__tab is-active" data-fn="relu">ReLU</button>
+    <button class="actzoo__tab" data-fn="sigmoid">Sigmoid</button>
+    <button class="actzoo__tab" data-fn="tanh">Tanh</button>
+    <button class="actzoo__tab" data-fn="gelu">GELU</button>
+    <button class="actzoo__tab" data-fn="leaky">Leaky ReLU</button>
+    <button class="actzoo__tab" data-fn="linear">Linear</button>
+  </div>
+  <div class="actzoo__body">
+    <canvas id="actzoo-canvas" width="640" height="360"></canvas>
+    <div class="actzoo__controls">
+      <label>Bias <input type="range" id="actzoo-bias" min="-3" max="3" step="0.05" value="0"><span data-bias-out>0.00</span></label>
+      <label>Input <input type="range" id="actzoo-x" min="-4" max="4" step="0.05" value="1.0"><span data-x-out>1.00</span></label>
+    </div>
+    <div class="actzoo__readout" id="actzoo-readout"></div>
+  </div>
+</div>
+<style>
+  .demo-actzoo{border:1px solid var(--nn-line,#e7e2da);border-radius:14px;padding:18px;margin:18px 0;background:#fffaf3;font-family:var(--nn-body,system-ui)}
+  .demo-actzoo .actzoo__title{font-weight:700;color:#7c4d0a;font-size:15px}
+  .demo-actzoo .actzoo__sub{font-size:13px;color:var(--nn-muted,#7a6a52);margin-top:3px}
+  .demo-actzoo .actzoo__tabs{display:flex;gap:6px;flex-wrap:wrap;margin:14px 0 10px}
+  .demo-actzoo .actzoo__tab{border:1px solid #ddb88e;background:#fff6e0;color:#7c4d0a;padding:6px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+  .demo-actzoo .actzoo__tab.is-active{background:#fbbf24;color:#3a2106;border-color:#b77214}
+  .demo-actzoo canvas{width:100%;height:auto;background:#fffefb;border:1px solid #ecdbc0;border-radius:8px;display:block}
+  .demo-actzoo .actzoo__controls{display:flex;gap:18px;margin:12px 0 6px;flex-wrap:wrap}
+  .demo-actzoo .actzoo__controls label{font-size:12px;color:#7c4d0a;display:flex;align-items:center;gap:8px;font-weight:600}
+  .demo-actzoo .actzoo__controls input[type=range]{accent-color:#b77214;width:140px}
+  .demo-actzoo .actzoo__readout{font-family:var(--nn-mono,ui-monospace);font-size:12px;color:#5a3d12;background:#fff6e0;border:1px dashed #ddb88e;padding:8px 12px;border-radius:8px;margin-top:8px}
+</style>
+<script>
+(function(){
+  const root=document.getElementById('demo-actzoo'); if(!root) return;
+  const cvs=root.querySelector('#actzoo-canvas'); const ctx=cvs.getContext('2d');
+  const tabs=root.querySelectorAll('[data-fn]');
+  const biasIn=root.querySelector('#actzoo-bias'); const xIn=root.querySelector('#actzoo-x');
+  const biasOut=root.querySelector('[data-bias-out]'); const xOut=root.querySelector('[data-x-out]');
+  const readout=root.querySelector('#actzoo-readout');
+  const fns={
+    relu:{f:x=>Math.max(0,x), d:x=>x>0?1:0, name:'ReLU', formula:'max(0, x+b)'},
+    sigmoid:{f:x=>1/(1+Math.exp(-x)), d:x=>{const s=1/(1+Math.exp(-x));return s*(1-s);}, name:'Sigmoid', formula:'1 / (1 + e^-(x+b))'},
+    tanh:{f:x=>Math.tanh(x), d:x=>1-Math.tanh(x)**2, name:'Tanh', formula:'tanh(x+b)'},
+    gelu:{f:x=>0.5*x*(1+Math.tanh(0.7978845608*(x+0.044715*x*x*x))), d:x=>{const h=1e-3;return ((0.5*(x+h)*(1+Math.tanh(0.7978845608*((x+h)+0.044715*(x+h)**3))))-(0.5*(x-h)*(1+Math.tanh(0.7978845608*((x-h)+0.044715*(x-h)**3)))))/(2*h);}, name:'GELU', formula:'≈ 0.5x(1+tanh(...))'},
+    leaky:{f:x=>x>0?x:0.1*x, d:x=>x>0?1:0.1, name:'Leaky ReLU', formula:'x if x>0 else 0.1·x'},
+    linear:{f:x=>x, d:x=>1, name:'Linear', formula:'x+b (no nonlinearity)'}
+  };
+  let cur='relu';
+  function setFn(name){cur=name; tabs.forEach(t=>t.classList.toggle('is-active',t.dataset.fn===name)); draw();}
+  tabs.forEach(t=>t.addEventListener('click',()=>setFn(t.dataset.fn)));
+  [biasIn,xIn].forEach(el=>el.addEventListener('input',draw));
+  function draw(){
+    const W=cvs.width,H=cvs.height; ctx.clearRect(0,0,W,H);
+    const b=parseFloat(biasIn.value); const xVal=parseFloat(xIn.value);
+    biasOut.textContent=b.toFixed(2); xOut.textContent=xVal.toFixed(2);
+    const fn=fns[cur];
+    const xMin=-5,xMax=5,yMin=-1.6,yMax=2.4;
+    const pad={l:50,r:20,t:24,b:30}; const gw=W-pad.l-pad.r, gh=H-pad.t-pad.b;
+    const X=x=>pad.l+(x-xMin)/(xMax-xMin)*gw; const Y=y=>pad.t+(yMax-y)/(yMax-yMin)*gh;
+    ctx.strokeStyle='#f0e3cc'; ctx.lineWidth=1;
+    for(let v=Math.ceil(xMin);v<=xMax;v++){ctx.beginPath();ctx.moveTo(X(v),pad.t);ctx.lineTo(X(v),H-pad.b);ctx.stroke();}
+    for(let v=Math.ceil(yMin);v<=yMax;v++){ctx.beginPath();ctx.moveTo(pad.l,Y(v));ctx.lineTo(W-pad.r,Y(v));ctx.stroke();}
+    ctx.strokeStyle='#c9a673'; ctx.lineWidth=1.5; ctx.beginPath(); ctx.moveTo(pad.l,Y(0)); ctx.lineTo(W-pad.r,Y(0)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(X(0),pad.t); ctx.lineTo(X(0),H-pad.b); ctx.stroke();
+    ctx.fillStyle='#7c4d0a'; ctx.font='12px ui-monospace,Menlo,monospace';
+    for(let v=Math.ceil(xMin);v<=xMax;v++)ctx.fillText(v,X(v)-3,H-pad.b+14);
+    for(let v=Math.ceil(yMin);v<=yMax;v++)ctx.fillText(v.toFixed(0),12,Y(v)+4);
+    ctx.strokeStyle='#b77214'; ctx.lineWidth=1.4; ctx.setLineDash([4,4]); ctx.beginPath();
+    let started=false; for(let px=0;px<=gw;px++){const x=xMin+(px/gw)*(xMax-xMin); const y=fn.d(x+b); if(!started){ctx.moveTo(X(x),Y(y));started=true;} else ctx.lineTo(X(x),Y(y));} ctx.stroke();
+    ctx.setLineDash([]); ctx.strokeStyle='#fbbf24'; ctx.lineWidth=2.4; ctx.beginPath(); started=false;
+    for(let px=0;px<=gw;px++){const x=xMin+(px/gw)*(xMax-xMin); const y=fn.f(x+b); if(!started){ctx.moveTo(X(x),Y(y));started=true;} else ctx.lineTo(X(x),Y(y));} ctx.stroke();
+    const yv=fn.f(xVal+b), dv=fn.d(xVal+b);
+    ctx.fillStyle='#0d6b3a'; ctx.beginPath(); ctx.arc(X(xVal),Y(yv),5,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle='#0d6b3a'; ctx.setLineDash([2,3]); ctx.beginPath(); ctx.moveTo(X(xVal),Y(0)); ctx.lineTo(X(xVal),Y(yv)); ctx.lineTo(pad.l,Y(yv)); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle='#7c4d0a'; ctx.font='600 13px ui-monospace,Menlo,monospace'; ctx.fillText(fn.name,W-pad.r-90,pad.t+18);
+    ctx.fillStyle='#7a6a52'; ctx.font='12px ui-monospace,Menlo,monospace'; ctx.fillText('— f(x)',W-pad.r-90,pad.t+38);
+    ctx.fillStyle='#b77214'; ctx.fillText('-- f′(x)',W-pad.r-90,pad.t+56);
+    readout.innerHTML=`f(x) = <b>${fn.formula}</b>  ·  at x=${xVal.toFixed(2)}, b=${b.toFixed(2)} → output = <b>${yv.toFixed(3)}</b>, gradient = <b>${dv.toFixed(3)}</b> ${dv<0.05&&dv>-0.05?' · <span style="color:#b25c2c">flat region (gradient ≈ 0)</span>':''}`;
+  }
+  draw();
+})();
+</script>

@@ -1,7 +1,7 @@
 ---
 layout: post-article
 title: "The Full Forward Pass: Putting Every Piece on the Belt"
-date: 2026-06-22
+date: 2026-04-24
 permalink: /posts/the-full-forward-pass/
 excerpt: "End-to-end execution: tokens → embeddings → six attention+MLP blocks → unembedding. Tensor shapes, layer-by-layer logit-lens trajectory, and the surface area available for mechanistic analysis."
 read_time_label: "11 min read"
