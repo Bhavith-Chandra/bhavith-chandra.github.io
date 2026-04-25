@@ -1,0 +1,245 @@
+<div class="idemo idemo--mini" id="demo-painter">
+  <div class="idemo__card">
+    <div class="idemo__head"><span class="idemo__title">Mini · Paint your own attention pattern</span></div>
+    <div class="idemo__body">
+
+      <p class="ap2-lead">Click and drag across the lower-triangular grid to paint attention weights. The demo auto-normalizes each row so weights sum to 1, then classifies your pattern against the canonical archetypes. Try to draw a previous-token head. Then a BOS sink. Then an induction head.</p>
+
+      <div class="ap2-stage">
+        <div class="ap2-grid-wrap">
+          <div class="ap2-axis-cols" data-ap2-cols></div>
+          <div class="ap2-axis-rows" data-ap2-rows></div>
+          <div class="ap2-grid" data-ap2-grid></div>
+        </div>
+
+        <div class="ap2-side">
+          <div class="ap2-classify">
+            <div class="ap2-classify__lbl">closest archetype</div>
+            <div class="ap2-classify__name" data-ap2-name>—</div>
+            <div class="ap2-classify__score" data-ap2-score></div>
+          </div>
+          <div class="ap2-presets">
+            <button class="ap2-btn" data-ap2-preset="prev">prev-token preset</button>
+            <button class="ap2-btn" data-ap2-preset="bos">BOS sink preset</button>
+            <button class="ap2-btn" data-ap2-preset="induction">induction preset</button>
+            <button class="ap2-btn" data-ap2-preset="self">self preset</button>
+            <button class="ap2-btn ap2-btn--ghost" data-ap2-clear>clear</button>
+          </div>
+        </div>
+      </div>
+
+      <p class="ap2-hint"><strong>Try this:</strong> click only the cells right below the diagonal. That's a previous-token pattern. Or click only the leftmost column (position 0): BOS sink. The classifier compares your row distributions against archetype templates using cosine similarity, exactly the kind of analysis MI researchers do programmatically over thousands of real heads.</p>
+    </div>
+  </div>
+</div>
+
+<style>
+  #demo-painter .ap2-lead { margin: 0 0 0.85rem !important; font-size: 0.96rem !important; color: var(--nn-body) !important; line-height: 1.6 !important; }
+  #demo-painter .ap2-stage {
+    display: grid; grid-template-columns: 1fr 220px; gap: 1rem;
+    background: #fafaf7; border: 1px solid var(--nn-line); border-radius: 4px;
+    padding: 0.85rem 0.95rem; margin-bottom: 0.85rem;
+  }
+  #demo-painter .ap2-grid-wrap {
+    position: relative;
+    padding: 22px 0 0 22px;
+  }
+  #demo-painter .ap2-axis-cols, #demo-painter .ap2-axis-rows {
+    display: flex;
+    font-family: var(--nn-mono); font-size: 0.6rem; color: var(--nn-muted);
+  }
+  #demo-painter .ap2-axis-cols {
+    position: absolute; top: 0; left: 22px; right: 0;
+    justify-content: space-around; height: 18px;
+  }
+  #demo-painter .ap2-axis-rows {
+    position: absolute; top: 22px; left: 0; bottom: 0; width: 18px;
+    flex-direction: column; justify-content: space-around;
+  }
+  #demo-painter .ap2-grid {
+    display: grid; gap: 2px;
+    user-select: none;
+  }
+  #demo-painter .ap2-cell {
+    aspect-ratio: 1 / 1;
+    background: #fff; border: 1px solid var(--nn-line); border-radius: 2px;
+    cursor: pointer;
+    transition: background 120ms;
+  }
+  #demo-painter .ap2-cell.is-mask {
+    background: #f0ece3; border-color: #f0ece3; cursor: default;
+  }
+  #demo-painter .ap2-cell:not(.is-mask):hover { border-color: #b77214; }
+
+  #demo-painter .ap2-side {
+    display: flex; flex-direction: column; gap: 0.6rem;
+  }
+  #demo-painter .ap2-classify {
+    background: #fff; border: 1px solid var(--nn-line); border-radius: 3px;
+    padding: 0.7rem 0.85rem;
+  }
+  #demo-painter .ap2-classify__lbl {
+    font-family: var(--nn-mono); font-size: 0.66rem; color: var(--nn-muted);
+    text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 0.3rem;
+  }
+  #demo-painter .ap2-classify__name {
+    font-family: var(--nn-mono); font-size: 0.95rem; color: #7c4d0a; font-weight: 600;
+  }
+  #demo-painter .ap2-classify__score {
+    font-family: var(--nn-mono); font-size: 0.72rem; color: var(--nn-muted);
+    margin-top: 0.25rem;
+  }
+  #demo-painter .ap2-presets { display: flex; flex-direction: column; gap: 0.35rem; }
+  #demo-painter .ap2-btn {
+    padding: 0.4rem 0.7rem; font-family: var(--nn-mono); font-size: 0.72rem;
+    background: #fff; border: 1px solid var(--nn-line); border-radius: 3px;
+    color: var(--nn-ink); cursor: pointer; text-align: left;
+  }
+  #demo-painter .ap2-btn:hover { border-color: #b77214; }
+  #demo-painter .ap2-btn--ghost { color: var(--nn-muted); }
+
+  #demo-painter .ap2-hint {
+    font-size: 0.92rem; color: var(--nn-body); line-height: 1.6;
+    padding: 0.7rem 0.85rem; background: #fff;
+    border: 1px solid var(--nn-line); border-radius: 3px;
+  }
+  #demo-painter .ap2-hint strong { color: #7c4d0a; }
+  @media (max-width: 720px){
+    #demo-painter .ap2-stage { grid-template-columns: 1fr; }
+  }
+</style>
+
+<script>
+(function(){
+  var root = document.getElementById("demo-painter"); if (!root) return;
+  var T = 8;
+  var TOKENS = ["<bos>","A","B","C","D","A","B","C"];
+
+  // raw click-counts (we'll normalize at render time)
+  var W = []; for (var i = 0; i < T; i++){ W.push(new Array(T).fill(0)); }
+
+  var grid = root.querySelector("[data-ap2-grid]");
+  var cols = root.querySelector("[data-ap2-cols]");
+  var rows = root.querySelector("[data-ap2-rows]");
+  var nameEl = root.querySelector("[data-ap2-name]");
+  var scoreEl = root.querySelector("[data-ap2-score]");
+
+  grid.style.gridTemplateColumns = "repeat("+T+", 1fr)";
+  cols.innerHTML = TOKENS.map(function(t){ return "<span style=\"flex:1;text-align:center\">"+t+"</span>"; }).join("");
+  rows.innerHTML = TOKENS.map(function(t){ return "<span style=\"flex:1;display:flex;align-items:center;justify-content:flex-end;padding-right:3px\">"+t+"</span>"; }).join("");
+
+  function normalizeRow(i){
+    var sum = 0;
+    for (var j = 0; j <= i; j++) sum += W[i][j];
+    if (sum === 0) return new Array(T).fill(0);
+    var out = new Array(T).fill(0);
+    for (var j2 = 0; j2 <= i; j2++) out[j2] = W[i][j2] / sum;
+    return out;
+  }
+
+  function normalizedMatrix(){
+    var out = [];
+    for (var i = 0; i < T; i++) out.push(normalizeRow(i));
+    return out;
+  }
+
+  function classify(){
+    var M = normalizedMatrix();
+    var TEMPLATES = {
+      "previous-token": (function(){ var m=[]; for(var i=0;i<T;i++){ var r=new Array(T).fill(0); if(i>0) r[i-1]=1; m.push(r); } return m; })(),
+      "BOS sink":       (function(){ var m=[]; for(var i=0;i<T;i++){ var r=new Array(T).fill(0); r[0]=1; m.push(r); } return m; })(),
+      "self":           (function(){ var m=[]; for(var i=0;i<T;i++){ var r=new Array(T).fill(0); r[i]=1; m.push(r); } return m; })(),
+      "induction":      (function(){
+        var m=[];
+        for(var i=0;i<T;i++){
+          var r=new Array(T).fill(0);
+          for(var k=0;k<i;k++){
+            if (TOKENS[k] === TOKENS[i] && k+1 < T && k+1 <= i){ r[k+1] = 1; break; }
+          }
+          m.push(r);
+        }
+        return m;
+      })()
+    };
+    var any = M.some(function(r){ return r.some(function(v){ return v > 0; }); });
+    if (!any) return { name: "—", score: "draw something to classify" };
+
+    var best = "—", bestSim = -1;
+    Object.keys(TEMPLATES).forEach(function(k){
+      var t = TEMPLATES[k];
+      var dot = 0, magM = 0, magT = 0;
+      for (var i = 0; i < T; i++){
+        for (var j = 0; j < T; j++){
+          dot += M[i][j] * t[i][j];
+          magM += M[i][j] * M[i][j];
+          magT += t[i][j] * t[i][j];
+        }
+      }
+      var sim = (Math.sqrt(magM) * Math.sqrt(magT) > 0) ? dot / (Math.sqrt(magM) * Math.sqrt(magT)) : 0;
+      if (sim > bestSim){ bestSim = sim; best = k; }
+    });
+    return { name: best, score: "cosine similarity: " + bestSim.toFixed(2) };
+  }
+
+  function render(){
+    var M = normalizedMatrix();
+    var html = "";
+    for (var i = 0; i < T; i++){
+      for (var j = 0; j < T; j++){
+        if (j > i){ html += "<div class=\"ap2-cell is-mask\"></div>"; continue; }
+        var v = M[i][j];
+        var alpha = Math.min(1, v);
+        var bg = "rgba(183, 114, 20, "+alpha.toFixed(3)+")";
+        if (alpha < 0.05) bg = "#fff";
+        html += "<div class=\"ap2-cell\" data-i=\""+i+"\" data-j=\""+j+"\" style=\"background:"+bg+"\"></div>";
+      }
+    }
+    grid.innerHTML = html;
+
+    var dragging = false;
+    function paint(el){
+      if (!el || !el.classList || !el.classList.contains("ap2-cell") || el.classList.contains("is-mask")) return;
+      var i = parseInt(el.getAttribute("data-i"), 10);
+      var j = parseInt(el.getAttribute("data-j"), 10);
+      W[i][j] += 1;
+      render();
+    }
+    grid.querySelectorAll(".ap2-cell").forEach(function(c){
+      c.addEventListener("mousedown", function(e){ dragging = true; paint(c); e.preventDefault(); });
+      c.addEventListener("mouseenter", function(){ if (dragging) paint(c); });
+    });
+    document.addEventListener("mouseup", function(){ dragging = false; });
+
+    var cls = classify();
+    nameEl.textContent = cls.name;
+    scoreEl.textContent = cls.score;
+  }
+
+  function clear(){
+    for (var i = 0; i < T; i++){ for (var j = 0; j < T; j++) W[i][j] = 0; }
+    render();
+  }
+
+  function preset(kind){
+    clear();
+    if (kind === "prev"){ for (var i = 1; i < T; i++) W[i][i-1] = 1; }
+    else if (kind === "bos"){ for (var i2 = 0; i2 < T; i2++) W[i2][0] = 1; }
+    else if (kind === "self"){ for (var i3 = 0; i3 < T; i3++) W[i3][i3] = 1; }
+    else if (kind === "induction"){
+      for (var i4 = 0; i4 < T; i4++){
+        for (var k = 0; k < i4; k++){
+          if (TOKENS[k] === TOKENS[i4] && k+1 <= i4){ W[i4][k+1] = 1; break; }
+        }
+      }
+    }
+    render();
+  }
+
+  root.querySelectorAll("[data-ap2-preset]").forEach(function(b){
+    b.addEventListener("click", function(){ preset(b.getAttribute("data-ap2-preset")); });
+  });
+  root.querySelector("[data-ap2-clear]").addEventListener("click", clear);
+
+  render();
+})();
+</script>

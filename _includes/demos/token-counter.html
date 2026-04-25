@@ -1,0 +1,193 @@
+<div class="idemo idemo--mini" id="demo-tcount">
+  <div class="idemo__card">
+    <div class="idemo__head"><span class="idemo__title">Mini · Multi-tokenizer counter (paste anything)</span></div>
+    <div class="idemo__body">
+
+      <p class="tc-lead">Type or paste text. The demo estimates how each major tokenizer would count it, then computes the API cost at current pricing. Try the same paragraph in English, then in Japanese, then with emoji, the count differences are real and they cost real money.</p>
+
+      <textarea class="tc-input" data-tc-input rows="4" placeholder="Type or paste text...">The quick brown fox jumps over the lazy dog. 🦊</textarea>
+
+      <div class="tc-presets">
+        <button class="tc-preset-btn" data-tc-preset="english">English paragraph</button>
+        <button class="tc-preset-btn" data-tc-preset="japanese">Japanese</button>
+        <button class="tc-preset-btn" data-tc-preset="code">Python code</button>
+        <button class="tc-preset-btn" data-tc-preset="emoji">Emoji-heavy</button>
+        <button class="tc-preset-btn" data-tc-preset="numbers">Long numbers</button>
+      </div>
+
+      <div class="tc-grid" data-tc-grid></div>
+
+      <div class="tc-summary">
+        <div class="tc-summary__row">
+          <span>characters</span><strong data-tc-chars>0</strong>
+        </div>
+        <div class="tc-summary__row">
+          <span>words</span><strong data-tc-words>0</strong>
+        </div>
+        <div class="tc-summary__row">
+          <span>bytes (UTF-8)</span><strong data-tc-bytes>0</strong>
+        </div>
+      </div>
+
+      <p class="tc-hint"><strong>Why models disagree:</strong> Each tokenizer was trained on a different mix of languages. GPT-4's vocabulary is more multilingual than GPT-2's, so the same Japanese sentence costs fewer tokens in GPT-4. Llama 3 has a 128K vocabulary biased heavily toward code. Counts are heuristic estimates (≈ chars-per-token ratios from published benchmarks); load <code>tiktoken</code> for exact numbers.</p>
+    </div>
+  </div>
+</div>
+
+<style>
+  #demo-tcount .tc-lead { margin: 0 0 0.85rem !important; font-size: 0.96rem !important; color: var(--nn-body) !important; line-height: 1.6 !important; }
+  #demo-tcount .tc-input {
+    width: 100%; min-height: 80px;
+    font-family: var(--nn-mono); font-size: 0.86rem; color: var(--nn-ink);
+    background: #fff; border: 1px solid var(--nn-line); border-radius: 3px;
+    padding: 0.65rem 0.8rem; margin-bottom: 0.6rem; resize: vertical;
+    box-sizing: border-box;
+  }
+  #demo-tcount .tc-input:focus { outline: none; border-color: #b77214; }
+  #demo-tcount .tc-presets {
+    display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0.85rem;
+  }
+  #demo-tcount .tc-preset-btn {
+    padding: 0.36rem 0.7rem; font-family: var(--nn-mono); font-size: 0.72rem;
+    background: #fff; border: 1px solid var(--nn-line); border-radius: 3px;
+    color: var(--nn-ink); cursor: pointer;
+  }
+  #demo-tcount .tc-preset-btn:hover { border-color: #b77214; }
+  #demo-tcount .tc-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;
+    margin-bottom: 0.85rem;
+  }
+  #demo-tcount .tc-card {
+    background: #fafaf7; border: 1px solid var(--nn-line); border-radius: 3px;
+    padding: 0.6rem 0.75rem;
+    display: flex; flex-direction: column; gap: 0.2rem;
+  }
+  #demo-tcount .tc-card__name {
+    font-family: var(--nn-mono); font-size: 0.72rem; color: var(--nn-muted);
+    text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  #demo-tcount .tc-card__row {
+    display: flex; justify-content: space-between; align-items: baseline;
+    font-family: var(--nn-mono); font-size: 0.78rem;
+  }
+  #demo-tcount .tc-card__row strong { color: #7c4d0a; font-weight: 600; }
+  #demo-tcount .tc-card__cost {
+    font-size: 0.7rem; color: var(--nn-muted);
+  }
+  #demo-tcount .tc-summary {
+    background: #fff; border: 1px solid var(--nn-line); border-radius: 3px;
+    padding: 0.55rem 0.75rem; margin-bottom: 0.85rem;
+    display: flex; gap: 1.5rem; flex-wrap: wrap;
+  }
+  #demo-tcount .tc-summary__row {
+    font-family: var(--nn-mono); font-size: 0.76rem; color: var(--nn-muted);
+  }
+  #demo-tcount .tc-summary__row strong { color: var(--nn-ink); margin-left: 0.3rem; }
+  #demo-tcount .tc-hint {
+    font-size: 0.92rem; color: var(--nn-body); line-height: 1.6;
+    padding: 0.7rem 0.85rem; background: #fff;
+    border: 1px solid var(--nn-line); border-radius: 3px;
+  }
+  #demo-tcount .tc-hint strong { color: #7c4d0a; }
+  #demo-tcount .tc-hint code {
+    font-family: var(--nn-mono); font-size: 0.84em;
+    background: #f5f1e8; padding: 1px 6px; border-radius: 3px;
+  }
+  @media (max-width: 620px){
+    #demo-tcount .tc-grid { grid-template-columns: 1fr; }
+  }
+</style>
+
+<script>
+(function(){
+  var root = document.getElementById("demo-tcount"); if (!root) return;
+
+  // Models with chars-per-token heuristics calibrated per-script.
+  // Estimates are illustrative; real tokenizers differ slightly per string.
+  var MODELS = [
+    { name: "GPT-2",       cpt: { en: 3.8, ja: 1.0, code: 3.0, emoji: 0.4, num: 1.5 }, price: 0 },
+    { name: "GPT-4o",      cpt: { en: 4.2, ja: 1.7, code: 3.4, emoji: 1.4, num: 2.0 }, price: 0.0025 },
+    { name: "Claude 3.5",  cpt: { en: 4.4, ja: 1.6, code: 3.6, emoji: 1.3, num: 2.5 }, price: 0.003 },
+    { name: "Llama 3",     cpt: { en: 4.0, ja: 1.4, code: 3.6, emoji: 1.0, num: 1.0 }, price: 0.0006 }
+  ];
+
+  var PRESETS = {
+    english: "The quick brown fox jumps over the lazy dog. Mechanistic interpretability is the study of what individual components inside trained neural networks actually compute.",
+    japanese: "私の好きな食べ物は寿司です。東京は日本の首都です。",
+    code: "def factorial(n):\n    return 1 if n <= 1 else n * factorial(n - 1)\n\nprint(factorial(10))",
+    emoji: "I love this 🚀🌟✨ It's really 🔥🔥🔥 going to be 💯 amazing! ❤️🎉🎊",
+    numbers: "Phone: 555-123-4567. Order #98765432109876. Price: $1,234,567.89. ZIP: 02139-4307."
+  };
+
+  var inputEl = root.querySelector("[data-tc-input]");
+  var gridEl  = root.querySelector("[data-tc-grid]");
+  var charsEl = root.querySelector("[data-tc-chars]");
+  var wordsEl = root.querySelector("[data-tc-words]");
+  var bytesEl = root.querySelector("[data-tc-bytes]");
+
+  function classify(text){
+    // Detect dominant script. Returns weights summing to 1 across {en, ja, code, emoji, num}.
+    var w = { en: 0, ja: 0, code: 0, emoji: 0, num: 0 };
+    var n = text.length || 1;
+    for (var i = 0; i < text.length; i++){
+      var c = text.charCodeAt(i);
+      if (c >= 0x3040 && c <= 0x30ff) w.ja++;
+      else if (c >= 0x4e00 && c <= 0x9fff) w.ja++;
+      else if (c >= 0xac00 && c <= 0xd7af) w.ja++;
+      else if (c >= 0x2700 || (c >= 0x1f300 && c <= 0x1faff)) w.emoji++;
+      else if (text[i] >= "0" && text[i] <= "9") w.num++;
+      else if ("(){}[];=<>".indexOf(text[i]) >= 0) w.code++;
+      else w.en++;
+    }
+    var sum = w.en + w.ja + w.code + w.emoji + w.num;
+    if (sum === 0) sum = 1;
+    return { en: w.en/sum, ja: w.ja/sum, code: w.code/sum, emoji: w.emoji/sum, num: w.num/sum };
+  }
+
+  function tokenCount(text, model){
+    var weights = classify(text);
+    var charsPerTok = weights.en * model.cpt.en
+                    + weights.ja * model.cpt.ja
+                    + weights.code * model.cpt.code
+                    + weights.emoji * model.cpt.emoji
+                    + weights.num * model.cpt.num;
+    if (charsPerTok < 0.5) charsPerTok = 0.5;
+    var n = text.length;
+    return Math.max(1, Math.round(n / charsPerTok));
+  }
+
+  function bytesUTF8(text){
+    return new TextEncoder().encode(text).length;
+  }
+
+  function render(){
+    var text = inputEl.value;
+    charsEl.textContent = text.length;
+    wordsEl.textContent = text.trim().split(/\s+/).filter(Boolean).length;
+    bytesEl.textContent = bytesUTF8(text);
+
+    var html = "";
+    MODELS.forEach(function(m){
+      var n = tokenCount(text, m);
+      var cost = (n / 1000) * m.price;
+      var costStr = m.price === 0 ? "free / open" : ("$" + cost.toFixed(5) + " / call");
+      html += "<div class=\"tc-card\">"+
+        "<div class=\"tc-card__name\">"+m.name+"</div>"+
+        "<div class=\"tc-card__row\"><span>tokens</span><strong>"+n+"</strong></div>"+
+        "<div class=\"tc-card__cost\">"+costStr+"</div>"+
+        "</div>";
+    });
+    gridEl.innerHTML = html;
+  }
+
+  inputEl.addEventListener("input", render);
+  root.querySelectorAll(".tc-preset-btn").forEach(function(b){
+    b.addEventListener("click", function(){
+      inputEl.value = PRESETS[b.getAttribute("data-tc-preset")] || "";
+      render();
+    });
+  });
+
+  render();
+})();
+</script>

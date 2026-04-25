@@ -102,6 +102,8 @@ UTF-8 encodes `❤️` as 3 bytes (`\xe2\x9d\xa4` for `❤`, plus the variation 
 
 A given prompt produces a different number of tokens at different positions in each model. Position-indexed MI results do not transfer without re-tokenization.
 
+{% include demos/token-counter.html %}
+
 ## Tokens are the unit of everything
 
 Inside the transformer:

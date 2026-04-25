@@ -1,0 +1,195 @@
+<div class="idemo idemo--mini" id="demo-patch">
+  <div class="idemo__card">
+    <div class="idemo__head"><span class="idemo__title">Mini · Activation patching, find where the answer lives</span></div>
+    <div class="idemo__body">
+
+      <p class="ap-lead">Two prompts disagree about the answer. Run both. Then copy the residual stream from the corrupt run into a single layer of the clean run, the patch, and watch the prediction shift. The layers where patching flips the answer are the layers where the answer-relevant computation happens.</p>
+
+      <div class="ap-prompts">
+        <div class="ap-prompt ap-prompt--clean">
+          <span class="ap-prompt__lbl">clean</span>
+          <span class="ap-prompt__text">Paris is the capital of</span>
+          <span class="ap-prompt__ans">→ <strong>France</strong></span>
+        </div>
+        <div class="ap-prompt ap-prompt--corrupt">
+          <span class="ap-prompt__lbl">corrupt</span>
+          <span class="ap-prompt__text">Tokyo is the capital of</span>
+          <span class="ap-prompt__ans">→ <strong>Japan</strong></span>
+        </div>
+      </div>
+
+      <div class="ap-question">click a layer to patch it from the corrupt run into the clean run:</div>
+
+      <div class="ap-layers" data-ap-layers></div>
+
+      <div class="ap-result">
+        <div class="ap-result__row">
+          <span>after patching layer <strong data-ap-layer>—</strong>:</span>
+        </div>
+        <div class="ap-result__bars">
+          <div class="ap-result__row">
+            <span class="ap-result__name">P(France)</span>
+            <div class="ap-result__bar"><div class="ap-result__fill ap-result__fill--france" data-ap-france-bar></div></div>
+            <span class="ap-result__num" data-ap-france>87%</span>
+          </div>
+          <div class="ap-result__row">
+            <span class="ap-result__name">P(Japan)</span>
+            <div class="ap-result__bar"><div class="ap-result__fill ap-result__fill--japan" data-ap-japan-bar></div></div>
+            <span class="ap-result__num" data-ap-japan>1%</span>
+          </div>
+        </div>
+      </div>
+
+      <p class="ap-hint"><strong>What the curve tells you:</strong> patching very early layers does almost nothing; the model hasn't yet computed anything answer-specific. Patching very late layers does almost nothing; the answer has already been extracted. The big effect lives in the middle, exactly where MLP-based factual recall happens. This is the technique <a href="https://arxiv.org/abs/2202.05262" target="_blank" rel="noopener">Meng et al. used to discover ROME</a>.</p>
+    </div>
+  </div>
+</div>
+
+<style>
+  #demo-patch .ap-lead { margin: 0 0 0.85rem !important; font-size: 0.96rem !important; color: var(--nn-body) !important; line-height: 1.6 !important; }
+  #demo-patch .ap-prompts {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.85rem;
+  }
+  #demo-patch .ap-prompt {
+    background: #fafaf7; border: 1px solid var(--nn-line); border-radius: 3px;
+    padding: 0.55rem 0.75rem;
+    display: flex; flex-direction: column; gap: 0.25rem;
+  }
+  #demo-patch .ap-prompt--corrupt { background: #fff6e0; border-color: #b77214; }
+  #demo-patch .ap-prompt__lbl {
+    font-family: var(--nn-mono); font-size: 0.65rem; color: var(--nn-muted);
+    text-transform: uppercase; letter-spacing: 0.08em;
+  }
+  #demo-patch .ap-prompt--corrupt .ap-prompt__lbl { color: #7c4d0a; }
+  #demo-patch .ap-prompt__text {
+    font-family: var(--nn-mono); font-size: 0.82rem; color: var(--nn-ink);
+  }
+  #demo-patch .ap-prompt__ans {
+    font-family: var(--nn-mono); font-size: 0.78rem; color: var(--nn-muted);
+  }
+  #demo-patch .ap-prompt__ans strong { color: #7c4d0a; font-weight: 600; }
+
+  #demo-patch .ap-question {
+    font-family: var(--nn-mono); font-size: 0.74rem; color: var(--nn-muted);
+    margin-bottom: 0.45rem;
+  }
+  #demo-patch .ap-layers {
+    display: grid; grid-template-columns: repeat(12, 1fr); gap: 4px;
+    margin-bottom: 0.85rem;
+  }
+  #demo-patch .ap-layer {
+    aspect-ratio: 1 / 1;
+    background: #fff; border: 1px solid var(--nn-line); border-radius: 3px;
+    cursor: pointer; position: relative;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--nn-mono); font-size: 0.66rem; color: var(--nn-muted);
+    transition: all 180ms;
+  }
+  #demo-patch .ap-layer:hover { border-color: #b77214; color: #7c4d0a; }
+  #demo-patch .ap-layer.is-active {
+    background: #b77214; color: #fff; border-color: #b77214;
+  }
+  #demo-patch .ap-layer__bar {
+    position: absolute; left: 4px; right: 4px; bottom: 4px;
+    height: 4px; background: #b77214; border-radius: 1px;
+    transform-origin: left;
+  }
+  #demo-patch .ap-layer.is-active .ap-layer__bar { background: #fff; }
+
+  #demo-patch .ap-result {
+    background: #fafaf7; border: 1px solid var(--nn-line); border-radius: 3px;
+    padding: 0.7rem 0.85rem; margin-bottom: 0.85rem;
+  }
+  #demo-patch .ap-result__row {
+    font-family: var(--nn-mono); font-size: 0.78rem; color: var(--nn-muted);
+    display: grid; grid-template-columns: 100px 1fr 56px;
+    align-items: center; gap: 0.55rem;
+    margin-bottom: 0.4rem;
+  }
+  #demo-patch .ap-result__row:first-child { display: block; margin-bottom: 0.55rem; }
+  #demo-patch .ap-result__row strong { color: #7c4d0a; }
+  #demo-patch .ap-result__name { color: var(--nn-ink); }
+  #demo-patch .ap-result__bar {
+    height: 14px; background: #fff; border: 1px solid var(--nn-line); border-radius: 2px; overflow: hidden;
+  }
+  #demo-patch .ap-result__fill {
+    height: 100%; transition: width 280ms cubic-bezier(.3,.5,.3,1);
+  }
+  #demo-patch .ap-result__fill--france { background: #b77214; }
+  #demo-patch .ap-result__fill--japan { background: #ddb88e; }
+  #demo-patch .ap-result__num {
+    font-family: var(--nn-mono); font-size: 0.74rem; text-align: right; color: var(--nn-ink);
+  }
+  #demo-patch .ap-hint {
+    font-size: 0.92rem; color: var(--nn-body); line-height: 1.6;
+    padding: 0.7rem 0.85rem; background: #fff;
+    border: 1px solid var(--nn-line); border-radius: 3px;
+  }
+  #demo-patch .ap-hint strong { color: #7c4d0a; }
+  #demo-patch .ap-hint a { color: #7c4d0a; }
+</style>
+
+<script>
+(function(){
+  var root = document.getElementById("demo-patch"); if (!root) return;
+
+  // Per-layer probability that the clean answer "France" wins after patching that layer
+  // from the corrupt run. Bell curve peaking around mid-layers, mirroring published causal
+  // tracing curves (Meng et al. 2022).
+  var BASELINE_FRANCE = 0.87;
+  var BASELINE_JAPAN  = 0.01;
+  // For each of 12 layers: how much the answer flips toward Japan when that layer is patched.
+  // 0 = no effect (still France). 1 = full flip (Japan wins).
+  var FLIP = [0.02, 0.05, 0.12, 0.28, 0.55, 0.78, 0.85, 0.78, 0.55, 0.28, 0.10, 0.04];
+
+  var layersEl = root.querySelector("[data-ap-layers]");
+  var layerEl  = root.querySelector("[data-ap-layer]");
+  var franceEl = root.querySelector("[data-ap-france]");
+  var japanEl  = root.querySelector("[data-ap-japan]");
+  var franceBar = root.querySelector("[data-ap-france-bar]");
+  var japanBar  = root.querySelector("[data-ap-japan-bar]");
+
+  var active = -1;
+
+  function renderLayers(){
+    var html = "";
+    for (var i = 0; i < FLIP.length; i++){
+      var pct = (FLIP[i] * 100).toFixed(0);
+      html += "<div class=\"ap-layer"+(active === i ? " is-active" : "")+"\" data-l=\""+i+"\">"+
+        "L"+i+
+        "<span class=\"ap-layer__bar\" style=\"transform: scaleX("+(FLIP[i]).toFixed(2)+")\"></span>"+
+        "</div>";
+    }
+    layersEl.innerHTML = html;
+    layersEl.querySelectorAll(".ap-layer").forEach(function(b){
+      b.addEventListener("click", function(){
+        active = parseInt(b.getAttribute("data-l"), 10);
+        renderLayers();
+        renderResult();
+      });
+    });
+  }
+
+  function renderResult(){
+    if (active < 0){
+      layerEl.textContent = "—";
+      franceEl.textContent = (BASELINE_FRANCE * 100).toFixed(0) + "%";
+      japanEl.textContent  = (BASELINE_JAPAN  * 100).toFixed(0) + "%";
+      franceBar.style.width = (BASELINE_FRANCE * 100) + "%";
+      japanBar.style.width  = (BASELINE_JAPAN  * 100) + "%";
+      return;
+    }
+    var f = FLIP[active];
+    var pFrance = BASELINE_FRANCE * (1 - f) + 0.05 * f;
+    var pJapan  = 0.01 * (1 - f) + 0.85 * f;
+    layerEl.textContent = active;
+    franceEl.textContent = (pFrance * 100).toFixed(0) + "%";
+    japanEl.textContent  = (pJapan  * 100).toFixed(0) + "%";
+    franceBar.style.width = (pFrance * 100) + "%";
+    japanBar.style.width  = (pJapan  * 100) + "%";
+  }
+
+  renderLayers();
+  renderResult();
+})();
+</script>

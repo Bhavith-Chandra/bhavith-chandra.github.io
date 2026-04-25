@@ -148,6 +148,8 @@ Examples:
 - **Factual-recall MLPs** ([Meng et al., 2022, ROME](https://arxiv.org/abs/2202.05262)): read subject embedding from subject tokens, write attribute information back.
 - **IOI circuit** ([Wang et al., 2022](https://arxiv.org/abs/2211.00593)): a chain of read/write heads juggling name and position information.
 
+{% include demos/activation-patching.html %}
+
 The next two posts cover attention and MLPs as readers/writers in detail.
 
 ## Resources

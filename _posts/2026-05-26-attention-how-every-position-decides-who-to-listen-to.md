@@ -101,6 +101,8 @@ In-context bigram completion: if the prefix contains `…A B…` and the current
 - **Where**: layer 9–10 in GPT-2 small.
 - **Use**: the output stage of the IOI circuit (below).
 
+{% include demos/attention-painter.html %}
+
 ### 4. Attention sinks (BOS sink)
 
 Many heads route most of their attention to position 0 (BOS) on tokens where the head has nothing useful to do. Softmax forces the weights to sum to 1, so the head must attend somewhere; the BOS slot acts as a "rest" position with low informational impact.

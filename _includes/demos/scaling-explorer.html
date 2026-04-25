@@ -1,0 +1,208 @@
+<div class="idemo idemo--mini" id="demo-scale">
+  <div class="idemo__card">
+    <div class="idemo__head"><span class="idemo__title">Mini · Build your own transformer (and find out which model it is)</span></div>
+    <div class="idemo__body">
+
+      <p class="sc-lead">Three sliders. Pick a depth, width, and head count. The demo computes total parameters, the attention/MLP split, FP16 memory, and matches your settings to the closest published model.</p>
+
+      <div class="sc-stage">
+        <div class="sc-sliders">
+          <label class="sc-slider-row">
+            <span>layers (N)</span>
+            <input type="range" min="1" max="120" step="1" value="12" data-sc-N>
+            <strong data-sc-N-val>12</strong>
+          </label>
+          <label class="sc-slider-row">
+            <span>d_model</span>
+            <input type="range" min="0" max="11" step="1" value="3" data-sc-D>
+            <strong data-sc-D-val>768</strong>
+          </label>
+          <label class="sc-slider-row">
+            <span>heads</span>
+            <input type="range" min="1" max="128" step="1" value="12" data-sc-H>
+            <strong data-sc-H-val>12</strong>
+          </label>
+        </div>
+
+        <div class="sc-readout">
+          <div class="sc-stat">
+            <div class="sc-stat__lbl">total params</div>
+            <div class="sc-stat__val" data-sc-total>0</div>
+          </div>
+          <div class="sc-stat">
+            <div class="sc-stat__lbl">FP16 memory</div>
+            <div class="sc-stat__val" data-sc-mem>0 MB</div>
+          </div>
+          <div class="sc-stat">
+            <div class="sc-stat__lbl">closest model</div>
+            <div class="sc-stat__val" data-sc-match>?</div>
+          </div>
+        </div>
+
+        <div class="sc-bar">
+          <div class="sc-bar__seg sc-bar__seg--attn" data-sc-attn-w></div>
+          <div class="sc-bar__seg sc-bar__seg--mlp" data-sc-mlp-w></div>
+          <div class="sc-bar__seg sc-bar__seg--emb" data-sc-emb-w></div>
+        </div>
+        <div class="sc-legend">
+          <span><i class="sc-leg sc-leg--attn"></i> attention <strong data-sc-attn-pct></strong></span>
+          <span><i class="sc-leg sc-leg--mlp"></i> MLP <strong data-sc-mlp-pct></strong></span>
+          <span><i class="sc-leg sc-leg--emb"></i> embed/unembed <strong data-sc-emb-pct></strong></span>
+        </div>
+      </div>
+
+      <p class="sc-hint"><strong>What you're learning:</strong> in any standard transformer, MLPs hold roughly twice the parameters of attention. Move the sliders and the ratio barely budges, ~⅔ MLP, ~⅓ attention, plus a small embedding/unembedding chunk that shrinks as you scale up. This is why interpretability work that focuses only on attention is missing where most of the model lives.</p>
+    </div>
+  </div>
+</div>
+
+<style>
+  #demo-scale .sc-lead { margin: 0 0 0.85rem !important; font-size: 0.96rem !important; color: var(--nn-body) !important; line-height: 1.6 !important; }
+  #demo-scale .sc-stage {
+    background: #fafaf7; border: 1px solid var(--nn-line); border-radius: 4px;
+    padding: 0.95rem; margin-bottom: 0.85rem;
+  }
+  #demo-scale .sc-sliders { display: flex; flex-direction: column; gap: 0.55rem; margin-bottom: 0.95rem; }
+  #demo-scale .sc-slider-row {
+    display: grid; grid-template-columns: 90px 1fr 70px; gap: 0.7rem; align-items: center;
+  }
+  #demo-scale .sc-slider-row > span {
+    font-family: var(--nn-mono); font-size: 0.74rem; color: var(--nn-muted);
+    text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  #demo-scale .sc-slider-row input { accent-color: #b77214; }
+  #demo-scale .sc-slider-row strong {
+    font-family: var(--nn-mono); font-size: 0.84rem; color: var(--nn-ink);
+    text-align: right;
+  }
+  #demo-scale .sc-readout {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.55rem;
+    margin-bottom: 0.95rem;
+  }
+  #demo-scale .sc-stat {
+    background: #fff; border: 1px solid var(--nn-line); border-radius: 3px;
+    padding: 0.55rem 0.7rem;
+  }
+  #demo-scale .sc-stat__lbl {
+    font-family: var(--nn-mono); font-size: 0.66rem; color: var(--nn-muted);
+    text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 0.2rem;
+  }
+  #demo-scale .sc-stat__val {
+    font-family: var(--nn-mono); font-size: 0.95rem; color: #7c4d0a; font-weight: 600;
+  }
+  #demo-scale .sc-bar {
+    display: flex; height: 22px; border-radius: 3px; overflow: hidden;
+    border: 1px solid var(--nn-line); margin-bottom: 0.5rem;
+  }
+  #demo-scale .sc-bar__seg { transition: flex-basis 320ms cubic-bezier(.3,.5,.3,1); }
+  #demo-scale .sc-bar__seg--attn { background: #b77214; }
+  #demo-scale .sc-bar__seg--mlp  { background: #7c4d0a; }
+  #demo-scale .sc-bar__seg--emb  { background: #ddb88e; }
+  #demo-scale .sc-legend {
+    display: flex; gap: 1.1rem; flex-wrap: wrap;
+    font-family: var(--nn-mono); font-size: 0.72rem; color: var(--nn-muted);
+  }
+  #demo-scale .sc-legend strong { color: var(--nn-ink); margin-left: 0.25rem; }
+  #demo-scale .sc-leg {
+    display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px;
+    vertical-align: middle;
+  }
+  #demo-scale .sc-leg--attn { background: #b77214; }
+  #demo-scale .sc-leg--mlp { background: #7c4d0a; }
+  #demo-scale .sc-leg--emb { background: #ddb88e; }
+  #demo-scale .sc-hint {
+    font-size: 0.92rem; color: var(--nn-body); line-height: 1.6;
+    padding: 0.7rem 0.85rem; background: #fff;
+    border: 1px solid var(--nn-line); border-radius: 3px;
+  }
+  #demo-scale .sc-hint strong { color: #7c4d0a; }
+</style>
+
+<script>
+(function(){
+  var root = document.getElementById("demo-scale"); if (!root) return;
+
+  var D_OPTIONS = [128, 256, 384, 768, 1024, 1600, 2048, 4096, 5120, 8192, 12288, 16384];
+  var V = 50257;
+
+  var KNOWN = [
+    { name: "GPT-2 small",  N: 12, d: 768,   h: 12,  total: 124e6 },
+    { name: "GPT-2 medium", N: 24, d: 1024,  h: 16,  total: 355e6 },
+    { name: "GPT-2 large",  N: 36, d: 1280,  h: 20,  total: 774e6 },
+    { name: "GPT-2 XL",     N: 48, d: 1600,  h: 25,  total: 1.5e9 },
+    { name: "GPT-3",        N: 96, d: 12288, h: 96,  total: 175e9 },
+    { name: "Llama 3 8B",   N: 32, d: 4096,  h: 32,  total: 8e9 },
+    { name: "Llama 3 70B",  N: 80, d: 8192,  h: 64,  total: 70e9 },
+    { name: "Llama 3 405B", N: 126,d: 16384, h: 128, total: 405e9 }
+  ];
+
+  var Nel = root.querySelector("[data-sc-N]");
+  var Del = root.querySelector("[data-sc-D]");
+  var Hel = root.querySelector("[data-sc-H]");
+  var Nv = root.querySelector("[data-sc-N-val]");
+  var Dv = root.querySelector("[data-sc-D-val]");
+  var Hv = root.querySelector("[data-sc-H-val]");
+  var totalEl = root.querySelector("[data-sc-total]");
+  var memEl = root.querySelector("[data-sc-mem]");
+  var matchEl = root.querySelector("[data-sc-match]");
+  var attnW = root.querySelector("[data-sc-attn-w]");
+  var mlpW = root.querySelector("[data-sc-mlp-w]");
+  var embW = root.querySelector("[data-sc-emb-w]");
+  var attnPct = root.querySelector("[data-sc-attn-pct]");
+  var mlpPct = root.querySelector("[data-sc-mlp-pct]");
+  var embPct = root.querySelector("[data-sc-emb-pct]");
+
+  function fmt(n){
+    if (n >= 1e12) return (n/1e12).toFixed(2) + "T";
+    if (n >= 1e9)  return (n/1e9).toFixed(2) + "B";
+    if (n >= 1e6)  return (n/1e6).toFixed(1) + "M";
+    if (n >= 1e3)  return (n/1e3).toFixed(0) + "K";
+    return n.toFixed(0);
+  }
+
+  function render(){
+    var N = parseInt(Nel.value, 10);
+    var d = D_OPTIONS[parseInt(Del.value, 10)];
+    var h = parseInt(Hel.value, 10);
+    Nv.textContent = N;
+    Dv.textContent = d;
+    Hv.textContent = h;
+
+    // Standard recipe: attention = 4*d^2 per block (Q,K,V,O); MLP = 8*d^2 per block (4d up, 4d down).
+    var attn = N * 4 * d * d;
+    var mlp  = N * 8 * d * d;
+    var emb  = 2 * V * d; // embed + unembed (untied)
+    var total = attn + mlp + emb;
+
+    totalEl.textContent = fmt(total);
+    memEl.textContent = fmt(total * 2 / (1024*1024)) + "B"; // approximation
+    // Show memory in MB / GB
+    var bytes = total * 2;
+    var memStr;
+    if (bytes >= 1024*1024*1024) memStr = (bytes / (1024*1024*1024)).toFixed(2) + " GB";
+    else memStr = (bytes / (1024*1024)).toFixed(1) + " MB";
+    memEl.textContent = memStr;
+
+    // closest model: minimize log-distance over (N, d, total)
+    var best = null, bestS = Infinity;
+    KNOWN.forEach(function(m){
+      var s = Math.abs(Math.log(m.N/N)) + Math.abs(Math.log(m.d/d)) + Math.abs(Math.log(m.total/total)) * 0.5;
+      if (s < bestS){ bestS = s; best = m; }
+    });
+    matchEl.textContent = best.name;
+
+    var aP = attn / total * 100;
+    var mP = mlp / total * 100;
+    var eP = emb / total * 100;
+    attnW.style.flexBasis = aP + "%";
+    mlpW.style.flexBasis = mP + "%";
+    embW.style.flexBasis = eP + "%";
+    attnPct.textContent = aP.toFixed(0) + "%";
+    mlpPct.textContent = mP.toFixed(0) + "%";
+    embPct.textContent = eP.toFixed(0) + "%";
+  }
+
+  [Nel, Del, Hel].forEach(function(el){ el.addEventListener("input", render); });
+  render();
+})();
+</script>

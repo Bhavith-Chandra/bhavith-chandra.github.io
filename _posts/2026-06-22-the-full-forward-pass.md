@@ -138,6 +138,8 @@ The MI program: characterize each of these components in terms of what it reads 
 
 **3. Computation is parallel and distributed, not sequential.** The model does not execute "identify France → look up capitals → output Paris" as discrete steps. All blocks compute simultaneously on their inputs; the result is an additive sum on the residual stream. There is no step 3. There are 78 components contributing in parallel.
 
+{% include demos/generation-stream.html %}
+
 This is why MI does not ask "what happened at step 3?" but instead "what did head 7.4 contribute?". The latter has a precise numerical answer (DLA gives a scalar); the former does not.
 
 ## What this series has covered

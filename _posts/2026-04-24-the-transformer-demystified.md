@@ -108,6 +108,8 @@ This is **autoregressive decoding**. Each generated token is appended to the inp
 
 Memorize one row (GPT-2 small is most common in MI papers) and use it as the reference point.
 
+{% include demos/scaling-explorer.html %}
+
 ## What's ahead
 
 Subsequent posts cover each station in mechanistic detail:

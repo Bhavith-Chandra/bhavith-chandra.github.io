@@ -1,0 +1,229 @@
+<div class="idemo idemo--mini" id="demo-rome">
+  <div class="idemo__card">
+    <div class="idemo__head"><span class="idemo__title">Mini · Edit a fact in the model (ROME-style)</span></div>
+    <div class="idemo__body">
+
+      <p class="rome-lead">Pick a fact. Pick the new answer you want the model to insist on. Drag the edit slider from 0 to 1 to apply a rank-one update to one MLP layer's weights, simulating what the ROME paper does. Watch the prediction shift, and watch a related question to see if your edit generalizes correctly.</p>
+
+      <div class="rome-pick">
+        <div class="rome-pick__label">fact:</div>
+        <div class="rome-pick__row">
+          <span class="rome-prompt" data-rome-prompt>The Eiffel Tower is in</span>
+          <select class="rome-select" data-rome-fact>
+            <option value="eiffel">The Eiffel Tower is in ___</option>
+            <option value="capital">The capital of France is ___</option>
+            <option value="lisa">The Mona Lisa was painted by ___</option>
+            <option value="space">Neil Armstrong walked on ___</option>
+          </select>
+        </div>
+        <div class="rome-pick__label">new answer:</div>
+        <select class="rome-select" data-rome-target></select>
+      </div>
+
+      <div class="rome-stage">
+        <div class="rome-result">
+          <div class="rome-result__row">
+            <span class="rome-result__name" data-rome-truth>Paris</span>
+            <div class="rome-result__bar"><div class="rome-result__fill rome-result__fill--truth" data-rome-truth-bar></div></div>
+            <span class="rome-result__num" data-rome-truth-num>91%</span>
+          </div>
+          <div class="rome-result__row">
+            <span class="rome-result__name" data-rome-target-name>Rome</span>
+            <div class="rome-result__bar"><div class="rome-result__fill rome-result__fill--new" data-rome-new-bar></div></div>
+            <span class="rome-result__num" data-rome-new-num>0%</span>
+          </div>
+        </div>
+
+        <div class="rome-related">
+          <div class="rome-related__lbl">consistency check</div>
+          <div class="rome-related__q" data-rome-related-q></div>
+          <div class="rome-related__a" data-rome-related-a></div>
+        </div>
+      </div>
+
+      <div class="rome-controls">
+        <label class="rome-label">edit strength: <strong data-rome-tval>0.00</strong></label>
+        <input type="range" min="0" max="100" value="0" step="1" class="rome-slider" data-rome-strength>
+      </div>
+
+      <p class="rome-hint"><strong>What ROME actually does:</strong> the model encodes facts as (key, value) pairs in mid-layer MLPs. ROME locates the layer where the subject's representation peaks, then computes a rank-one update to <code>W_out</code> that swaps the value while preserving the key. The edit propagates to paraphrases of the same fact (the consistency check) without destroying unrelated knowledge. Numbers shown are illustrative; real ROME edits typically achieve 95%+ post-edit probability.</p>
+    </div>
+  </div>
+</div>
+
+<style>
+  #demo-rome .rome-lead { margin: 0 0 0.85rem !important; font-size: 0.96rem !important; color: var(--nn-body) !important; line-height: 1.6 !important; }
+  #demo-rome .rome-pick {
+    background: #fafaf7; border: 1px solid var(--nn-line); border-radius: 4px;
+    padding: 0.7rem 0.85rem; margin-bottom: 0.55rem;
+    display: flex; flex-direction: column; gap: 0.4rem;
+  }
+  #demo-rome .rome-pick__label {
+    font-family: var(--nn-mono); font-size: 0.66rem; color: var(--nn-muted);
+    text-transform: uppercase; letter-spacing: 0.08em;
+  }
+  #demo-rome .rome-pick__row {
+    display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
+  }
+  #demo-rome .rome-prompt {
+    font-family: var(--nn-mono); font-size: 0.84rem; color: var(--nn-ink);
+  }
+  #demo-rome .rome-select {
+    font-family: var(--nn-mono); font-size: 0.78rem;
+    padding: 0.32rem 0.5rem; border: 1px solid var(--nn-line); border-radius: 3px;
+    background: #fff; color: var(--nn-ink);
+  }
+  #demo-rome .rome-stage {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem;
+    margin-bottom: 0.85rem;
+  }
+  #demo-rome .rome-result {
+    background: #fff; border: 1px solid var(--nn-line); border-radius: 3px;
+    padding: 0.7rem 0.85rem;
+    display: flex; flex-direction: column; gap: 0.5rem;
+  }
+  #demo-rome .rome-result__row {
+    display: grid; grid-template-columns: 90px 1fr 50px;
+    align-items: center; gap: 0.55rem;
+  }
+  #demo-rome .rome-result__name {
+    font-family: var(--nn-mono); font-size: 0.78rem; color: var(--nn-ink);
+  }
+  #demo-rome .rome-result__bar {
+    height: 14px; background: #f5f1e8; border: 1px solid var(--nn-line); border-radius: 2px; overflow: hidden;
+  }
+  #demo-rome .rome-result__fill { height: 100%; transition: width 280ms cubic-bezier(.3,.5,.3,1); }
+  #demo-rome .rome-result__fill--truth { background: #ddb88e; }
+  #demo-rome .rome-result__fill--new { background: #b77214; }
+  #demo-rome .rome-result__num {
+    font-family: var(--nn-mono); font-size: 0.74rem; text-align: right; color: var(--nn-muted);
+  }
+
+  #demo-rome .rome-related {
+    background: #fff; border: 1px solid var(--nn-line); border-radius: 3px;
+    padding: 0.7rem 0.85rem;
+    display: flex; flex-direction: column; gap: 0.3rem;
+  }
+  #demo-rome .rome-related__lbl {
+    font-family: var(--nn-mono); font-size: 0.66rem; color: var(--nn-muted);
+    text-transform: uppercase; letter-spacing: 0.08em;
+  }
+  #demo-rome .rome-related__q {
+    font-family: var(--nn-mono); font-size: 0.78rem; color: var(--nn-ink);
+  }
+  #demo-rome .rome-related__a {
+    font-family: var(--nn-mono); font-size: 0.78rem; color: #7c4d0a; font-weight: 600;
+    transition: color 280ms;
+  }
+  #demo-rome .rome-controls {
+    display: flex; align-items: center; gap: 0.7rem; flex-wrap: wrap;
+    margin-bottom: 0.65rem;
+  }
+  #demo-rome .rome-label { font-family: var(--nn-mono); font-size: 0.78rem; color: var(--nn-muted); }
+  #demo-rome .rome-label strong { color: var(--nn-ink); }
+  #demo-rome .rome-slider { flex: 1; min-width: 140px; accent-color: #b77214; }
+
+  #demo-rome .rome-hint {
+    font-size: 0.92rem; color: var(--nn-body); line-height: 1.6;
+    padding: 0.7rem 0.85rem; background: #fff;
+    border: 1px solid var(--nn-line); border-radius: 3px;
+  }
+  #demo-rome .rome-hint strong { color: #7c4d0a; }
+  #demo-rome .rome-hint code {
+    font-family: var(--nn-mono); font-size: 0.84em;
+    background: #f5f1e8; padding: 1px 6px; border-radius: 3px;
+  }
+  @media (max-width: 620px){
+    #demo-rome .rome-stage { grid-template-columns: 1fr; }
+  }
+</style>
+
+<script>
+(function(){
+  var root = document.getElementById("demo-rome"); if (!root) return;
+
+  var FACTS = {
+    eiffel: {
+      prompt: "The Eiffel Tower is in",
+      truth: "Paris",
+      options: ["Rome", "London", "Berlin", "Tokyo"],
+      relatedQ: "What language do you hear near the Eiffel Tower?",
+      relatedA: { Paris: "French", Rome: "Italian", London: "English", Berlin: "German", Tokyo: "Japanese" }
+    },
+    capital: {
+      prompt: "The capital of France is",
+      truth: "Paris",
+      options: ["Madrid", "Berlin", "Rome", "Lyon"],
+      relatedQ: "Tourists in the capital of France ride...",
+      relatedA: { Paris: "the Métro", Madrid: "the Madrid Metro", Berlin: "the U-Bahn", Rome: "the Roma metro", Lyon: "the Lyon metro" }
+    },
+    lisa: {
+      prompt: "The Mona Lisa was painted by",
+      truth: "da Vinci",
+      options: ["Picasso", "Van Gogh", "Monet", "Rembrandt"],
+      relatedQ: "The Mona Lisa was painted in the style of...",
+      relatedA: { "da Vinci": "the Italian Renaissance", Picasso: "Cubism", "Van Gogh": "Post-Impressionism", Monet: "Impressionism", Rembrandt: "the Dutch Golden Age" }
+    },
+    space: {
+      prompt: "Neil Armstrong walked on",
+      truth: "the Moon",
+      options: ["Mars", "Venus", "Jupiter", "Saturn"],
+      relatedQ: "The first object Armstrong stepped onto was made of...",
+      relatedA: { "the Moon": "lunar regolith", Mars: "Martian dust", Venus: "Venusian rock", Jupiter: "gas (impossible)", Saturn: "gas (impossible)" }
+    }
+  };
+
+  var promptEl = root.querySelector("[data-rome-prompt]");
+  var factSel  = root.querySelector("[data-rome-fact]");
+  var targetSel= root.querySelector("[data-rome-target]");
+  var truthEl  = root.querySelector("[data-rome-truth]");
+  var truthNum = root.querySelector("[data-rome-truth-num]");
+  var truthBar = root.querySelector("[data-rome-truth-bar]");
+  var newBar   = root.querySelector("[data-rome-new-bar]");
+  var newNum   = root.querySelector("[data-rome-new-num]");
+  var newName  = root.querySelector("[data-rome-target-name]");
+  var relatedQ = root.querySelector("[data-rome-related-q]");
+  var relatedA = root.querySelector("[data-rome-related-a]");
+  var slider   = root.querySelector("[data-rome-strength]");
+  var tval     = root.querySelector("[data-rome-tval]");
+
+  function populateTargets(){
+    var f = FACTS[factSel.value];
+    promptEl.textContent = f.prompt;
+    truthEl.textContent = f.truth;
+    targetSel.innerHTML = f.options.map(function(o){ return "<option value=\""+o+"\">"+o+"</option>"; }).join("");
+    render();
+  }
+
+  function render(){
+    var f = FACTS[factSel.value];
+    var target = targetSel.value;
+    var t = parseInt(slider.value, 10) / 100;
+    tval.textContent = t.toFixed(2);
+
+    var pTruth = 0.91 * (1 - t) + 0.04 * t;
+    var pNew   = 0.01 * (1 - t) + 0.93 * t;
+
+    truthEl.textContent = f.truth;
+    truthNum.textContent = (pTruth * 100).toFixed(0) + "%";
+    truthBar.style.width = (pTruth * 100) + "%";
+
+    newName.textContent = target;
+    newNum.textContent = (pNew * 100).toFixed(0) + "%";
+    newBar.style.width = (pNew * 100) + "%";
+
+    relatedQ.textContent = f.relatedQ;
+    var ans = (t > 0.5) ? f.relatedA[target] : f.relatedA[f.truth];
+    relatedA.textContent = ans || "—";
+    // Tint the related answer amber while edit is partial
+    var alpha = Math.min(1, Math.max(0.4, 0.4 + Math.abs(t - 0.5) * 1.2));
+    relatedA.style.color = "rgba(124, 77, 10, "+alpha.toFixed(2)+")";
+  }
+
+  factSel.addEventListener("change", populateTargets);
+  targetSel.addEventListener("change", render);
+  slider.addEventListener("input", render);
+
+  populateTargets();
+})();
+</script>

@@ -140,6 +140,8 @@ Three lines of evidence support the claim that factual knowledge lives in MLPs:
 
 A clean operational summary: **attention moves information; MLPs add new information.** Both contribute additively to the residual stream. Their roles are complementary.
 
+{% include demos/rome-editor.html %}
+
 ## Activation functions in modern models
 
 | Model | Non-linearity | Form |

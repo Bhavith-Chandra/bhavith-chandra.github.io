@@ -1,0 +1,329 @@
+<div class="idemo idemo--mini" id="demo-gen">
+  <div class="idemo__card">
+    <div class="idemo__head"><span class="idemo__title">Mini · Generate token-by-token (watch the factory floor run, repeatedly)</span></div>
+    <div class="idemo__body">
+
+      <p class="gen-lead">Pick a starting prompt. Click <strong>next token</strong> and the model runs one full forward pass: 12 layers, 144 heads, 36,864 MLP neurons, the whole thing, to produce a single token. Click again to run it all over again. That's autoregressive generation.</p>
+
+      <div class="gen-presets">
+        <button class="gen-preset" data-gen-preset="cat">The cat sat on the</button>
+        <button class="gen-preset" data-gen-preset="poetry">Roses are red,</button>
+        <button class="gen-preset" data-gen-preset="capital">Paris is the capital of</button>
+        <button class="gen-preset" data-gen-preset="code">def factorial(n):</button>
+      </div>
+
+      <div class="gen-prompt" data-gen-prompt></div>
+
+      <div class="gen-stage">
+        <div class="gen-col">
+          <div class="gen-col__label">top-5 candidates for the next token</div>
+          <div class="gen-candidates" data-gen-candidates></div>
+        </div>
+        <div class="gen-col">
+          <div class="gen-col__label">forward pass <span data-gen-pass>0</span></div>
+          <div class="gen-pulse" data-gen-pulse>
+            <div class="gen-pulse__bar"></div>
+            <div class="gen-pulse__bar"></div>
+            <div class="gen-pulse__bar"></div>
+            <div class="gen-pulse__bar"></div>
+            <div class="gen-pulse__bar"></div>
+            <div class="gen-pulse__bar"></div>
+          </div>
+          <div class="gen-stats" data-gen-stats>0 tokens generated</div>
+        </div>
+      </div>
+
+      <div class="gen-controls">
+        <button class="gen-btn gen-btn--primary" data-gen-next>next token</button>
+        <button class="gen-btn" data-gen-auto>auto-play</button>
+        <button class="gen-btn gen-btn--ghost" data-gen-reset>reset</button>
+        <label class="gen-temp">T: <strong data-gen-tval>0.80</strong>
+          <input type="range" min="10" max="200" value="80" step="5" data-gen-temp>
+        </label>
+      </div>
+
+      <p class="gen-hint"><strong>What you're watching:</strong> for each click, the demo samples one token from the top-5 distribution at the current temperature. Lower T sharpens to greedy; higher T flattens to chaos. The real model would do this exactly the same way, but with a 50,257-token vocabulary and a real forward pass instead of these handcrafted continuations. Same shape, different scale.</p>
+    </div>
+  </div>
+</div>
+
+<style>
+  #demo-gen .gen-lead { margin: 0 0 0.85rem !important; font-size: 0.96rem !important; color: var(--nn-body) !important; line-height: 1.6 !important; }
+  #demo-gen .gen-lead strong { color: #7c4d0a; }
+  #demo-gen .gen-presets { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0.7rem; }
+  #demo-gen .gen-preset {
+    padding: 0.36rem 0.7rem; font-family: var(--nn-mono); font-size: 0.72rem;
+    background: #fff; border: 1px solid var(--nn-line); border-radius: 3px;
+    color: var(--nn-ink); cursor: pointer;
+  }
+  #demo-gen .gen-preset:hover { border-color: #b77214; }
+  #demo-gen .gen-preset.is-active { background: #b77214; color: #fff; border-color: #b77214; }
+  #demo-gen .gen-prompt {
+    background: #fff; border: 1px solid var(--nn-line); border-radius: 3px;
+    padding: 0.65rem 0.85rem; margin-bottom: 0.75rem;
+    font-family: var(--nn-mono); font-size: 0.92rem; color: var(--nn-ink);
+    min-height: 50px; line-height: 1.65;
+    word-break: break-word;
+  }
+  #demo-gen .gen-prompt .gen-tok-new {
+    background: #fff6e0; color: #7c4d0a; padding: 0 3px; border-radius: 2px;
+    animation: genPop 320ms cubic-bezier(.2,.8,.4,1);
+  }
+  @keyframes genPop {
+    0% { background: #b77214; color: #fff; transform: scale(0.85); }
+    100% { background: #fff6e0; color: #7c4d0a; transform: scale(1); }
+  }
+  #demo-gen .gen-stage {
+    display: grid; grid-template-columns: 1.2fr 1fr; gap: 0.7rem;
+    background: #fafaf7; border: 1px solid var(--nn-line); border-radius: 4px;
+    padding: 0.85rem; margin-bottom: 0.85rem;
+  }
+  #demo-gen .gen-col__label {
+    font-family: var(--nn-mono); font-size: 0.66rem; color: var(--nn-muted);
+    text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 0.45rem;
+  }
+  #demo-gen .gen-candidates { display: flex; flex-direction: column; gap: 0.32rem; }
+  #demo-gen .gen-cand {
+    display: grid; grid-template-columns: 90px 1fr 50px;
+    align-items: center; gap: 0.5rem;
+  }
+  #demo-gen .gen-cand__tok { font-family: var(--nn-mono); font-size: 0.78rem; color: var(--nn-ink); }
+  #demo-gen .gen-cand__tok.is-picked { color: #7c4d0a; font-weight: 600; }
+  #demo-gen .gen-cand__bar {
+    height: 12px; background: #f5f1e8; border: 1px solid var(--nn-line); border-radius: 2px; overflow: hidden;
+  }
+  #demo-gen .gen-cand__fill { height: 100%; background: #ddb88e; transition: width 220ms; }
+  #demo-gen .gen-cand__fill.is-picked { background: #b77214; }
+  #demo-gen .gen-cand__num {
+    font-family: var(--nn-mono); font-size: 0.7rem; color: var(--nn-muted); text-align: right;
+  }
+
+  #demo-gen .gen-pulse {
+    display: flex; gap: 4px; height: 38px; align-items: end; margin-bottom: 0.45rem;
+    padding: 0 4px;
+  }
+  #demo-gen .gen-pulse__bar {
+    flex: 1; background: #ddb88e; border-radius: 2px 2px 0 0; height: 30%;
+    transition: height 180ms;
+  }
+  #demo-gen .gen-pulse.is-pulsing .gen-pulse__bar {
+    animation: genPulse 800ms cubic-bezier(.5,0,.5,1) infinite;
+  }
+  #demo-gen .gen-pulse.is-pulsing .gen-pulse__bar:nth-child(1) { animation-delay: 0ms; }
+  #demo-gen .gen-pulse.is-pulsing .gen-pulse__bar:nth-child(2) { animation-delay: 80ms; }
+  #demo-gen .gen-pulse.is-pulsing .gen-pulse__bar:nth-child(3) { animation-delay: 160ms; }
+  #demo-gen .gen-pulse.is-pulsing .gen-pulse__bar:nth-child(4) { animation-delay: 240ms; }
+  #demo-gen .gen-pulse.is-pulsing .gen-pulse__bar:nth-child(5) { animation-delay: 320ms; }
+  #demo-gen .gen-pulse.is-pulsing .gen-pulse__bar:nth-child(6) { animation-delay: 400ms; }
+  @keyframes genPulse {
+    0%   { height: 25%; background: #ddb88e; }
+    50%  { height: 95%; background: #b77214; }
+    100% { height: 25%; background: #ddb88e; }
+  }
+  #demo-gen .gen-stats {
+    font-family: var(--nn-mono); font-size: 0.72rem; color: var(--nn-muted);
+  }
+
+  #demo-gen .gen-controls {
+    display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
+    margin-bottom: 0.65rem;
+  }
+  #demo-gen .gen-btn {
+    padding: 0.42rem 0.85rem; font-family: var(--nn-mono); font-size: 0.78rem;
+    background: #fff; border: 1px solid var(--nn-line); border-radius: 3px;
+    color: var(--nn-ink); cursor: pointer;
+  }
+  #demo-gen .gen-btn:hover { border-color: #b77214; }
+  #demo-gen .gen-btn--primary { background: #b77214; color: #fff; border-color: #b77214; font-weight: 600; }
+  #demo-gen .gen-btn--primary:hover { background: #7c4d0a; }
+  #demo-gen .gen-btn--ghost { color: var(--nn-muted); }
+  #demo-gen .gen-temp {
+    margin-left: auto; font-family: var(--nn-mono); font-size: 0.74rem; color: var(--nn-muted);
+    display: flex; align-items: center; gap: 0.35rem;
+  }
+  #demo-gen .gen-temp strong { color: var(--nn-ink); min-width: 32px; }
+  #demo-gen .gen-temp input { accent-color: #b77214; }
+
+  #demo-gen .gen-hint {
+    font-size: 0.92rem; color: var(--nn-body); line-height: 1.6;
+    padding: 0.7rem 0.85rem; background: #fff;
+    border: 1px solid var(--nn-line); border-radius: 3px;
+  }
+  #demo-gen .gen-hint strong { color: #7c4d0a; }
+  @media (max-width: 620px){
+    #demo-gen .gen-stage { grid-template-columns: 1fr; }
+    #demo-gen .gen-temp { margin-left: 0; }
+  }
+</style>
+
+<script>
+(function(){
+  var root = document.getElementById("demo-gen"); if (!root) return;
+
+  // Hand-crafted small "language model": for each known prefix, a top-5 distribution.
+  // Logits, not probabilities. Demo will softmax with the user's T.
+  var TABLE = {
+    "The cat sat on the": [{t:" mat",l:4.5},{t:" couch",l:3.6},{t:" floor",l:3.2},{t:" rug",l:2.8},{t:" windowsill",l:2.0}],
+    "The cat sat on the mat": [{t:".",l:4.2},{t:",",l:3.4},{t:" and",l:3.1},{t:" while",l:2.4},{t:" looking",l:2.1}],
+    "The cat sat on the mat.": [{t:" The",l:3.8},{t:" It",l:3.4},{t:" Then",l:3.0},{t:" Outside",l:2.5},{t:" Suddenly",l:2.2}],
+    "The cat sat on the couch": [{t:".",l:4.0},{t:" and",l:3.6},{t:" purring",l:3.2},{t:" looking",l:2.6},{t:" while",l:2.3}],
+    "The cat sat on the floor": [{t:".",l:4.0},{t:" and",l:3.5},{t:" staring",l:3.1},{t:" near",l:2.5},{t:" by",l:2.2}],
+
+    "Roses are red,": [{t:" violets",l:5.0},{t:" the",l:2.5},{t:" so",l:2.0},{t:" they",l:1.8},{t:" and",l:1.6}],
+    "Roses are red, violets": [{t:" are",l:4.8},{t:" too",l:2.2},{t:" green",l:1.8},{t:" bloom",l:1.5},{t:" rare",l:1.3}],
+    "Roses are red, violets are": [{t:" blue",l:5.0},{t:" purple",l:2.6},{t:" lovely",l:2.1},{t:" rare",l:1.7},{t:" too",l:1.5}],
+    "Roses are red, violets are blue": [{t:",",l:4.5},{t:".",l:3.4},{t:" and",l:3.0},{t:" sugar",l:2.6},{t:" honey",l:2.0}],
+    "Roses are red, violets are blue,": [{t:" sugar",l:4.0},{t:" honey",l:3.0},{t:" the",l:2.4},{t:" you",l:2.0},{t:" love",l:1.8}],
+
+    "Paris is the capital of": [{t:" France",l:5.5},{t:" the",l:2.4},{t:" Europe",l:1.7},{t:" a",l:1.4},{t:" Western",l:1.2}],
+    "Paris is the capital of France": [{t:".",l:4.8},{t:",",l:3.4},{t:" and",l:2.8},{t:" since",l:2.0},{t:" with",l:1.7}],
+    "Paris is the capital of France.": [{t:" It",l:3.8},{t:" The",l:3.5},{t:" Located",l:2.9},{t:" Home",l:2.4},{t:" Paris",l:2.1}],
+
+    "def factorial(n):": [{t:"\n    return",l:5.0},{t:"\n    if",l:3.6},{t:"\n    \"\"\"",l:2.5},{t:"\n    result",l:2.0},{t:"\n    n",l:1.4}],
+    "def factorial(n):\n    return": [{t:" 1",l:4.5},{t:" n",l:3.6},{t:" prod",l:2.6},{t:" reduce",l:2.2},{t:" math",l:1.7}],
+    "def factorial(n):\n    return 1": [{t:" if",l:5.0},{t:" *",l:2.4},{t:"\n",l:2.0},{t:" or",l:1.6},{t:" when",l:1.4}],
+    "def factorial(n):\n    return 1 if": [{t:" n",l:5.0},{t:" not",l:2.4},{t:" else",l:1.8},{t:" len",l:1.4},{t:" i",l:1.2}]
+  };
+
+  // generic fallback for unknown prefixes
+  var FALLBACK = [{t:" the",l:3.0},{t:" a",l:2.6},{t:" and",l:2.4},{t:" of",l:2.0},{t:" to",l:1.8}];
+
+  var PRESETS = {
+    cat: "The cat sat on the",
+    poetry: "Roses are red,",
+    capital: "Paris is the capital of",
+    code: "def factorial(n):"
+  };
+
+  var promptEl = root.querySelector("[data-gen-prompt]");
+  var candEl   = root.querySelector("[data-gen-candidates]");
+  var passEl   = root.querySelector("[data-gen-pass]");
+  var pulseEl  = root.querySelector("[data-gen-pulse]");
+  var statsEl  = root.querySelector("[data-gen-stats]");
+  var nextBtn  = root.querySelector("[data-gen-next]");
+  var autoBtn  = root.querySelector("[data-gen-auto]");
+  var resetBtn = root.querySelector("[data-gen-reset]");
+  var tempEl   = root.querySelector("[data-gen-temp]");
+  var tvalEl   = root.querySelector("[data-gen-tval]");
+
+  var state = {
+    base: PRESETS.cat,
+    extra: "",
+    pass: 0,
+    auto: false,
+    autoTimer: null
+  };
+
+  function softmax(logits, T){
+    if (T < 0.05) T = 0.05;
+    var max = -Infinity;
+    logits.forEach(function(l){ if (l/T > max) max = l/T; });
+    var e = logits.map(function(l){ return Math.exp(l/T - max); });
+    var s = e.reduce(function(a,b){ return a+b; }, 0);
+    return e.map(function(x){ return x/s; });
+  }
+
+  function getCandidates(){
+    var key = state.base + state.extra;
+    return TABLE[key] || FALLBACK;
+  }
+
+  function renderPrompt(newTok){
+    var html = state.base + state.extra;
+    if (newTok){
+      html = (state.base + state.extra.slice(0, state.extra.length - newTok.length)) +
+             "<span class=\"gen-tok-new\">" + escapeHtml(newTok) + "</span>";
+    }
+    promptEl.innerHTML = html;
+  }
+
+  function renderCandidates(picked){
+    var T = parseInt(tempEl.value, 10) / 100;
+    tvalEl.textContent = T.toFixed(2);
+    var cands = getCandidates();
+    var probs = softmax(cands.map(function(c){ return c.l; }), T);
+    var html = "";
+    cands.forEach(function(c, i){
+      var pct = (probs[i] * 100).toFixed(1);
+      var isPicked = picked === c.t ? " is-picked" : "";
+      html += "<div class=\"gen-cand\">"+
+        "<div class=\"gen-cand__tok"+isPicked+"\">"+escapeHtml(c.t.replace(/\n/g,"\\n"))+"</div>"+
+        "<div class=\"gen-cand__bar\"><div class=\"gen-cand__fill"+isPicked+"\" style=\"width:"+(probs[i]*100).toFixed(2)+"%\"></div></div>"+
+        "<div class=\"gen-cand__num\">"+pct+"%</div>"+
+        "</div>";
+    });
+    candEl.innerHTML = html;
+  }
+
+  function escapeHtml(s){
+    return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  }
+
+  function pulse(){
+    pulseEl.classList.add("is-pulsing");
+    setTimeout(function(){ pulseEl.classList.remove("is-pulsing"); }, 480);
+  }
+
+  function step(){
+    var T = parseInt(tempEl.value, 10) / 100;
+    var cands = getCandidates();
+    var probs = softmax(cands.map(function(c){ return c.l; }), T);
+    var r = Math.random(), cum = 0, picked = cands[0].t;
+    for (var i = 0; i < probs.length; i++){
+      cum += probs[i];
+      if (r < cum){ picked = cands[i].t; break; }
+    }
+    state.extra += picked;
+    state.pass += 1;
+    pulse();
+    renderPrompt(picked);
+    setTimeout(function(){ renderPrompt(); renderCandidates(picked); }, 320);
+    passEl.textContent = state.pass;
+    var tokens = state.extra.split(/(?=[ .,])/).filter(Boolean).length;
+    statsEl.textContent = state.pass + " forward passes · " + state.pass + " tokens generated";
+  }
+
+  function reset(){
+    stopAuto();
+    state.extra = "";
+    state.pass = 0;
+    passEl.textContent = 0;
+    statsEl.textContent = "0 tokens generated";
+    renderPrompt();
+    renderCandidates();
+  }
+
+  function setPreset(key){
+    stopAuto();
+    state.base = PRESETS[key];
+    reset();
+    root.querySelectorAll(".gen-preset").forEach(function(b){
+      b.classList.toggle("is-active", b.getAttribute("data-gen-preset") === key);
+    });
+  }
+
+  function startAuto(){
+    if (state.auto) return;
+    state.auto = true;
+    autoBtn.textContent = "stop";
+    state.autoTimer = setInterval(step, 900);
+  }
+  function stopAuto(){
+    if (!state.auto) return;
+    state.auto = false;
+    autoBtn.textContent = "auto-play";
+    clearInterval(state.autoTimer);
+  }
+  function toggleAuto(){ if (state.auto) stopAuto(); else startAuto(); }
+
+  nextBtn.addEventListener("click", step);
+  autoBtn.addEventListener("click", toggleAuto);
+  resetBtn.addEventListener("click", reset);
+  tempEl.addEventListener("input", function(){ renderCandidates(); });
+  root.querySelectorAll(".gen-preset").forEach(function(b){
+    b.addEventListener("click", function(){ setPreset(b.getAttribute("data-gen-preset")); });
+  });
+
+  setPreset("cat");
+})();
+</script>
