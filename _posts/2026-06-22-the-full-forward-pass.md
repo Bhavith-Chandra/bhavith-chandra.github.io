@@ -87,6 +87,8 @@ Apply final layer norm, then project the last position's residual through $W_U$ 
 
 The model commits one token. To generate more, append the chosen token and run the forward pass again.
 
+{% include demos/sampling-playground.html %}
+
 ## Tensor shapes summary
 
 | Stage | Tensor | Shape | Memory (fp16) |

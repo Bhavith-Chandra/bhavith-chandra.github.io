@@ -1,0 +1,185 @@
+<div class="idemo idemo--mini" id="demo-super">
+  <div class="idemo__card">
+    <div class="idemo__head"><span class="idemo__title">Mini · Superposition in 2D</span></div>
+    <div class="idemo__body">
+
+      <p class="sup-lead">A neural network has fewer dimensions than concepts. To survive, it packs many features into the same space at near-orthogonal angles. The trick: only a few features are active at once, so they barely interfere. Toggle features on and off and watch the residual vector form. Then read it back out.</p>
+
+      <div class="sup-stage">
+        <svg viewBox="0 0 320 320" class="sup-svg" data-sup-svg></svg>
+        <div class="sup-readout" data-sup-readout></div>
+      </div>
+
+      <div class="sup-controls" data-sup-toggles></div>
+
+      <p class="sup-hint"><strong>What you're seeing:</strong> 8 feature directions packed into 2 dimensions. Each active feature contributes its direction (faded amber arrow); the residual is their sum (dark amber). Below: dot products of the residual with each feature direction, the model's "readout." When few features are on the readout is clean. Turn on too many and they start to interfere. This is why neurons can be polysemantic and why sparse autoencoders work.</p>
+    </div>
+  </div>
+</div>
+
+<style>
+  #demo-super .sup-lead { margin: 0 0 0.85rem !important; font-size: 0.96rem !important; color: var(--nn-body) !important; line-height: 1.6 !important; }
+  #demo-super .sup-lead strong { color: #7c4d0a; }
+  #demo-super .sup-stage {
+    background: #fafaf7; border: 1px solid var(--nn-line); border-radius: 4px;
+    padding: 0.85rem 0.95rem; margin-bottom: 0.85rem;
+    display: grid; grid-template-columns: 320px 1fr; gap: 1rem; align-items: start;
+  }
+  #demo-super .sup-svg {
+    width: 320px; height: 320px; max-width: 100%;
+    background: #fff; border: 1px solid var(--nn-line); border-radius: 3px;
+  }
+  #demo-super .sup-readout {
+    display: flex; flex-direction: column; gap: 0.35rem;
+  }
+  #demo-super .sup-readout__row {
+    display: grid; grid-template-columns: 80px 1fr 50px; gap: 0.5rem; align-items: center;
+  }
+  #demo-super .sup-readout__lbl {
+    font-family: var(--nn-mono); font-size: 0.74rem; color: var(--nn-ink);
+  }
+  #demo-super .sup-readout__bar {
+    height: 14px; background: #f5f1e8; border: 1px solid var(--nn-line); border-radius: 2px; overflow: hidden;
+    position: relative;
+  }
+  #demo-super .sup-readout__fill {
+    height: 100%; background: #b77214; transition: width 220ms;
+  }
+  #demo-super .sup-readout__fill.is-neg { background: #ddb88e; }
+  #demo-super .sup-readout__num {
+    font-family: var(--nn-mono); font-size: 0.72rem; color: var(--nn-muted); text-align: right;
+  }
+  #demo-super .sup-controls {
+    display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0.85rem;
+  }
+  #demo-super .sup-toggle {
+    padding: 0.4rem 0.75rem; font-family: var(--nn-mono); font-size: 0.74rem;
+    background: #fff; border: 1px solid var(--nn-line); border-radius: 3px;
+    color: var(--nn-ink); cursor: pointer;
+  }
+  #demo-super .sup-toggle:hover { border-color: #b77214; }
+  #demo-super .sup-toggle.is-on {
+    background: #b77214; color: #fff; border-color: #b77214;
+  }
+  #demo-super .sup-hint {
+    font-size: 0.92rem; color: var(--nn-body); line-height: 1.6;
+    padding: 0.7rem 0.85rem; background: #fff;
+    border: 1px solid var(--nn-line); border-radius: 3px;
+  }
+  #demo-super .sup-hint strong { color: #7c4d0a; }
+  @media (max-width: 620px){
+    #demo-super .sup-stage { grid-template-columns: 1fr; }
+    #demo-super .sup-svg { width: 100%; height: auto; }
+  }
+</style>
+
+<script>
+(function(){
+  var root = document.getElementById("demo-super"); if (!root) return;
+
+  var FEATURES = [
+    { name: "cat", angle: 0 },
+    { name: "dog", angle: 45 },
+    { name: "Paris", angle: 90 },
+    { name: "code", angle: 135 },
+    { name: "verb", angle: 180 },
+    { name: "noun", angle: 225 },
+    { name: "DNA", angle: 270 },
+    { name: "music", angle: 315 }
+  ];
+  var CX = 160, CY = 160, R = 120;
+
+  var active = { cat: true, Paris: true };
+
+  var svg = root.querySelector("[data-sup-svg]");
+  var readout = root.querySelector("[data-sup-readout]");
+  var toggles = root.querySelector("[data-sup-toggles]");
+
+  function rad(a){ return a * Math.PI / 180; }
+  function vec(f){ return { x: Math.cos(rad(f.angle)), y: -Math.sin(rad(f.angle)) }; }
+
+  function residual(){
+    var r = { x: 0, y: 0 };
+    FEATURES.forEach(function(f){
+      if (active[f.name]){
+        var v = vec(f);
+        r.x += v.x; r.y += v.y;
+      }
+    });
+    return r;
+  }
+
+  function renderToggles(){
+    var h = "";
+    FEATURES.forEach(function(f){
+      h += "<button class=\"sup-toggle"+(active[f.name] ? " is-on" : "")+"\" data-f=\""+f.name+"\">"+f.name+"</button>";
+    });
+    toggles.innerHTML = h;
+    toggles.querySelectorAll(".sup-toggle").forEach(function(b){
+      b.addEventListener("click", function(){
+        var n = b.getAttribute("data-f");
+        active[n] = !active[n];
+        renderToggles(); render();
+      });
+    });
+  }
+
+  function render(){
+    var sv = "";
+    // axes
+    sv += "<line x1=\"0\" y1=\""+CY+"\" x2=\"320\" y2=\""+CY+"\" stroke=\"#eee\" stroke-width=\"1\"/>";
+    sv += "<line x1=\""+CX+"\" y1=\"0\" x2=\""+CX+"\" y2=\"320\" stroke=\"#eee\" stroke-width=\"1\"/>";
+    // unit circle
+    sv += "<circle cx=\""+CX+"\" cy=\""+CY+"\" r=\""+R+"\" fill=\"none\" stroke=\"#eaeaea\" stroke-width=\"1\"/>";
+
+    // feature directions (faded if off, amber if on)
+    FEATURES.forEach(function(f){
+      var v = vec(f);
+      var x2 = CX + v.x * R, y2 = CY + v.y * R;
+      var on = active[f.name];
+      var stroke = on ? "rgba(183,114,20,0.55)" : "rgba(0,0,0,0.12)";
+      var sw = on ? 2 : 1;
+      sv += "<line x1=\""+CX+"\" y1=\""+CY+"\" x2=\""+x2.toFixed(1)+"\" y2=\""+y2.toFixed(1)+"\" stroke=\""+stroke+"\" stroke-width=\""+sw+"\" stroke-linecap=\"round\"/>";
+      // label
+      var lx = CX + v.x * (R + 18), ly = CY + v.y * (R + 18);
+      var color = on ? "#7c4d0a" : "#999";
+      var weight = on ? "600" : "400";
+      sv += "<text x=\""+lx.toFixed(1)+"\" y=\""+ly.toFixed(1)+"\" font-family=\"ui-monospace, monospace\" font-size=\"11\" fill=\""+color+"\" font-weight=\""+weight+"\" text-anchor=\"middle\" dominant-baseline=\"middle\">"+f.name+"</text>";
+    });
+
+    // residual vector (dark amber arrow)
+    var r = residual();
+    var rx = CX + r.x * R * 0.5, ry = CY + r.y * R * 0.5;
+    sv += "<line x1=\""+CX+"\" y1=\""+CY+"\" x2=\""+rx.toFixed(1)+"\" y2=\""+ry.toFixed(1)+"\" stroke=\"#7c4d0a\" stroke-width=\"3\" stroke-linecap=\"round\"/>";
+    sv += "<circle cx=\""+rx.toFixed(1)+"\" cy=\""+ry.toFixed(1)+"\" r=\"4.5\" fill=\"#7c4d0a\"/>";
+    sv += "<text x=\""+(rx + 8).toFixed(1)+"\" y=\""+(ry - 8).toFixed(1)+"\" font-family=\"ui-monospace, monospace\" font-size=\"10\" fill=\"#7c4d0a\" font-weight=\"600\">residual</text>";
+
+    svg.innerHTML = sv;
+
+    // readout = dot product residual · feature_direction
+    var rh = "<div style=\"font-family: var(--nn-mono); font-size: 0.7rem; color: var(--nn-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.3rem;\">readout (residual · feature)</div>";
+    var maxAbs = 0;
+    FEATURES.forEach(function(f){
+      var v = vec(f);
+      var dot = r.x * v.x + r.y * v.y;
+      if (Math.abs(dot) > maxAbs) maxAbs = Math.abs(dot);
+    });
+    if (maxAbs < 0.01) maxAbs = 1;
+    FEATURES.forEach(function(f){
+      var v = vec(f);
+      var dot = r.x * v.x + r.y * v.y;
+      var pct = Math.min(100, Math.abs(dot) / maxAbs * 100);
+      var cls = dot < 0 ? "is-neg" : "";
+      rh += "<div class=\"sup-readout__row\">"+
+        "<div class=\"sup-readout__lbl\">"+f.name+"</div>"+
+        "<div class=\"sup-readout__bar\"><div class=\"sup-readout__fill "+cls+"\" style=\"width:"+pct.toFixed(1)+"%\"></div></div>"+
+        "<div class=\"sup-readout__num\">"+dot.toFixed(2)+"</div>"+
+        "</div>";
+    });
+    readout.innerHTML = rh;
+  }
+
+  renderToggles();
+  render();
+})();
+</script>

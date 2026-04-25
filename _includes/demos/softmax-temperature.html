@@ -1,0 +1,151 @@
+<div class="idemo idemo--mini" id="demo-softmax">
+  <div class="idemo__card">
+    <div class="idemo__head"><span class="idemo__title">Mini · Softmax with temperature</span></div>
+    <div class="idemo__body">
+
+      <p class="sm-lead">Five logits, one softmax, one temperature dial. Drag the slider and watch the probability mass redistribute. This is the very last computation in a transformer: scores in, distribution out, sample one.</p>
+
+      <div class="sm-stage">
+        <div class="sm-rows" data-sm-rows></div>
+      </div>
+
+      <div class="sm-controls">
+        <label class="sm-label">temperature: <strong data-sm-tval>1.00</strong></label>
+        <input type="range" min="0" max="200" value="100" step="1" class="sm-slider" data-sm-temp>
+        <button class="sm-btn" data-sm-sample>sample 1 token</button>
+        <button class="sm-btn sm-btn--ghost" data-sm-reset>reset history</button>
+      </div>
+
+      <div class="sm-history" data-sm-history>sampled history will appear here.</div>
+
+      <p class="sm-hint" data-sm-hint><strong>What you're watching:</strong> as <em>T</em> drops toward 0 the distribution sharpens onto the top logit (greedy). As <em>T</em> grows the distribution flattens toward uniform (chaos). Temperature 1.0 is the model's natural distribution. Most chatbots use 0.7, 1.0.</p>
+    </div>
+  </div>
+</div>
+
+<style>
+  #demo-softmax .sm-lead { margin: 0 0 0.95rem !important; font-size: 0.96rem !important; color: var(--nn-body) !important; line-height: 1.6 !important; }
+  #demo-softmax .sm-stage {
+    background: #fafaf7; border: 1px solid var(--nn-line); border-radius: 4px;
+    padding: 0.85rem 0.95rem; margin-bottom: 0.85rem;
+  }
+  #demo-softmax .sm-rows { display: flex; flex-direction: column; gap: 0.45rem; }
+  #demo-softmax .sm-row {
+    display: grid; grid-template-columns: 90px 1fr 70px;
+    align-items: center; gap: 0.6rem;
+  }
+  #demo-softmax .sm-row__tok {
+    font-family: var(--nn-mono); font-size: 0.84rem; color: var(--nn-ink);
+  }
+  #demo-softmax .sm-row__bar {
+    height: 18px; background: #f5f1e8; border-radius: 3px; overflow: hidden;
+    border: 1px solid var(--nn-line);
+  }
+  #demo-softmax .sm-row__fill {
+    height: 100%; background: #b77214;
+    transition: width 220ms cubic-bezier(.3,.5,.3,1);
+  }
+  #demo-softmax .sm-row__num {
+    font-family: var(--nn-mono); font-size: 0.78rem;
+    color: var(--nn-muted); text-align: right;
+  }
+  #demo-softmax .sm-controls {
+    display: flex; align-items: center; gap: 0.7rem; flex-wrap: wrap;
+    margin-bottom: 0.65rem;
+  }
+  #demo-softmax .sm-label {
+    font-family: var(--nn-mono); font-size: 0.78rem; color: var(--nn-muted);
+  }
+  #demo-softmax .sm-label strong { color: var(--nn-ink); }
+  #demo-softmax .sm-slider { flex: 1; min-width: 140px; accent-color: #b77214; }
+  #demo-softmax .sm-btn {
+    padding: 0.42rem 0.85rem; font-family: var(--nn-mono); font-size: 0.78rem;
+    background: #b77214; color: #fff; border: 1px solid #b77214; border-radius: 3px; cursor: pointer;
+  }
+  #demo-softmax .sm-btn:hover { background: #7c4d0a; }
+  #demo-softmax .sm-btn--ghost { background: #fff; color: var(--nn-ink); }
+  #demo-softmax .sm-btn--ghost:hover { border-color: #b77214; background: #fff; }
+  #demo-softmax .sm-history {
+    font-family: var(--nn-mono); font-size: 0.78rem; color: var(--nn-body);
+    background: #fff; border: 1px solid var(--nn-line); border-radius: 3px;
+    padding: 0.5rem 0.75rem; min-height: 32px; margin-bottom: 0.85rem;
+    word-break: break-word;
+  }
+  #demo-softmax .sm-hint {
+    font-size: 0.92rem; color: var(--nn-body); line-height: 1.6;
+    padding: 0.7rem 0.85rem; background: #fff;
+    border: 1px solid var(--nn-line); border-radius: 3px;
+  }
+  #demo-softmax .sm-hint em { color: #7c4d0a; font-style: italic; }
+</style>
+
+<script>
+(function(){
+  var root = document.getElementById("demo-softmax"); if (!root) return;
+  var TOKENS = [
+    { tok: " Paris",   logit: 4.2 },
+    { tok: " France",  logit: 2.1 },
+    { tok: " Europe",  logit: 1.4 },
+    { tok: " Britain", logit: 0.6 },
+    { tok: " Berlin",  logit: 0.2 }
+  ];
+
+  var rowsEl = root.querySelector("[data-sm-rows]");
+  var tempEl = root.querySelector("[data-sm-temp]");
+  var tvalEl = root.querySelector("[data-sm-tval]");
+  var historyEl = root.querySelector("[data-sm-history]");
+  var sampleBtn = root.querySelector("[data-sm-sample]");
+  var resetBtn = root.querySelector("[data-sm-reset]");
+
+  var history = [];
+
+  function softmax(logits, T){
+    if (T < 0.01) T = 0.01;
+    var max = -Infinity;
+    for (var i = 0; i < logits.length; i++){ if (logits[i]/T > max) max = logits[i]/T; }
+    var exps = logits.map(function(l){ return Math.exp(l/T - max); });
+    var sum = exps.reduce(function(a,b){ return a+b; }, 0);
+    return exps.map(function(e){ return e / sum; });
+  }
+
+  function render(){
+    var T = parseInt(tempEl.value, 10) / 100;
+    tvalEl.textContent = T.toFixed(2);
+    var probs = softmax(TOKENS.map(function(t){ return t.logit; }), T);
+    var html = "";
+    for (var i = 0; i < TOKENS.length; i++){
+      var p = probs[i];
+      html += "<div class=\"sm-row\">"+
+        "<div class=\"sm-row__tok\">"+TOKENS[i].tok+"</div>"+
+        "<div class=\"sm-row__bar\"><div class=\"sm-row__fill\" style=\"width:"+(p*100).toFixed(2)+"%\"></div></div>"+
+        "<div class=\"sm-row__num\">"+(p*100).toFixed(1)+"%</div>"+
+        "</div>";
+    }
+    rowsEl.innerHTML = html;
+  }
+
+  function sample(){
+    var T = parseInt(tempEl.value, 10) / 100;
+    var probs = softmax(TOKENS.map(function(t){ return t.logit; }), T);
+    var r = Math.random(), cum = 0;
+    for (var i = 0; i < probs.length; i++){
+      cum += probs[i];
+      if (r < cum){
+        history.push(TOKENS[i].tok.trim());
+        if (history.length > 18) history.shift();
+        historyEl.textContent = history.join(" · ");
+        return;
+      }
+    }
+  }
+
+  tempEl.addEventListener("input", render);
+  sampleBtn.addEventListener("click", sample);
+  resetBtn.addEventListener("click", function(){
+    history = [];
+    historyEl.textContent = "sampled history will appear here.";
+  });
+
+  render();
+})();
+</script>

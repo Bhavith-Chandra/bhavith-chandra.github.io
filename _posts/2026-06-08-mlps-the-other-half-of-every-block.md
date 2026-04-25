@@ -111,6 +111,8 @@ Consequences:
 
 [Bricken et al. (2023, "Towards Monosemanticity")](https://transformer-circuits.pub/2023/monosemantic-features/index.html) and [Templeton et al. (2024, "Scaling Monosemanticity")](https://transformer-circuits.pub/2024/scaling-monosemanticity/index.html) trained SAEs on Claude 3 Sonnet and recovered millions of monosemantic features ranging from "the Golden Gate Bridge" to "code with security vulnerabilities."
 
+{% include demos/superposition-2d.html %}
+
 ## Direct logit attribution for MLPs
 
 Because each neuron's contribution to the residual stream is $\sigma(k_n^\top x) v_n$, its contribution to the final logit of token $w$ is:

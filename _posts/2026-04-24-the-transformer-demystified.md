@@ -37,6 +37,8 @@ Click a station, press play, watch one token's vector traverse the pipeline. The
 
 Total parameters scale roughly as $N \cdot d_\text{model}^2 \cdot 12$ for the standard recipe.
 
+{% include demos/softmax-temperature.html %}
+
 <aside class="callout callout--analogy">
   <div class="callout__label">Analogy</div>
   <p>Each station reads the conveyor belt, computes a small contribution, and adds it back. By the final station the vector at the last position has accumulated enough information to identify the next token.</p>

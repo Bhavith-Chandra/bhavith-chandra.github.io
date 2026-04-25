@@ -1,0 +1,157 @@
+<div class="idemo idemo--mini" id="demo-dla">
+  <div class="idemo__card">
+    <div class="idemo__head"><span class="idemo__title">Mini · Direct logit attribution, layer by layer</span></div>
+    <div class="idemo__body">
+
+      <p class="dla-lead">For a given prompt, decompose the final logit of the answer token into per-layer contributions. Positive bars push the prediction toward the answer; negative bars push it away. The biggest bars locate where the work happened.</p>
+
+      <div class="dla-prompts" data-dla-prompts></div>
+
+      <div class="dla-stage">
+        <div class="dla-meta">
+          <div class="dla-meta__row"><span>prompt:</span> <strong data-dla-prompt></strong></div>
+          <div class="dla-meta__row"><span>answer token:</span> <strong data-dla-answer></strong></div>
+        </div>
+        <div class="dla-bars" data-dla-bars></div>
+        <div class="dla-axis"><span>layer 0</span><span>final</span></div>
+      </div>
+
+      <p class="dla-hint"><strong>Read it like this:</strong> for the Paris prompt, layers 8, 9 carry most of the answer signal, those late blocks contain MLP neurons and attention heads writing "Paris" into the residual stream. For the John, Mary prompt, layers 9, 10 dominate, that's where the name-mover heads live. The negative bar in layer 11 is the "negative name-mover", a regularization-like component.</p>
+    </div>
+  </div>
+</div>
+
+<style>
+  #demo-dla .dla-lead { margin: 0 0 0.85rem !important; font-size: 0.96rem !important; color: var(--nn-body) !important; line-height: 1.6 !important; }
+  #demo-dla .dla-prompts {
+    display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0.85rem;
+  }
+  #demo-dla .dla-prompt-btn {
+    padding: 0.4rem 0.75rem; font-family: var(--nn-mono); font-size: 0.74rem;
+    background: #fff; border: 1px solid var(--nn-line); border-radius: 3px;
+    color: var(--nn-ink); cursor: pointer;
+  }
+  #demo-dla .dla-prompt-btn:hover { border-color: #b77214; }
+  #demo-dla .dla-prompt-btn.is-active {
+    background: #b77214; color: #fff; border-color: #b77214;
+  }
+  #demo-dla .dla-stage {
+    background: #fafaf7; border: 1px solid var(--nn-line); border-radius: 4px;
+    padding: 0.85rem 0.95rem; margin-bottom: 0.85rem;
+  }
+  #demo-dla .dla-meta {
+    display: flex; flex-direction: column; gap: 0.25rem; margin-bottom: 0.7rem;
+  }
+  #demo-dla .dla-meta__row {
+    font-family: var(--nn-mono); font-size: 0.78rem; color: var(--nn-muted);
+  }
+  #demo-dla .dla-meta__row strong { color: var(--nn-ink); font-weight: 500; }
+  #demo-dla .dla-bars {
+    display: grid; grid-template-columns: repeat(12, 1fr);
+    gap: 4px; height: 140px; align-items: end;
+    background: linear-gradient(to bottom, transparent calc(50% - 0.5px), rgba(0,0,0,0.12) 50%, transparent calc(50% + 0.5px));
+    padding: 0;
+  }
+  #demo-dla .dla-bar-cell {
+    position: relative; height: 100%;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  #demo-dla .dla-bar {
+    background: #b77214; border-radius: 2px 2px 0 0;
+    transition: height 280ms cubic-bezier(.3,.5,.3,1);
+  }
+  #demo-dla .dla-bar--pos {
+    align-self: flex-end; margin-bottom: 50%;
+  }
+  #demo-dla .dla-bar--neg {
+    align-self: flex-start; margin-top: 50%;
+    background: #ddb88e; border-radius: 0 0 2px 2px;
+  }
+  #demo-dla .dla-bar-cell__lbl {
+    position: absolute; bottom: -16px; left: 0; right: 0; text-align: center;
+    font-family: var(--nn-mono); font-size: 0.62rem; color: var(--nn-muted);
+  }
+  #demo-dla .dla-axis {
+    display: flex; justify-content: space-between; margin-top: 24px;
+    font-family: var(--nn-mono); font-size: 0.7rem; color: var(--nn-muted);
+  }
+  #demo-dla .dla-hint {
+    font-size: 0.92rem; color: var(--nn-body); line-height: 1.6;
+    padding: 0.7rem 0.85rem; background: #fff;
+    border: 1px solid var(--nn-line); border-radius: 3px;
+  }
+</style>
+
+<script>
+(function(){
+  var root = document.getElementById("demo-dla"); if (!root) return;
+
+  // 12-layer per-block contribution to the correct answer's final logit
+  // (illustrative; magnitudes hand-tuned to mirror published GPT-2 small DLA traces)
+  var PROMPTS = [
+    {
+      key: "paris",
+      label: "Paris is the capital of",
+      answer: "France",
+      contribs: [0.04, 0.06, 0.08, 0.10, 0.18, 0.32, 0.55, 0.95, 1.40, 1.60, 0.85, 0.20]
+    },
+    {
+      key: "ioi",
+      label: "When John and Mary went to the store, John gave a drink to",
+      answer: "Mary",
+      contribs: [0.02, 0.05, 0.10, 0.15, 0.20, 0.30, 0.40, 0.30, 0.55, 1.85, 1.65, -0.45]
+    },
+    {
+      key: "induction",
+      label: "A B C D A B C",
+      answer: "D",
+      contribs: [0.05, 0.10, 0.20, 0.30, 0.55, 1.20, 1.50, 0.95, 0.60, 0.40, 0.25, 0.15]
+    },
+    {
+      key: "code",
+      label: "def hello(): print('hello, world')\\nhello()\\n# output:",
+      answer: "hello",
+      contribs: [0.10, 0.20, 0.40, 0.55, 0.75, 0.95, 1.10, 1.20, 1.05, 0.85, 0.55, 0.20]
+    }
+  ];
+
+  var promptsEl = root.querySelector("[data-dla-prompts]");
+  var promptEl  = root.querySelector("[data-dla-prompt]");
+  var answerEl  = root.querySelector("[data-dla-answer]");
+  var barsEl    = root.querySelector("[data-dla-bars]");
+
+  var active = 0;
+
+  function renderTabs(){
+    var html = "";
+    PROMPTS.forEach(function(p, i){
+      html += "<button class=\"dla-prompt-btn"+(i === active ? " is-active" : "")+"\" data-i=\""+i+"\">"+p.key+"</button>";
+    });
+    promptsEl.innerHTML = html;
+    promptsEl.querySelectorAll(".dla-prompt-btn").forEach(function(b){
+      b.addEventListener("click", function(){ active = parseInt(b.getAttribute("data-i"), 10); renderTabs(); render(); });
+    });
+  }
+
+  function render(){
+    var p = PROMPTS[active];
+    promptEl.textContent = "\"" + p.label + "\"";
+    answerEl.textContent = p.answer;
+    var max = 0;
+    p.contribs.forEach(function(v){ if (Math.abs(v) > max) max = Math.abs(v); });
+    var html = "";
+    p.contribs.forEach(function(v, i){
+      var pct = (Math.abs(v) / max) * 50; // 50% of cell height max (centered axis)
+      var cls = v >= 0 ? "dla-bar--pos" : "dla-bar--neg";
+      html += "<div class=\"dla-bar-cell\">"+
+        "<div class=\"dla-bar "+cls+"\" style=\"height:"+pct.toFixed(2)+"%\"></div>"+
+        "<div class=\"dla-bar-cell__lbl\">"+i+"</div>"+
+        "</div>";
+    });
+    barsEl.innerHTML = html;
+  }
+
+  renderTabs();
+  render();
+})();
+</script>

@@ -1,0 +1,212 @@
+<div class="idemo idemo--mini" id="demo-bpe">
+  <div class="idemo__card">
+    <div class="idemo__head"><span class="idemo__title">Mini · Build a BPE vocabulary, one merge at a time</span></div>
+    <div class="idemo__body">
+
+      <p class="bpe-lead">Start with a tiny corpus split into characters. Click <strong>merge most frequent pair</strong> to greedily glue the most common adjacent pair into a single token. Watch the corpus shrink and the vocabulary grow. Real tokenizers run this loop ~50,000 times.</p>
+
+      <div class="bpe-stage">
+        <div class="bpe-row">
+          <div class="bpe-row__label">corpus</div>
+          <div class="bpe-row__value" data-bpe-corpus></div>
+        </div>
+        <div class="bpe-row">
+          <div class="bpe-row__label">most frequent pair</div>
+          <div class="bpe-row__value" data-bpe-pair>, </div>
+        </div>
+        <div class="bpe-row">
+          <div class="bpe-row__label">vocabulary <span data-bpe-vsize>(0)</span></div>
+          <div class="bpe-row__value bpe-row__value--vocab" data-bpe-vocab></div>
+        </div>
+      </div>
+
+      <div class="bpe-controls">
+        <button class="bpe-btn bpe-btn--primary" data-bpe-step>merge most frequent pair</button>
+        <button class="bpe-btn" data-bpe-reset>reset</button>
+        <span class="bpe-counter" data-bpe-counter>0 merges</span>
+      </div>
+
+      <p class="bpe-hint"><strong>What's happening:</strong> the algorithm scans every adjacent pair in the corpus, finds the highest-frequency one, replaces every occurrence with a new token, and adds that token to the vocabulary. After enough merges, common substrings (<code>th</code>, <code>the</code>, <code>cat</code>) become single tokens; rare strings stay multi-piece. That's GPT-2's tokenizer in miniature.</p>
+    </div>
+  </div>
+</div>
+
+<style>
+  #demo-bpe .bpe-lead { margin: 0 0 0.95rem !important; font-size: 0.96rem !important; color: var(--nn-body) !important; line-height: 1.6 !important; }
+  #demo-bpe .bpe-lead strong { color: #7c4d0a; }
+  #demo-bpe .bpe-stage {
+    background: #fafaf7; border: 1px solid var(--nn-line); border-radius: 4px;
+    padding: 0.85rem 0.95rem; margin-bottom: 0.85rem;
+    display: flex; flex-direction: column; gap: 0.65rem;
+  }
+  #demo-bpe .bpe-row { display: grid; grid-template-columns: 160px 1fr; gap: 0.7rem; align-items: start; }
+  #demo-bpe .bpe-row__label {
+    font-family: var(--nn-mono); font-size: 0.7rem; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--nn-muted);
+    padding-top: 0.25rem;
+  }
+  #demo-bpe .bpe-row__label span { text-transform: none; letter-spacing: 0; }
+  #demo-bpe .bpe-row__value {
+    font-family: var(--nn-mono); font-size: 0.85rem; color: var(--nn-ink);
+    background: #fff; border: 1px solid var(--nn-line); border-radius: 3px;
+    padding: 0.45rem 0.65rem; min-height: 32px;
+    line-height: 1.7; word-break: break-word;
+  }
+  #demo-bpe .bpe-row__value--vocab { line-height: 2; }
+  #demo-bpe .bpe-tok {
+    display: inline-block; padding: 1px 7px; margin: 0 2px;
+    background: #f5f1e8; border: 1px solid var(--nn-line); border-radius: 3px;
+    color: var(--nn-ink);
+  }
+  #demo-bpe .bpe-tok.is-new {
+    background: #fff6e0; border-color: #b77214; color: #7c4d0a; font-weight: 600;
+    animation: bpePop 320ms cubic-bezier(.2,.8,.4,1);
+  }
+  #demo-bpe .bpe-tok.is-pair {
+    background: #b77214; color: #fff; border-color: #b77214;
+  }
+  @keyframes bpePop {
+    0% { transform: scale(0.6); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  #demo-bpe .bpe-controls {
+    display: flex; align-items: center; gap: 0.55rem; flex-wrap: wrap;
+    margin-bottom: 0.65rem;
+  }
+  #demo-bpe .bpe-btn {
+    padding: 0.42rem 0.9rem; font-family: var(--nn-mono); font-size: 0.78rem;
+    background: #fff; border: 1px solid var(--nn-line); border-radius: 3px;
+    color: var(--nn-ink); cursor: pointer;
+  }
+  #demo-bpe .bpe-btn:hover { border-color: #b77214; }
+  #demo-bpe .bpe-btn--primary { background: #b77214; color: #fff; border-color: #b77214; font-weight: 600; }
+  #demo-bpe .bpe-btn--primary:hover { background: #7c4d0a; }
+  #demo-bpe .bpe-btn:disabled { opacity: 0.5; cursor: default; }
+  #demo-bpe .bpe-counter {
+    margin-left: auto; font-family: var(--nn-mono); font-size: 0.74rem; color: var(--nn-muted);
+  }
+  #demo-bpe .bpe-hint {
+    font-size: 0.92rem; color: var(--nn-body); line-height: 1.6;
+    padding: 0.7rem 0.85rem; background: #fff;
+    border: 1px solid var(--nn-line); border-radius: 3px;
+  }
+  #demo-bpe .bpe-hint code {
+    font-family: var(--nn-mono); font-size: 0.84em;
+    background: #f5f1e8; padding: 1px 6px; border-radius: 3px;
+  }
+</style>
+
+<script>
+(function(){
+  var root = document.getElementById("demo-bpe"); if (!root) return;
+
+  var INITIAL_WORDS = ["the","cat","sat","on","the","mat","the","cat","ran","fast","the","mat","was","new"];
+
+  var corpusEl = root.querySelector("[data-bpe-corpus]");
+  var pairEl   = root.querySelector("[data-bpe-pair]");
+  var vocabEl  = root.querySelector("[data-bpe-vocab]");
+  var vsizeEl  = root.querySelector("[data-bpe-vsize]");
+  var stepBtn  = root.querySelector("[data-bpe-step]");
+  var resetBtn = root.querySelector("[data-bpe-reset]");
+  var counterEl= root.querySelector("[data-bpe-counter]");
+
+  // each "word" is a list of tokens. start = each char its own token.
+  var words = [];
+  var vocab = [];
+  var lastNew = null;
+  var lastPair = null;
+  var merges = 0;
+
+  function init(){
+    words = INITIAL_WORDS.map(function(w){ return w.split(""); });
+    vocab = [];
+    var seen = {};
+    words.forEach(function(w){ w.forEach(function(c){ if (!seen[c]){ seen[c] = 1; vocab.push(c); } }); });
+    lastNew = null; lastPair = null; merges = 0;
+    render();
+  }
+
+  function countPairs(){
+    var counts = {};
+    words.forEach(function(w){
+      for (var i = 0; i < w.length - 1; i++){
+        var key = w[i] + "\t" + w[i+1];
+        counts[key] = (counts[key] || 0) + 1;
+      }
+    });
+    return counts;
+  }
+
+  function bestPair(){
+    var counts = countPairs();
+    var best = null, bestN = 0;
+    for (var k in counts){
+      if (counts[k] > bestN){ best = k; bestN = counts[k]; }
+    }
+    return best ? { a: best.split("\t")[0], b: best.split("\t")[1], n: bestN } : null;
+  }
+
+  function step(){
+    var p = bestPair();
+    if (!p || p.n < 2){ stepBtn.disabled = true; return; }
+    var merged = p.a + p.b;
+    words = words.map(function(w){
+      var out = [], i = 0;
+      while (i < w.length){
+        if (i < w.length - 1 && w[i] === p.a && w[i+1] === p.b){ out.push(merged); i += 2; }
+        else { out.push(w[i]); i += 1; }
+      }
+      return out;
+    });
+    if (vocab.indexOf(merged) === -1) vocab.push(merged);
+    lastNew = merged;
+    lastPair = p;
+    merges += 1;
+    render();
+  }
+
+  function render(){
+    // corpus
+    var html = "";
+    words.forEach(function(w, wi){
+      w.forEach(function(t){
+        var cls = "bpe-tok";
+        if (lastNew && t === lastNew) cls += " is-new";
+        html += "<span class=\""+cls+"\">"+escape(t)+"</span>";
+      });
+      if (wi < words.length - 1) html += " ";
+    });
+    corpusEl.innerHTML = html;
+
+    // pair preview
+    var p = bestPair();
+    if (p && p.n >= 2){
+      pairEl.innerHTML = "<span class=\"bpe-tok is-pair\">"+escape(p.a)+"</span> + <span class=\"bpe-tok is-pair\">"+escape(p.b)+"</span> &nbsp; (occurs "+p.n+"×)";
+      stepBtn.disabled = false;
+    } else {
+      pairEl.innerHTML = "<em style=\"color:var(--nn-muted)\">no more pairs to merge</em>";
+      stepBtn.disabled = true;
+    }
+
+    // vocab
+    var vh = "";
+    vocab.forEach(function(t){
+      var cls = "bpe-tok";
+      if (t === lastNew) cls += " is-new";
+      vh += "<span class=\""+cls+"\">"+escape(t)+"</span>";
+    });
+    vocabEl.innerHTML = vh;
+    vsizeEl.textContent = "(" + vocab.length + ")";
+    counterEl.textContent = merges + " merge" + (merges === 1 ? "" : "s");
+  }
+
+  function escape(s){
+    return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  }
+
+  stepBtn.addEventListener("click", step);
+  resetBtn.addEventListener("click", init);
+
+  init();
+})();
+</script>

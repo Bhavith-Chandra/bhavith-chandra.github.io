@@ -1,0 +1,268 @@
+<div class="idemo idemo--mini" id="demo-sample">
+  <div class="idemo__card">
+    <div class="idemo__head"><span class="idemo__title">Mini · Sampling playground (greedy / temperature / top-k / top-p)</span></div>
+    <div class="idemo__body">
+
+      <p class="samp-lead">Same logits, four ways to pick a token. Switch sampling strategy, change the parameter, and click <strong>generate</strong> to roll 50 samples. The histogram on the right shows where the strategy actually places its bets.</p>
+
+      <div class="samp-strategy" data-samp-strategy></div>
+
+      <div class="samp-stage">
+        <div class="samp-col">
+          <div class="samp-col__label">truncated distribution</div>
+          <div class="samp-rows" data-samp-dist></div>
+        </div>
+        <div class="samp-col">
+          <div class="samp-col__label">50 samples</div>
+          <div class="samp-rows" data-samp-hist></div>
+        </div>
+      </div>
+
+      <div class="samp-controls">
+        <label class="samp-label" data-samp-paramlabel>temperature: <strong data-samp-pval>1.00</strong></label>
+        <input type="range" min="0" max="100" value="50" step="1" class="samp-slider" data-samp-param>
+        <button class="samp-btn" data-samp-go>generate 50</button>
+      </div>
+
+      <p class="samp-hint" data-samp-hint><strong>Greedy</strong> always picks top-1, deterministic but boring. <strong>Temperature</strong> rescales then samples from the full distribution. <strong>Top-k</strong> keeps only the k highest tokens, then renormalizes. <strong>Top-p (nucleus)</strong> keeps the smallest set whose cumulative probability exceeds <em>p</em>. Frontier chatbots usually combine top-p with temperature 0.7, 1.0.</p>
+    </div>
+  </div>
+</div>
+
+<style>
+  #demo-sample .samp-lead { margin: 0 0 0.85rem !important; font-size: 0.96rem !important; color: var(--nn-body) !important; line-height: 1.6 !important; }
+  #demo-sample .samp-lead strong { color: #7c4d0a; }
+  #demo-sample .samp-strategy {
+    display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0.85rem;
+  }
+  #demo-sample .samp-strategy-btn {
+    padding: 0.4rem 0.85rem; font-family: var(--nn-mono); font-size: 0.74rem;
+    background: #fff; border: 1px solid var(--nn-line); border-radius: 3px;
+    color: var(--nn-ink); cursor: pointer;
+  }
+  #demo-sample .samp-strategy-btn:hover { border-color: #b77214; }
+  #demo-sample .samp-strategy-btn.is-active {
+    background: #b77214; color: #fff; border-color: #b77214;
+  }
+  #demo-sample .samp-stage {
+    background: #fafaf7; border: 1px solid var(--nn-line); border-radius: 4px;
+    padding: 0.85rem 0.95rem; margin-bottom: 0.85rem;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;
+  }
+  #demo-sample .samp-col__label {
+    font-family: var(--nn-mono); font-size: 0.7rem; letter-spacing: 0.06em;
+    text-transform: uppercase; color: var(--nn-muted); margin-bottom: 0.45rem;
+  }
+  #demo-sample .samp-rows { display: flex; flex-direction: column; gap: 0.32rem; }
+  #demo-sample .samp-row {
+    display: grid; grid-template-columns: 80px 1fr 56px;
+    align-items: center; gap: 0.45rem;
+  }
+  #demo-sample .samp-row__tok {
+    font-family: var(--nn-mono); font-size: 0.78rem; color: var(--nn-ink);
+  }
+  #demo-sample .samp-row__bar {
+    height: 14px; background: #f5f1e8; border-radius: 2px; overflow: hidden;
+    border: 1px solid var(--nn-line);
+  }
+  #demo-sample .samp-row__fill {
+    height: 100%; background: #b77214;
+    transition: width 220ms cubic-bezier(.3,.5,.3,1);
+  }
+  #demo-sample .samp-row__fill.is-cut { background: #ddb88e; opacity: 0.4; }
+  #demo-sample .samp-row__num {
+    font-family: var(--nn-mono); font-size: 0.72rem;
+    color: var(--nn-muted); text-align: right;
+  }
+  #demo-sample .samp-controls {
+    display: flex; align-items: center; gap: 0.7rem; flex-wrap: wrap;
+    margin-bottom: 0.65rem;
+  }
+  #demo-sample .samp-label {
+    font-family: var(--nn-mono); font-size: 0.78rem; color: var(--nn-muted);
+  }
+  #demo-sample .samp-label strong { color: var(--nn-ink); }
+  #demo-sample .samp-slider { flex: 1; min-width: 140px; accent-color: #b77214; }
+  #demo-sample .samp-btn {
+    padding: 0.42rem 0.85rem; font-family: var(--nn-mono); font-size: 0.78rem;
+    background: #b77214; color: #fff; border: 1px solid #b77214; border-radius: 3px; cursor: pointer;
+  }
+  #demo-sample .samp-btn:hover { background: #7c4d0a; }
+  #demo-sample .samp-hint {
+    font-size: 0.92rem; color: var(--nn-body); line-height: 1.6;
+    padding: 0.7rem 0.85rem; background: #fff;
+    border: 1px solid var(--nn-line); border-radius: 3px;
+  }
+  #demo-sample .samp-hint strong { color: #7c4d0a; }
+  #demo-sample .samp-hint em { color: #7c4d0a; font-style: italic; }
+  @media (max-width: 620px){
+    #demo-sample .samp-stage { grid-template-columns: 1fr; }
+  }
+</style>
+
+<script>
+(function(){
+  var root = document.getElementById("demo-sample"); if (!root) return;
+
+  var TOKENS = [
+    { tok: " Paris",   logit: 4.2 },
+    { tok: " France",  logit: 2.4 },
+    { tok: " Europe",  logit: 1.6 },
+    { tok: " Britain", logit: 0.9 },
+    { tok: " Berlin",  logit: 0.6 },
+    { tok: " Italy",   logit: 0.3 },
+    { tok: " Spain",   logit: 0.1 },
+    { tok: " Asia",    logit: -0.4 }
+  ];
+
+  var STRATS = ["greedy","temperature","top-k","top-p"];
+  var strat = "temperature";
+
+  var stratEl = root.querySelector("[data-samp-strategy]");
+  var distEl  = root.querySelector("[data-samp-dist]");
+  var histEl  = root.querySelector("[data-samp-hist]");
+  var paramEl = root.querySelector("[data-samp-param]");
+  var pvalEl  = root.querySelector("[data-samp-pval]");
+  var labelEl = root.querySelector("[data-samp-paramlabel]");
+  var goBtn   = root.querySelector("[data-samp-go]");
+
+  function softmaxT(logits, T){
+    if (T < 0.01) T = 0.01;
+    var m = -Infinity;
+    logits.forEach(function(l){ if (l/T > m) m = l/T; });
+    var e = logits.map(function(l){ return Math.exp(l/T - m); });
+    var s = e.reduce(function(a,b){ return a+b; }, 0);
+    return e.map(function(x){ return x / s; });
+  }
+
+  function applyStrategy(){
+    var raw = TOKENS.map(function(t){ return t.logit; });
+    var probs;
+    var cut = TOKENS.map(function(){ return false; });
+    if (strat === "greedy"){
+      probs = TOKENS.map(function(){ return 0; });
+      var top = 0;
+      for (var i = 1; i < raw.length; i++){ if (raw[i] > raw[top]) top = i; }
+      probs[top] = 1;
+      for (var j = 0; j < TOKENS.length; j++){ if (j !== top) cut[j] = true; }
+    } else if (strat === "temperature"){
+      var T = parseInt(paramEl.value, 10) / 50; // 0, 2.0
+      probs = softmaxT(raw, Math.max(0.05, T));
+    } else if (strat === "top-k"){
+      var k = Math.max(1, Math.min(TOKENS.length, Math.round(parseInt(paramEl.value, 10) / 100 * (TOKENS.length - 1)) + 1));
+      var idx = raw.map(function(v, i){ return i; }).sort(function(a, b){ return raw[b] - raw[a]; });
+      var keep = {}; idx.slice(0, k).forEach(function(i){ keep[i] = 1; });
+      var p1 = softmaxT(raw, 1.0);
+      var sum = 0;
+      probs = p1.map(function(p, i){ if (keep[i]) { sum += p; return p; } cut[i] = true; return 0; });
+      probs = probs.map(function(p){ return p / sum; });
+    } else if (strat === "top-p"){
+      var p_target = parseInt(paramEl.value, 10) / 100;
+      var p1b = softmaxT(raw, 1.0);
+      var idx2 = p1b.map(function(v, i){ return i; }).sort(function(a, b){ return p1b[b] - p1b[a]; });
+      var cum = 0, kept = {};
+      for (var ii = 0; ii < idx2.length; ii++){
+        kept[idx2[ii]] = 1; cum += p1b[idx2[ii]];
+        if (cum >= p_target){ break; }
+      }
+      var sum2 = 0;
+      probs = p1b.map(function(p, i){ if (kept[i]) { sum2 += p; return p; } cut[i] = true; return 0; });
+      probs = probs.map(function(p){ return p / sum2; });
+    }
+    return { probs: probs, cut: cut };
+  }
+
+  function renderStrats(){
+    var h = "";
+    STRATS.forEach(function(s){
+      h += "<button class=\"samp-strategy-btn"+(s === strat ? " is-active" : "")+"\" data-s=\""+s+"\">"+s+"</button>";
+    });
+    stratEl.innerHTML = h;
+    stratEl.querySelectorAll(".samp-strategy-btn").forEach(function(b){
+      b.addEventListener("click", function(){ strat = b.getAttribute("data-s"); renderStrats(); updateLabel(); render(); });
+    });
+  }
+
+  function updateLabel(){
+    if (strat === "greedy"){
+      labelEl.innerHTML = "no parameter";
+      paramEl.disabled = true;
+      pvalEl.textContent = "";
+    } else if (strat === "temperature"){
+      labelEl.innerHTML = "temperature: <strong data-samp-pval></strong>";
+      paramEl.disabled = false;
+      paramEl.min = 0; paramEl.max = 100;
+    } else if (strat === "top-k"){
+      labelEl.innerHTML = "k: <strong data-samp-pval></strong>";
+      paramEl.disabled = false;
+    } else if (strat === "top-p"){
+      labelEl.innerHTML = "p: <strong data-samp-pval></strong>";
+      paramEl.disabled = false;
+    }
+    pvalEl = root.querySelector("[data-samp-pval]");
+  }
+
+  function paramText(){
+    var v = parseInt(paramEl.value, 10);
+    if (strat === "temperature") return (v / 50).toFixed(2);
+    if (strat === "top-k") return Math.max(1, Math.round(v / 100 * (TOKENS.length - 1)) + 1).toString();
+    if (strat === "top-p") return (v / 100).toFixed(2);
+    return "";
+  }
+
+  function render(){
+    if (pvalEl) pvalEl.textContent = paramText();
+    var out = applyStrategy();
+    var probs = out.probs, cut = out.cut;
+    var h = "";
+    TOKENS.forEach(function(t, i){
+      var p = probs[i];
+      var pct = (p * 100).toFixed(1);
+      var cls = cut[i] ? "is-cut" : "";
+      h += "<div class=\"samp-row\">"+
+        "<div class=\"samp-row__tok\">"+t.tok+"</div>"+
+        "<div class=\"samp-row__bar\"><div class=\"samp-row__fill "+cls+"\" style=\"width:"+(p*100).toFixed(2)+"%\"></div></div>"+
+        "<div class=\"samp-row__num\">"+pct+"%</div>"+
+        "</div>";
+    });
+    distEl.innerHTML = h;
+
+    if (!histEl.dataset.populated){
+      histEl.innerHTML = TOKENS.map(function(t){
+        return "<div class=\"samp-row\">"+
+          "<div class=\"samp-row__tok\">"+t.tok+"</div>"+
+          "<div class=\"samp-row__bar\"><div class=\"samp-row__fill\" style=\"width:0%\"></div></div>"+
+          "<div class=\"samp-row__num\">0</div>"+
+          "</div>";
+      }).join("");
+    }
+  }
+
+  function generate(){
+    var out = applyStrategy();
+    var probs = out.probs;
+    var counts = TOKENS.map(function(){ return 0; });
+    for (var s = 0; s < 50; s++){
+      var r = Math.random(), c = 0;
+      for (var i = 0; i < probs.length; i++){
+        c += probs[i];
+        if (r < c){ counts[i]++; break; }
+      }
+    }
+    var max = Math.max.apply(null, counts) || 1;
+    var rows = histEl.querySelectorAll(".samp-row");
+    rows.forEach(function(row, i){
+      row.querySelector(".samp-row__fill").style.width = (counts[i] / max * 100).toFixed(1) + "%";
+      row.querySelector(".samp-row__num").textContent = counts[i];
+    });
+    histEl.dataset.populated = "1";
+  }
+
+  paramEl.addEventListener("input", render);
+  goBtn.addEventListener("click", generate);
+
+  renderStrats();
+  updateLabel();
+  render();
+})();
+</script>

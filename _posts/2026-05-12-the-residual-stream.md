@@ -108,6 +108,8 @@ contributions = per_layer[0] @ W_U  # one scalar per component
 
 The largest entries in `contributions` identify the layers/heads/MLPs that drove the answer. DLA is the starting point for circuit analysis: keep zooming in (head → query/key/value → input neurons) until you have a mechanism.
 
+{% include demos/dla-bars.html %}
+
 ## Subspaces and superposition
 
 The stream has $d_\text{model}$ dimensions but generally encodes far more *features* than that. Components write to and read from **subspaces** of the stream, generally not axis-aligned.

@@ -69,6 +69,8 @@ The product $W_{OV} := W_V W_O^{(h)} \in \mathbb{R}^{d_\text{model} \times d_\te
 
 **The two are independent.** Routing (QK) and payload (OV) are trained jointly but are mathematically separate objects. Most interpretability claims about a head reduce to characterizing $W_{QK}$ and $W_{OV}$ separately. ([Elhage et al., 2021](https://transformer-circuits.pub/2021/framework/index.html))
 
+{% include demos/qk-ov-toggle.html %}
+
 <aside class="callout callout--key">
   <div class="callout__label">Why this matters for MI</div>
   <p>"What does this head do?" decomposes into two questions: "What does QK select for?" and "What does OV copy?" Almost every head archetype in the literature (induction, copy, name-mover, S-inhibition) is named after its OV behavior with a description of QK as the routing condition.</p>

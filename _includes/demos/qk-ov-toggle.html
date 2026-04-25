@@ -1,0 +1,239 @@
+<div class="idemo idemo--mini" id="demo-qkov">
+  <div class="idemo__card">
+    <div class="idemo__head"><span class="idemo__title">Mini · QK / OV, the two halves of an attention head</span></div>
+    <div class="idemo__body">
+
+      <p class="qkov-lead">Every attention head does two separate things. <strong>QK</strong> decides where to look; <strong>OV</strong> decides what to copy. Pick a head archetype, then toggle between the two views to see the same head from both angles.</p>
+
+      <div class="qkov-tabs">
+        <div class="qkov-tabs__group" data-qkov-heads></div>
+        <div class="qkov-tabs__group" data-qkov-modes></div>
+      </div>
+
+      <div class="qkov-stage">
+        <div class="qkov-stage__row">
+          <div class="qkov-stage__label">tokens</div>
+          <div class="qkov-stage__tokens" data-qkov-tokens></div>
+        </div>
+        <div class="qkov-stage__row">
+          <div class="qkov-stage__label" data-qkov-rowlabel>QK · attention pattern</div>
+          <div class="qkov-stage__matrix" data-qkov-matrix></div>
+        </div>
+      </div>
+
+      <div class="qkov-explain" data-qkov-explain></div>
+    </div>
+  </div>
+</div>
+
+<style>
+  #demo-qkov .qkov-lead { margin: 0 0 0.85rem !important; font-size: 0.96rem !important; color: var(--nn-body) !important; line-height: 1.6 !important; }
+  #demo-qkov .qkov-lead strong { color: #7c4d0a; }
+  #demo-qkov .qkov-tabs {
+    display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 0.85rem;
+    align-items: center;
+  }
+  #demo-qkov .qkov-tabs__group { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+  #demo-qkov .qkov-btn {
+    padding: 0.4rem 0.75rem; font-family: var(--nn-mono); font-size: 0.74rem;
+    background: #fff; border: 1px solid var(--nn-line); border-radius: 3px;
+    color: var(--nn-ink); cursor: pointer;
+  }
+  #demo-qkov .qkov-btn:hover { border-color: #b77214; }
+  #demo-qkov .qkov-btn.is-active {
+    background: #b77214; color: #fff; border-color: #b77214;
+  }
+  #demo-qkov .qkov-stage {
+    background: #fafaf7; border: 1px solid var(--nn-line); border-radius: 4px;
+    padding: 0.85rem 0.95rem; margin-bottom: 0.85rem;
+    display: flex; flex-direction: column; gap: 0.75rem;
+  }
+  #demo-qkov .qkov-stage__row { display: grid; grid-template-columns: 110px 1fr; gap: 0.7rem; align-items: start; }
+  #demo-qkov .qkov-stage__label {
+    font-family: var(--nn-mono); font-size: 0.7rem; letter-spacing: 0.06em;
+    text-transform: uppercase; color: var(--nn-muted); padding-top: 0.25rem;
+  }
+  #demo-qkov .qkov-stage__tokens {
+    display: flex; gap: 4px; flex-wrap: wrap;
+  }
+  #demo-qkov .qkov-tok {
+    font-family: var(--nn-mono); font-size: 0.78rem; padding: 3px 8px;
+    background: #fff; border: 1px solid var(--nn-line); border-radius: 3px;
+    color: var(--nn-ink);
+  }
+  #demo-qkov .qkov-stage__matrix {
+    display: grid; gap: 2px; max-width: 360px;
+  }
+  #demo-qkov .qkov-cell {
+    aspect-ratio: 1 / 1; border-radius: 2px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--nn-mono); font-size: 0.6rem; color: rgba(124,77,10,0.55);
+    transition: background 220ms;
+  }
+  #demo-qkov .qkov-cell.is-mask {
+    background: #f0ece3; color: rgba(0,0,0,0.15);
+  }
+  #demo-qkov .qkov-explain {
+    font-size: 0.92rem; color: var(--nn-body); line-height: 1.6;
+    padding: 0.7rem 0.85rem; background: #fff;
+    border: 1px solid var(--nn-line); border-radius: 3px;
+  }
+  #demo-qkov .qkov-explain strong { color: #7c4d0a; }
+  #demo-qkov .qkov-explain code {
+    font-family: var(--nn-mono); font-size: 0.84em;
+    background: #f5f1e8; padding: 1px 6px; border-radius: 3px;
+  }
+</style>
+
+<script>
+(function(){
+  var root = document.getElementById("demo-qkov"); if (!root) return;
+
+  var TOKENS = ["When","John","and","Mary","went","to","the","store",",","John","gave","a","drink","to"];
+  var T = TOKENS.length;
+
+  function tri(scoreFn){
+    var rows = [];
+    for (var i = 0; i < T; i++){
+      var row = [], sum = 0;
+      for (var j = 0; j < T; j++){
+        if (j > i){ row.push(null); continue; }
+        var s = Math.exp(scoreFn(i, j));
+        row.push(s); sum += s;
+      }
+      for (var j2 = 0; j2 < T; j2++){
+        if (row[j2] !== null) row[j2] = row[j2] / sum;
+      }
+      rows.push(row);
+    }
+    return rows;
+  }
+
+  function ov(payloadFn){
+    // OV view: at each (i, j) cell, show "amount of source-j content that gets written to position i".
+    // We display = attention weight * payload_strength(j).
+    var rows = [];
+    for (var i = 0; i < T; i++){
+      var row = [];
+      for (var j = 0; j < T; j++){
+        if (j > i) row.push(null);
+        else row.push(payloadFn(i, j));
+      }
+      rows.push(row);
+    }
+    return rows;
+  }
+
+  var HEADS = {
+    prev: {
+      name: "previous-token head",
+      qk: tri(function(i, j){ return j === i - 1 ? 4 : 0; }),
+      ov: ov(function(i, j){ return j === i - 1 ? 1 : 0; }),
+      explain: "<strong>QK</strong>: position <em>i</em> attends almost entirely to <em>i, 1</em>. The dot product fires when the key encodes \"position one before query.\" <strong>OV</strong>: copies the source token's embedding into the destination, building a \"what came right before?\" feature for downstream heads."
+    },
+    bos: {
+      name: "BOS-sink head",
+      qk: tri(function(i, j){ return j === 0 ? 3 : 0; }),
+      ov: ov(function(i, j){ return j === 0 ? 1 : 0; }),
+      explain: "<strong>QK</strong>: most queries match the key at position 0 (the BOS slot). <strong>OV</strong>: the source content at BOS is near-constant, so the head writes near, nothing. This is a head \"resting\" because softmax forces it to attend somewhere even when no content key matches."
+    },
+    induction: {
+      name: "induction head",
+      qk: (function(){
+        return tri(function(i, j){
+          // For each i where TOKENS[i] previously appeared, attend to (prev_occurrence + 1).
+          for (var k = 0; k < i; k++){
+            if (TOKENS[k] === TOKENS[i] && j === k + 1) return 4;
+          }
+          return 0;
+        });
+      })(),
+      ov: (function(){
+        return ov(function(i, j){
+          for (var k = 0; k < i; k++){
+            if (TOKENS[k] === TOKENS[i] && j === k + 1) return 1;
+          }
+          return 0;
+        });
+      })(),
+      explain: "<strong>QK</strong>: when the current token equals an earlier token <code>A</code>, attend to whatever came right after that earlier <code>A</code>. <strong>OV</strong>: copy that next-token forward. Result: in-context bigram completion. This is the head that lets the model continue patterns it has never been trained on."
+    },
+    namemover: {
+      name: "name-mover head",
+      qk: tri(function(i, j){
+        if (i !== T - 1) return 0;
+        if (TOKENS[j] === "John") return 3.5;
+        if (TOKENS[j] === "Mary") return 4;
+        return 0;
+      }),
+      ov: ov(function(i, j){
+        if (i !== T - 1) return 0;
+        if (TOKENS[j] === "John") return 0.6;
+        if (TOKENS[j] === "Mary") return 1;
+        return 0;
+      }),
+      explain: "<strong>QK</strong>: the final position attends to all earlier name tokens. <strong>OV</strong>: writes those name embeddings into the final residual, raising their logits. Because earlier S-inhibition heads have suppressed the John direction, the OV write toward Mary dominates and the model predicts <code>Mary</code>. This is the output stage of the IOI circuit."
+    }
+  };
+
+  var headsEl = root.querySelector("[data-qkov-heads]");
+  var modesEl = root.querySelector("[data-qkov-modes]");
+  var tokensEl= root.querySelector("[data-qkov-tokens]");
+  var matrixEl= root.querySelector("[data-qkov-matrix]");
+  var rowLabel= root.querySelector("[data-qkov-rowlabel]");
+  var explainEl= root.querySelector("[data-qkov-explain]");
+
+  var head = "prev";
+  var mode = "qk";
+
+  function renderTabs(){
+    var hh = "";
+    Object.keys(HEADS).forEach(function(k){
+      hh += "<button class=\"qkov-btn"+(k === head ? " is-active" : "")+"\" data-h=\""+k+"\">"+HEADS[k].name+"</button>";
+    });
+    headsEl.innerHTML = hh;
+    headsEl.querySelectorAll(".qkov-btn").forEach(function(b){
+      b.addEventListener("click", function(){ head = b.getAttribute("data-h"); renderTabs(); render(); });
+    });
+
+    var mh = "";
+    [["qk","QK · where to look"], ["ov","OV · what to copy"]].forEach(function(p){
+      mh += "<button class=\"qkov-btn"+(p[0] === mode ? " is-active" : "")+"\" data-m=\""+p[0]+"\">"+p[1]+"</button>";
+    });
+    modesEl.innerHTML = mh;
+    modesEl.querySelectorAll(".qkov-btn").forEach(function(b){
+      b.addEventListener("click", function(){ mode = b.getAttribute("data-m"); renderTabs(); render(); });
+    });
+  }
+
+  function render(){
+    var th = "";
+    TOKENS.forEach(function(t){ th += "<span class=\"qkov-tok\">"+t.replace(/</g,"&lt;")+"</span>"; });
+    tokensEl.innerHTML = th;
+
+    var data = HEADS[head][mode];
+    rowLabel.textContent = mode === "qk" ? "QK · attention pattern" : "OV · written content";
+    matrixEl.style.gridTemplateColumns = "repeat("+T+", 1fr)";
+
+    var html = "";
+    for (var i = 0; i < T; i++){
+      for (var j = 0; j < T; j++){
+        var v = data[i][j];
+        if (v === null){
+          html += "<div class=\"qkov-cell is-mask\"></div>";
+          continue;
+        }
+        var alpha = Math.min(1, v * 1.0);
+        var bg = "rgba(183, 114, 20, "+alpha.toFixed(3)+")";
+        html += "<div class=\"qkov-cell\" style=\"background:"+bg+"\"></div>";
+      }
+    }
+    matrixEl.innerHTML = html;
+
+    explainEl.innerHTML = HEADS[head].explain;
+  }
+
+  renderTabs();
+  render();
+})();
+</script>

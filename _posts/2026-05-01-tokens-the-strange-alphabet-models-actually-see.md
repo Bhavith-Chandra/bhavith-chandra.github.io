@@ -39,6 +39,8 @@ Modern LLMs use **byte-level BPE** (Byte-Pair Encoding):
 
 Encoding new text greedily applies merges in the order they were learned. The output is the list of resulting token IDs.
 
+{% include demos/bpe-merger.html %}
+
 Example (GPT-2 BPE):
 
 ```
