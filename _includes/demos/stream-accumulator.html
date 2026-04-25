@@ -1,0 +1,183 @@
+<div class="idemo idemo--mini" id="demo-accumulator">
+  <div class="idemo__card">
+    <div class="idemo__head"><span class="idemo__title">Mini · Residual stream as a running sum</span></div>
+    <div class="idemo__body">
+
+      <p class="acc-lead">Each block does <em>not</em> replace the belt's contents. It adds a small contribution. Below: 6 blocks, each contributing a different vector (here just colored shape, real-life it's 768 numbers). Press <strong>add next block</strong> and watch the belt accumulate.</p>
+
+      <div class="acc-stage">
+        <div class="acc-row">
+          <div class="acc-row__label">Block contribution</div>
+          <div class="acc-row__belt" data-acc-blocks></div>
+        </div>
+        <div class="acc-row">
+          <div class="acc-row__label">Running sum (the belt)</div>
+          <div class="acc-row__belt acc-row__belt--accent" data-acc-sum>
+            <div class="acc-sum-cell" data-acc-sum-cell>
+              <span class="acc-sum-cell__layers" data-acc-sum-layers></span>
+              <span class="acc-sum-cell__label" data-acc-sum-label>start: just the embedding</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="acc-controls">
+        <button class="acc-btn acc-btn--primary" data-acc-next>add next block</button>
+        <button class="acc-btn" data-acc-reset>reset</button>
+        <span class="acc-stage__counter" data-acc-counter>0 / 6 blocks added</span>
+      </div>
+
+      <p class="acc-hint" data-acc-hint><strong>Why this matters:</strong> because the operation is <em>add</em>, not <em>replace</em>, every block has a direct line to every later block. The early embedding can survive intact to the very last layer if no block decides to write something contradicting it. This is why we can use the logit lens at any depth: the belt is always "in the same language."</p>
+    </div>
+  </div>
+</div>
+
+<style>
+  #demo-accumulator .acc-lead { margin: 0 0 0.95rem !important; font-size: 0.96rem !important; color: var(--nn-body) !important; line-height: 1.6 !important; }
+  #demo-accumulator .acc-lead em { color: #7c4d0a; font-style: italic; }
+
+  #demo-accumulator .acc-stage {
+    background: #fafaf7; border: 1px solid var(--nn-line); border-radius: 4px;
+    padding: 0.85rem 0.95rem; margin-bottom: 0.9rem;
+  }
+  #demo-accumulator .acc-row { display: flex; align-items: center; gap: 0.7rem; margin-bottom: 0.7rem; }
+  #demo-accumulator .acc-row:last-child { margin-bottom: 0; }
+  #demo-accumulator .acc-row__label {
+    font-family: var(--nn-mono); font-size: 0.7rem; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--nn-muted); min-width: 145px;
+  }
+  #demo-accumulator .acc-row__belt {
+    flex: 1; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 0.32rem; min-height: 56px;
+  }
+  #demo-accumulator .acc-row__belt--accent { grid-template-columns: 1fr; }
+
+  #demo-accumulator .acc-block {
+    border-radius: 4px; padding: 0.5rem 0.4rem; text-align: center;
+    background: #f5f1e8; border: 1px solid var(--nn-line); color: var(--nn-muted);
+    font-family: var(--nn-mono); font-size: 0.72rem;
+    transition: all 220ms cubic-bezier(.4,.05,.2,1);
+    opacity: 0.55;
+  }
+  #demo-accumulator .acc-block.is-added {
+    opacity: 1; transform: translateY(-2px);
+    border-color: #b77214; color: #7c4d0a; background: #fff6e0;
+    box-shadow: 0 2px 6px rgba(183,114,20,0.18);
+  }
+  #demo-accumulator .acc-block__bar {
+    display: block; height: 6px; border-radius: 2px;
+    margin-top: 0.3rem; background: #c98c3a; opacity: 0.4;
+  }
+  #demo-accumulator .acc-block.is-added .acc-block__bar { opacity: 1; }
+
+  #demo-accumulator .acc-sum-cell {
+    background: #fff; border: 1px solid #b77214; border-radius: 4px;
+    padding: 0.65rem 0.85rem; min-height: 64px;
+    display: flex; flex-direction: column; gap: 0.4rem; justify-content: center;
+  }
+  #demo-accumulator .acc-sum-cell__layers {
+    display: flex; gap: 4px; min-height: 12px;
+  }
+  #demo-accumulator .acc-sum-cell__layer {
+    flex: 1; height: 12px; border-radius: 2px;
+    transform: scaleY(0); transform-origin: bottom;
+    transition: transform 320ms cubic-bezier(.3,.5,.3,1);
+  }
+  #demo-accumulator .acc-sum-cell__layer.is-on { transform: scaleY(1); }
+  #demo-accumulator .acc-sum-cell__label {
+    font-family: var(--nn-mono); font-size: 0.78rem; color: var(--nn-body);
+  }
+
+  #demo-accumulator .acc-controls {
+    display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
+    padding: 0.55rem 0; margin-bottom: 0.65rem;
+  }
+  #demo-accumulator .acc-btn {
+    padding: 0.42rem 0.9rem; font-family: var(--nn-mono); font-size: 0.78rem;
+    background: #fff; border: 1px solid var(--nn-line); border-radius: 3px;
+    color: var(--nn-ink); cursor: pointer;
+  }
+  #demo-accumulator .acc-btn:hover { border-color: #b77214; }
+  #demo-accumulator .acc-btn--primary { background: #b77214; color: #fff; border-color: #b77214; font-weight: 600; }
+  #demo-accumulator .acc-btn--primary:hover { background: #7c4d0a; }
+  #demo-accumulator .acc-stage__counter {
+    margin-left: auto; font-family: var(--nn-mono); font-size: 0.74rem; color: var(--nn-muted);
+  }
+
+  #demo-accumulator .acc-hint {
+    font-size: 0.92rem; color: var(--nn-body); line-height: 1.6;
+    padding: 0.7rem 0.85rem; background: #fff;
+    border: 1px solid var(--nn-line); border-radius: 3px;
+  }
+  #demo-accumulator .acc-hint em { color: #7c4d0a; font-style: italic; }
+
+  @media (max-width: 620px){
+    #demo-accumulator .acc-row { flex-direction: column; align-items: stretch; }
+    #demo-accumulator .acc-row__label { min-width: 0; }
+  }
+</style>
+
+<script>
+(function(){
+  var root = document.getElementById("demo-accumulator"); if (!root) return;
+
+  var BLOCKS = [
+    { name: "blk 0", color: "#fcd68b", label: "embedding only" },
+    { name: "blk 1", color: "#fbbf24", label: "+ block 0 (surface features)" },
+    { name: "blk 2", color: "#f59e0b", label: "+ block 1 (early syntax)" },
+    { name: "blk 3", color: "#d97706", label: "+ block 2 (mid-network mixing)" },
+    { name: "blk 4", color: "#b45309", label: "+ block 3 (semantic consolidation)" },
+    { name: "blk 5", color: "#92400e", label: "+ block 4 (answer narrows)" },
+    { name: "blk 6", color: "#7c4d0a", label: "+ block 5 (final answer)" }
+  ];
+
+  var blocksEl = root.querySelector("[data-acc-blocks]");
+  var layersEl = root.querySelector("[data-acc-sum-layers]");
+  var labelEl = root.querySelector("[data-acc-sum-label]");
+  var counterEl = root.querySelector("[data-acc-counter]");
+  var nextBtn = root.querySelector("[data-acc-next]");
+
+  var added = 0;
+
+  function drawBlocks(){
+    var html = "";
+    for (var i = 1; i < BLOCKS.length; i++){
+      var on = i <= added;
+      html += "<div class=\"acc-block "+(on ? "is-added" : "")+"\" data-block=\""+i+"\">"+
+        BLOCKS[i].name +
+        "<span class=\"acc-block__bar\" style=\"background:"+BLOCKS[i].color+"\"></span>"+
+        "</div>";
+    }
+    blocksEl.innerHTML = html;
+  }
+
+  function drawSum(){
+    var html = "";
+    // Always include embedding (i=0); each added block adds a layer
+    for (var i = 0; i <= added; i++){
+      html += "<span class=\"acc-sum-cell__layer is-on\" style=\"background:"+BLOCKS[i].color+"\"></span>";
+    }
+    // ghost layers for not-yet-added blocks
+    for (var j = added + 1; j < BLOCKS.length; j++){
+      html += "<span class=\"acc-sum-cell__layer\" style=\"background:"+BLOCKS[j].color+"\"></span>";
+    }
+    layersEl.innerHTML = html;
+    labelEl.textContent = added === 0 ? "start: just the embedding" : BLOCKS[added].label;
+    counterEl.textContent = added + " / " + (BLOCKS.length - 1) + " blocks added";
+    nextBtn.disabled = added >= BLOCKS.length - 1;
+    nextBtn.style.opacity = nextBtn.disabled ? "0.5" : "1";
+    nextBtn.style.cursor = nextBtn.disabled ? "default" : "pointer";
+  }
+
+  function next(){
+    if (added < BLOCKS.length - 1){ added++; drawBlocks(); drawSum(); }
+  }
+  function reset(){ added = 0; drawBlocks(); drawSum(); }
+
+  nextBtn.addEventListener("click", next);
+  root.querySelector("[data-acc-reset]").addEventListener("click", reset);
+
+  drawBlocks();
+  drawSum();
+})();
+</script>
