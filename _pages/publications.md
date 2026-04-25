@@ -64,8 +64,6 @@ author_profile: false
 
 <div style="margin-top:2rem; text-align:center;">
   <p style="font-size:0.78rem; letter-spacing:0.08em; text-transform:uppercase; color:#888; margin-bottom:0.5rem;">visitors</p>
-  <a href="https://www.mapmyvisitors.com/web/1bvuh" title="Visit tracker">
-    <img src="https://www.mapmyvisitors.com/map.png?d=1bvuh&cl=ffffff&w=a&t=tt&co=2d78ad&cmo=3acc3a&cmn=ff5353&ct=ffffff" alt="Visitor map" style="border:0;max-height:60px;" />
-  </a>
+  <a href="https://mapmyvisitors.com/web/1c43x" title="Visit tracker"><img src="https://mapmyvisitors.com/map.png?d=xcDvosJyCiumDNXymQiS3Z4OoOZUKFU6We72Xig4QmQ&cl=ffffff" alt="Visitor map" style="border:0;max-height:60px;" /></a>
 </div>
-<script type="text/javascript" id="mapmyvisitors" src="https://mapmyvisitors.com/map.js?cl=ffffff&w=a&t=tt&d=1bvuh&co=2d78ad&cmo=3acc3a&cmn=ff5353&ct=ffffff"></script>
+<script type="text/javascript" id="mapmyvisitors" src="//mapmyvisitors.com/map.js?d=xcDvosJyCiumDNXymQiS3Z4OoOZUKFU6We72Xig4QmQ&cl=ffffff&w=a"></script>
