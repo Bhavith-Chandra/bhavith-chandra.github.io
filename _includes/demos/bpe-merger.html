@@ -3,16 +3,34 @@
     <div class="idemo__head"><span class="idemo__title">Mini · Build a BPE vocabulary, one merge at a time</span></div>
     <div class="idemo__body">
 
-      <p class="bpe-lead">Start with a tiny corpus split into characters. Click <strong>merge most frequent pair</strong> to greedily glue the most common adjacent pair into a single token. Watch the corpus shrink and the vocabulary grow. Real tokenizers run this loop ~50,000 times.</p>
+      <div class="bpe-howto">
+        <div class="bpe-howto__title">How to play</div>
+        <ol class="bpe-howto__list">
+          <li><b>Pick a corpus</b> (or type your own) — every word starts split into characters.</li>
+          <li><b>Click any of the top-3 candidate pairs</b> to merge it. You're not stuck with the most-frequent one — try suboptimal merges and see what happens.</li>
+          <li>Or hit <b>auto-merge</b> and watch greedy BPE build up a real tokenizer in seconds.</li>
+          <li>Below, the <b>test sentence</b> shows how today's vocabulary tokenizes new text. The fewer pieces, the better the compression.</li>
+        </ol>
+      </div>
+
+      <div class="bpe-presets">
+        <span class="bpe-presets__label">corpus</span>
+        <button class="bpe-pbtn is-active" data-bpe-preset="english">english</button>
+        <button class="bpe-pbtn" data-bpe-preset="code">python code</button>
+        <button class="bpe-pbtn" data-bpe-preset="numbers">numbers</button>
+        <button class="bpe-pbtn" data-bpe-preset="custom">custom ↓</button>
+      </div>
+
+      <textarea class="bpe-textarea" data-bpe-input rows="2" placeholder="type your own corpus here, space-separated"></textarea>
 
       <div class="bpe-stage">
         <div class="bpe-row">
-          <div class="bpe-row__label">corpus</div>
+          <div class="bpe-row__label">corpus <span data-bpe-tokens>(0 tokens)</span></div>
           <div class="bpe-row__value" data-bpe-corpus></div>
         </div>
         <div class="bpe-row">
-          <div class="bpe-row__label">most frequent pair</div>
-          <div class="bpe-row__value" data-bpe-pair>, </div>
+          <div class="bpe-row__label">test sentence</div>
+          <div class="bpe-row__value" data-bpe-test></div>
         </div>
         <div class="bpe-row">
           <div class="bpe-row__label">vocabulary <span data-bpe-vsize>(0)</span></div>
@@ -20,68 +38,162 @@
         </div>
       </div>
 
-      <div class="bpe-controls">
-        <button class="bpe-btn bpe-btn--primary" data-bpe-step>merge most frequent pair</button>
-        <button class="bpe-btn" data-bpe-reset>reset</button>
-        <span class="bpe-counter" data-bpe-counter>0 merges</span>
+      <div class="bpe-candidates">
+        <div class="bpe-candidates__label">click a candidate to merge it →</div>
+        <div class="bpe-candidates__grid" data-bpe-candidates></div>
       </div>
 
-      <p class="bpe-hint"><strong>What's happening:</strong> the algorithm scans every adjacent pair in the corpus, finds the highest-frequency one, replaces every occurrence with a new token, and adds that token to the vocabulary. After enough merges, common substrings (<code>th</code>, <code>the</code>, <code>cat</code>) become single tokens; rare strings stay multi-piece. That's GPT-2's tokenizer in miniature.</p>
+      <div class="bpe-controls">
+        <button class="bpe-btn" data-bpe-auto>▶ auto-merge</button>
+        <label class="bpe-speed">
+          speed
+          <input type="range" min="80" max="900" value="380" step="20" data-bpe-speed>
+        </label>
+        <button class="bpe-btn" data-bpe-reset>↺ reset</button>
+        <span class="bpe-counter" data-bpe-counter>0 merges · compression 1.00×</span>
+      </div>
+
+      <p class="bpe-hint"><b>Notice:</b> the first merges always pick up boring junk like <code>th</code>, <code>he</code>, <code>in</code>. The interesting tokens (<code>the</code>, <code>ing</code>, whole words) only appear after dozens of merges. Real GPT-style tokenizers do this <b>50,000 times</b> on the entire internet — that's why <code>" the"</code> is one token but <code>" frosting"</code> might be three.</p>
     </div>
   </div>
 </div>
 
 <style>
-  #demo-bpe .bpe-lead { margin: 0 0 0.95rem !important; font-size: 0.96rem !important; color: var(--nn-body) !important; line-height: 1.6 !important; }
-  #demo-bpe .bpe-lead strong { color: #7c4d0a; }
+  #demo-bpe .bpe-howto {
+    background: #fffaf3; border: 1px solid #ddb88e; border-radius: 4px;
+    padding: 0.7rem 0.95rem; margin-bottom: 0.85rem;
+  }
+  #demo-bpe .bpe-howto__title {
+    font-family: var(--nn-mono); font-size: 0.7rem; letter-spacing: 0.1em;
+    text-transform: uppercase; color: #7c4d0a; margin-bottom: 0.35rem; font-weight: 600;
+  }
+  #demo-bpe .bpe-howto__list {
+    margin: 0; padding: 0 0 0 1.1rem; font-size: 0.9rem;
+    color: var(--nn-body); line-height: 1.6;
+  }
+  #demo-bpe .bpe-howto__list li { margin-bottom: 0.18rem; }
+  #demo-bpe .bpe-howto__list li b { color: #7c4d0a; }
+
+  #demo-bpe .bpe-presets {
+    display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;
+    margin-bottom: 0.5rem;
+  }
+  #demo-bpe .bpe-presets__label {
+    font-family: var(--nn-mono); font-size: 0.7rem; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--nn-muted); margin-right: 0.2rem;
+  }
+  #demo-bpe .bpe-pbtn {
+    padding: 0.3rem 0.65rem; font-family: var(--nn-mono); font-size: 0.74rem;
+    background: #fff; border: 1px solid var(--nn-line); border-radius: 3px;
+    color: var(--nn-ink); cursor: pointer;
+  }
+  #demo-bpe .bpe-pbtn:hover { border-color: #b77214; }
+  #demo-bpe .bpe-pbtn.is-active {
+    background: #b77214; color: #fff; border-color: #b77214;
+  }
+  #demo-bpe .bpe-textarea {
+    width: 100%; box-sizing: border-box;
+    padding: 0.55rem 0.75rem; margin-bottom: 0.7rem;
+    font-family: var(--nn-mono); font-size: 0.82rem; color: var(--nn-ink);
+    background: #fffefb; border: 1px solid var(--nn-line); border-radius: 3px;
+    resize: vertical; display: none;
+  }
+  #demo-bpe .bpe-textarea.is-shown { display: block; }
+  #demo-bpe .bpe-textarea:focus { outline: none; border-color: #b77214; }
+
   #demo-bpe .bpe-stage {
     background: #fafaf7; border: 1px solid var(--nn-line); border-radius: 4px;
     padding: 0.85rem 0.95rem; margin-bottom: 0.85rem;
-    display: flex; flex-direction: column; gap: 0.65rem;
+    display: flex; flex-direction: column; gap: 0.55rem;
   }
-  #demo-bpe .bpe-row { display: grid; grid-template-columns: 160px 1fr; gap: 0.7rem; align-items: start; }
+  #demo-bpe .bpe-row { display: grid; grid-template-columns: 150px 1fr; gap: 0.7rem; align-items: start; }
   #demo-bpe .bpe-row__label {
     font-family: var(--nn-mono); font-size: 0.7rem; letter-spacing: 0.08em;
     text-transform: uppercase; color: var(--nn-muted);
-    padding-top: 0.25rem;
+    padding-top: 0.3rem;
   }
   #demo-bpe .bpe-row__label span { text-transform: none; letter-spacing: 0; }
   #demo-bpe .bpe-row__value {
-    font-family: var(--nn-mono); font-size: 0.85rem; color: var(--nn-ink);
+    font-family: var(--nn-mono); font-size: 0.84rem; color: var(--nn-ink);
     background: #fff; border: 1px solid var(--nn-line); border-radius: 3px;
-    padding: 0.45rem 0.65rem; min-height: 32px;
-    line-height: 1.7; word-break: break-word;
+    padding: 0.4rem 0.6rem; min-height: 30px;
+    line-height: 1.85; word-break: break-word;
   }
-  #demo-bpe .bpe-row__value--vocab { line-height: 2; }
+  #demo-bpe .bpe-row__value--vocab { line-height: 2; max-height: 120px; overflow-y: auto; }
   #demo-bpe .bpe-tok {
-    display: inline-block; padding: 1px 7px; margin: 0 2px;
+    display: inline-block; padding: 1px 6px; margin: 1px 1px;
     background: #f5f1e8; border: 1px solid var(--nn-line); border-radius: 3px;
-    color: var(--nn-ink);
+    color: var(--nn-ink); transition: background 200ms;
   }
   #demo-bpe .bpe-tok.is-new {
     background: #fff6e0; border-color: #b77214; color: #7c4d0a; font-weight: 600;
-    animation: bpePop 320ms cubic-bezier(.2,.8,.4,1);
+    animation: bpePop 360ms cubic-bezier(.2,.8,.4,1);
   }
-  #demo-bpe .bpe-tok.is-pair {
-    background: #b77214; color: #fff; border-color: #b77214;
-  }
+  #demo-bpe .bpe-tok.is-test-new { background: #d8f1e0; border-color: #0d6b3a; color: #0d6b3a; }
   @keyframes bpePop {
-    0% { transform: scale(0.6); opacity: 0; }
+    0% { transform: scale(0.5); opacity: 0; background: #b77214; color: #fff; }
+    60% { transform: scale(1.18); }
     100% { transform: scale(1); opacity: 1; }
   }
+
+  #demo-bpe .bpe-candidates {
+    margin-bottom: 0.7rem;
+    background: #fffefb; border: 1px solid var(--nn-line); border-radius: 4px;
+    padding: 0.65rem 0.8rem;
+  }
+  #demo-bpe .bpe-candidates__label {
+    font-family: var(--nn-mono); font-size: 0.7rem; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--nn-muted); margin-bottom: 0.5rem;
+  }
+  #demo-bpe .bpe-candidates__grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.55rem;
+  }
+  #demo-bpe .bpe-cand {
+    display: flex; flex-direction: column; align-items: center; gap: 0.25rem;
+    padding: 0.55rem 0.4rem;
+    background: #fff; border: 1px solid var(--nn-line); border-radius: 3px;
+    cursor: pointer; transition: all 160ms;
+    font-family: var(--nn-mono);
+  }
+  #demo-bpe .bpe-cand:hover {
+    border-color: #b77214; background: #fffaf3; transform: translateY(-1px);
+  }
+  #demo-bpe .bpe-cand[disabled] { opacity: 0.45; cursor: default; transform: none; }
+  #demo-bpe .bpe-cand[disabled]:hover { border-color: var(--nn-line); background: #fff; }
+  #demo-bpe .bpe-cand__rank {
+    font-size: 0.65rem; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--nn-muted);
+  }
+  #demo-bpe .bpe-cand__pair {
+    display: flex; align-items: center; gap: 0.25rem;
+    font-size: 0.92rem; color: var(--nn-ink); font-weight: 600;
+  }
+  #demo-bpe .bpe-cand__pair span {
+    background: #f5f1e8; border: 1px solid var(--nn-line); border-radius: 3px;
+    padding: 1px 6px;
+  }
+  #demo-bpe .bpe-cand__pair em { font-style: normal; color: var(--nn-muted); font-weight: 400; }
+  #demo-bpe .bpe-cand__count {
+    font-size: 0.7rem; color: #b77214;
+  }
+  #demo-bpe .bpe-cand:first-child { background: #fffaf3; border-color: #ddb88e; }
+
   #demo-bpe .bpe-controls {
     display: flex; align-items: center; gap: 0.55rem; flex-wrap: wrap;
     margin-bottom: 0.65rem;
   }
   #demo-bpe .bpe-btn {
-    padding: 0.42rem 0.9rem; font-family: var(--nn-mono); font-size: 0.78rem;
+    padding: 0.42rem 0.85rem; font-family: var(--nn-mono); font-size: 0.78rem;
     background: #fff; border: 1px solid var(--nn-line); border-radius: 3px;
     color: var(--nn-ink); cursor: pointer;
   }
   #demo-bpe .bpe-btn:hover { border-color: #b77214; }
-  #demo-bpe .bpe-btn--primary { background: #b77214; color: #fff; border-color: #b77214; font-weight: 600; }
-  #demo-bpe .bpe-btn--primary:hover { background: #7c4d0a; }
-  #demo-bpe .bpe-btn:disabled { opacity: 0.5; cursor: default; }
+  #demo-bpe .bpe-btn.is-running { background: #b77214; color: #fff; border-color: #b77214; }
+  #demo-bpe .bpe-speed {
+    display: flex; align-items: center; gap: 0.4rem;
+    font-family: var(--nn-mono); font-size: 0.74rem; color: var(--nn-muted);
+  }
+  #demo-bpe .bpe-speed input { width: 110px; accent-color: #b77214; }
   #demo-bpe .bpe-counter {
     margin-left: auto; font-family: var(--nn-mono); font-size: 0.74rem; color: var(--nn-muted);
   }
@@ -94,75 +206,129 @@
     font-family: var(--nn-mono); font-size: 0.84em;
     background: #f5f1e8; padding: 1px 6px; border-radius: 3px;
   }
+  #demo-bpe .bpe-hint b { color: #7c4d0a; }
 </style>
 
 <script>
 (function(){
   var root = document.getElementById("demo-bpe"); if (!root) return;
 
-  var INITIAL_WORDS = ["the","cat","sat","on","the","mat","the","cat","ran","fast","the","mat","was","new"];
+  var PRESETS = {
+    english: {
+      corpus: "the cat sat on the mat the cat ran fast the dog and the cat the mat was new the rat hated the cat she sat there",
+      test: "the cat sat there"
+    },
+    code: {
+      corpus: "def add a b return a plus b def sub a b return a minus b def mul a b return a times b for i in range",
+      test: "def mul return"
+    },
+    numbers: {
+      corpus: "one two three four five six seven eight nine ten one hundred two hundred three hundred four hundred",
+      test: "two hundred three"
+    }
+  };
 
   var corpusEl = root.querySelector("[data-bpe-corpus]");
-  var pairEl   = root.querySelector("[data-bpe-pair]");
+  var testEl   = root.querySelector("[data-bpe-test]");
   var vocabEl  = root.querySelector("[data-bpe-vocab]");
   var vsizeEl  = root.querySelector("[data-bpe-vsize]");
-  var stepBtn  = root.querySelector("[data-bpe-step]");
+  var tokensEl = root.querySelector("[data-bpe-tokens]");
+  var candEl   = root.querySelector("[data-bpe-candidates]");
+  var autoBtn  = root.querySelector("[data-bpe-auto]");
+  var speedEl  = root.querySelector("[data-bpe-speed]");
   var resetBtn = root.querySelector("[data-bpe-reset]");
   var counterEl= root.querySelector("[data-bpe-counter]");
+  var inputEl  = root.querySelector("[data-bpe-input]");
+  var presetBtns = root.querySelectorAll("[data-bpe-preset]");
 
-  // each "word" is a list of tokens. start = each char its own token.
-  var words = [];
-  var vocab = [];
-  var lastNew = null;
-  var lastPair = null;
-  var merges = 0;
+  var words = [], vocab = [], merges = 0, lastNew = null, initialTokenCount = 0;
+  var testWords = [];
+  var autoTimer = null;
+  var currentPreset = "english";
+
+  function setPreset(name){
+    currentPreset = name;
+    presetBtns.forEach(function(b){
+      b.classList.toggle("is-active", b.dataset.bpePreset === name);
+    });
+    if (name === "custom"){
+      inputEl.classList.add("is-shown");
+      if (!inputEl.value.trim()) inputEl.value = PRESETS.english.corpus;
+      inputEl.focus();
+    } else {
+      inputEl.classList.remove("is-shown");
+      inputEl.value = PRESETS[name].corpus;
+    }
+    init();
+  }
 
   function init(){
-    words = INITIAL_WORDS.map(function(w){ return w.split(""); });
+    var preset = PRESETS[currentPreset] || PRESETS.english;
+    var src = (currentPreset === "custom" ? inputEl.value : preset.corpus).trim();
+    if (!src) src = PRESETS.english.corpus;
+    var ws = src.split(/\s+/);
+    words = ws.map(function(w){ return w.split(""); });
     vocab = [];
     var seen = {};
     words.forEach(function(w){ w.forEach(function(c){ if (!seen[c]){ seen[c] = 1; vocab.push(c); } }); });
-    lastNew = null; lastPair = null; merges = 0;
+    initialTokenCount = words.reduce(function(a,w){ return a + w.length; }, 0);
+    testWords = preset.test.split(/\s+/).map(function(w){ return w.split(""); });
+    lastNew = null; merges = 0;
+    stopAuto();
     render();
   }
 
-  function countPairs(){
-    var counts = {};
-    words.forEach(function(w){
+  function pairCounts(arr){
+    var counts = {}, order = [];
+    arr.forEach(function(w){
       for (var i = 0; i < w.length - 1; i++){
-        var key = w[i] + "\t" + w[i+1];
-        counts[key] = (counts[key] || 0) + 1;
+        var key = w[i] + "\u0001" + w[i+1];
+        if (counts[key] == null){ counts[key] = 0; order.push(key); }
+        counts[key]++;
       }
     });
-    return counts;
+    return order.map(function(k){ var p = k.split("\u0001"); return { a: p[0], b: p[1], n: counts[k] }; })
+                .sort(function(x,y){ return y.n - x.n; });
   }
 
-  function bestPair(){
-    var counts = countPairs();
-    var best = null, bestN = 0;
-    for (var k in counts){
-      if (counts[k] > bestN){ best = k; bestN = counts[k]; }
-    }
-    return best ? { a: best.split("\t")[0], b: best.split("\t")[1], n: bestN } : null;
-  }
-
-  function step(){
-    var p = bestPair();
-    if (!p || p.n < 2){ stepBtn.disabled = true; return; }
-    var merged = p.a + p.b;
-    words = words.map(function(w){
+  function applyMerge(arr, a, b){
+    var ab = a + b;
+    return arr.map(function(w){
       var out = [], i = 0;
       while (i < w.length){
-        if (i < w.length - 1 && w[i] === p.a && w[i+1] === p.b){ out.push(merged); i += 2; }
+        if (i < w.length - 1 && w[i] === a && w[i+1] === b){ out.push(ab); i += 2; }
         else { out.push(w[i]); i += 1; }
       }
       return out;
     });
-    if (vocab.indexOf(merged) === -1) vocab.push(merged);
-    lastNew = merged;
-    lastPair = p;
-    merges += 1;
+  }
+
+  function doMerge(a, b){
+    words = applyMerge(words, a, b);
+    testWords = applyMerge(testWords, a, b);
+    var ab = a + b;
+    if (vocab.indexOf(ab) === -1) vocab.push(ab);
+    lastNew = ab;
+    merges++;
     render();
+  }
+
+  function startAuto(){
+    if (autoTimer) return;
+    autoBtn.textContent = "■ pause";
+    autoBtn.classList.add("is-running");
+    var tick = function(){
+      var pairs = pairCounts(words);
+      if (!pairs.length || pairs[0].n < 2){ stopAuto(); return; }
+      doMerge(pairs[0].a, pairs[0].b);
+      autoTimer = setTimeout(tick, +speedEl.value);
+    };
+    autoTimer = setTimeout(tick, +speedEl.value);
+  }
+  function stopAuto(){
+    if (autoTimer){ clearTimeout(autoTimer); autoTimer = null; }
+    autoBtn.textContent = "▶ auto-merge";
+    autoBtn.classList.remove("is-running");
   }
 
   function render(){
@@ -170,43 +336,80 @@
     var html = "";
     words.forEach(function(w, wi){
       w.forEach(function(t){
-        var cls = "bpe-tok";
-        if (lastNew && t === lastNew) cls += " is-new";
-        html += "<span class=\""+cls+"\">"+escape(t)+"</span>";
+        var cls = "bpe-tok" + (lastNew && t === lastNew ? " is-new" : "");
+        html += "<span class=\""+cls+"\">"+esc(t)+"</span>";
       });
       if (wi < words.length - 1) html += " ";
     });
     corpusEl.innerHTML = html;
 
-    // pair preview
-    var p = bestPair();
-    if (p && p.n >= 2){
-      pairEl.innerHTML = "<span class=\"bpe-tok is-pair\">"+escape(p.a)+"</span> + <span class=\"bpe-tok is-pair\">"+escape(p.b)+"</span> &nbsp; (occurs "+p.n+"×)";
-      stepBtn.disabled = false;
+    var totalTokens = words.reduce(function(a,w){ return a + w.length; }, 0);
+    var compression = initialTokenCount > 0 ? (initialTokenCount / Math.max(totalTokens, 1)) : 1;
+    tokensEl.textContent = "(" + totalTokens + " tokens)";
+
+    // test sentence
+    var th = "";
+    testWords.forEach(function(w, wi){
+      w.forEach(function(t){
+        var cls = "bpe-tok" + (lastNew && t === lastNew ? " is-test-new" : "");
+        th += "<span class=\""+cls+"\">"+esc(t)+"</span>";
+      });
+      if (wi < testWords.length - 1) th += " ";
+    });
+    testEl.innerHTML = th;
+
+    // candidates
+    var pairs = pairCounts(words).slice(0, 3);
+    candEl.innerHTML = "";
+    if (!pairs.length || pairs[0].n < 2){
+      candEl.innerHTML = "<div class='bpe-cand' disabled style='grid-column:1/-1'><div class='bpe-cand__rank'>nothing left to merge</div></div>";
+      stopAuto();
     } else {
-      pairEl.innerHTML = "<em style=\"color:var(--nn-muted)\">no more pairs to merge</em>";
-      stepBtn.disabled = true;
+      var labels = ["best", "2nd", "3rd"];
+      for (var i = 0; i < 3; i++){
+        var btn = document.createElement("button");
+        btn.className = "bpe-cand";
+        if (!pairs[i] || pairs[i].n < 2){
+          btn.disabled = true;
+          btn.innerHTML = "<div class='bpe-cand__rank'>"+labels[i]+"</div><div class='bpe-cand__pair'><em>—</em></div><div class='bpe-cand__count'>&nbsp;</div>";
+        } else {
+          (function(p){
+            btn.innerHTML = "<div class='bpe-cand__rank'>"+labels[i]+"</div>"+
+              "<div class='bpe-cand__pair'><span>"+esc(p.a)+"</span><em>+</em><span>"+esc(p.b)+"</span></div>"+
+              "<div class='bpe-cand__count'>"+p.n+"× → "+esc(p.a+p.b)+"</div>";
+            btn.addEventListener("click", function(){ doMerge(p.a, p.b); });
+          })(pairs[i]);
+        }
+        candEl.appendChild(btn);
+      }
     }
 
     // vocab
     var vh = "";
     vocab.forEach(function(t){
-      var cls = "bpe-tok";
-      if (t === lastNew) cls += " is-new";
-      vh += "<span class=\""+cls+"\">"+escape(t)+"</span>";
+      var cls = "bpe-tok" + (t === lastNew ? " is-new" : "");
+      vh += "<span class=\""+cls+"\">"+esc(t)+"</span>";
     });
     vocabEl.innerHTML = vh;
     vsizeEl.textContent = "(" + vocab.length + ")";
-    counterEl.textContent = merges + " merge" + (merges === 1 ? "" : "s");
+    counterEl.textContent = merges + " merge" + (merges === 1 ? "" : "s") + " · compression " + compression.toFixed(2) + "×";
   }
 
-  function escape(s){
-    return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  function esc(s){
+    return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/ /g,"·");
   }
 
-  stepBtn.addEventListener("click", step);
-  resetBtn.addEventListener("click", init);
+  presetBtns.forEach(function(b){
+    b.addEventListener("click", function(){ setPreset(b.dataset.bpePreset); });
+  });
+  inputEl.addEventListener("input", function(){
+    if (currentPreset === "custom") init();
+  });
+  autoBtn.addEventListener("click", function(){
+    if (autoTimer) stopAuto(); else startAuto();
+  });
+  resetBtn.addEventListener("click", function(){ init(); });
 
-  init();
+  setPreset("english");
 })();
 </script>

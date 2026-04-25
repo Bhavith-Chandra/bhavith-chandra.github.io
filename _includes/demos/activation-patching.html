@@ -3,50 +3,107 @@
     <div class="idemo__head"><span class="idemo__title">Mini · Activation patching, find where the answer lives</span></div>
     <div class="idemo__body">
 
-      <p class="ap-lead">Two prompts disagree about the answer. Run both. Then copy the residual stream from the corrupt run into a single layer of the clean run, the patch, and watch the prediction shift. The layers where patching flips the answer are the layers where the answer-relevant computation happens.</p>
+      <div class="ap-howto">
+        <div class="ap-howto__title">How to play</div>
+        <ol class="ap-howto__list">
+          <li>Pick an <b>example pair</b> below — clean prompt vs. corrupt prompt that flip the model's answer.</li>
+          <li><b>Click any cell</b> in the layer × position heatmap to patch the residual stream at that (layer, token) from the corrupt run into the clean run.</li>
+          <li>Watch the prediction probabilities shift. <b>Hot cells = answer-relevant computation lives there.</b></li>
+          <li>Or hit <b>auto-scan</b> to sweep every cell and let the heatmap paint itself.</li>
+        </ol>
+      </div>
+
+      <div class="ap-examples" data-ap-examples></div>
 
       <div class="ap-prompts">
         <div class="ap-prompt ap-prompt--clean">
           <span class="ap-prompt__lbl">clean</span>
-          <span class="ap-prompt__text">Paris is the capital of</span>
-          <span class="ap-prompt__ans">→ <strong>France</strong></span>
+          <span class="ap-prompt__text" data-ap-clean-text>—</span>
+          <span class="ap-prompt__ans">→ <strong data-ap-clean-ans>—</strong></span>
         </div>
         <div class="ap-prompt ap-prompt--corrupt">
           <span class="ap-prompt__lbl">corrupt</span>
-          <span class="ap-prompt__text">Tokyo is the capital of</span>
-          <span class="ap-prompt__ans">→ <strong>Japan</strong></span>
+          <span class="ap-prompt__text" data-ap-corrupt-text>—</span>
+          <span class="ap-prompt__ans">→ <strong data-ap-corrupt-ans>—</strong></span>
         </div>
       </div>
 
-      <div class="ap-question">click a layer to patch it from the corrupt run into the clean run:</div>
+      <div class="ap-grid-wrap">
+        <div class="ap-grid-axis ap-grid-axis--y">
+          <div class="ap-grid-axis__label">layer</div>
+        </div>
+        <div class="ap-grid-main">
+          <div class="ap-grid-tokens" data-ap-tokens></div>
+          <div class="ap-grid" data-ap-grid></div>
+          <div class="ap-grid-axis ap-grid-axis--x">
+            <span>early</span><span>token position →</span><span>last</span>
+          </div>
+        </div>
+        <div class="ap-grid-legend">
+          <div class="ap-grid-legend__title">flip strength</div>
+          <div class="ap-grid-legend__bar"></div>
+          <div class="ap-grid-legend__scale"><span>0</span><span>1</span></div>
+          <div class="ap-grid-legend__hint">cells you've clicked stay outlined</div>
+        </div>
+      </div>
 
-      <div class="ap-layers" data-ap-layers></div>
+      <div class="ap-controls">
+        <button class="ap-btn ap-btn--primary" data-ap-scan>▶ auto-scan all cells</button>
+        <button class="ap-btn" data-ap-clear>↺ reset patches</button>
+        <span class="ap-counter" data-ap-counter>0 / 0 cells revealed</span>
+      </div>
 
       <div class="ap-result">
         <div class="ap-result__row">
-          <span>after patching layer <strong data-ap-layer>—</strong>:</span>
+          <span>after patching <strong data-ap-where>nothing yet</strong>:</span>
         </div>
         <div class="ap-result__bars">
           <div class="ap-result__row">
-            <span class="ap-result__name">P(France)</span>
-            <div class="ap-result__bar"><div class="ap-result__fill ap-result__fill--france" data-ap-france-bar></div></div>
-            <span class="ap-result__num" data-ap-france>87%</span>
+            <span class="ap-result__name" data-ap-name-clean>clean answer</span>
+            <div class="ap-result__bar"><div class="ap-result__fill ap-result__fill--clean" data-ap-clean-bar></div></div>
+            <span class="ap-result__num" data-ap-clean-pct>—</span>
           </div>
           <div class="ap-result__row">
-            <span class="ap-result__name">P(Japan)</span>
-            <div class="ap-result__bar"><div class="ap-result__fill ap-result__fill--japan" data-ap-japan-bar></div></div>
-            <span class="ap-result__num" data-ap-japan>1%</span>
+            <span class="ap-result__name" data-ap-name-corrupt>corrupt answer</span>
+            <div class="ap-result__bar"><div class="ap-result__fill ap-result__fill--corrupt" data-ap-corrupt-bar></div></div>
+            <span class="ap-result__num" data-ap-corrupt-pct>—</span>
           </div>
         </div>
       </div>
 
-      <p class="ap-hint"><strong>What the curve tells you:</strong> patching very early layers does almost nothing; the model hasn't yet computed anything answer-specific. Patching very late layers does almost nothing; the answer has already been extracted. The big effect lives in the middle, exactly where MLP-based factual recall happens. This is the technique <a href="https://arxiv.org/abs/2202.05262" target="_blank" rel="noopener">Meng et al. used to discover ROME</a>.</p>
+      <p class="ap-hint"><b>What the heatmap reveals:</b> hot cells form a small region — usually mid-to-late layers at the <i>last subject token</i> for factual recall, or at <i>name positions</i> for IOI. Click those cells: the answer flips. Click anywhere else: nothing happens. That's how <a href="https://arxiv.org/abs/2202.05262" target="_blank" rel="noopener">Meng et al. found ROME</a> and how the IOI circuit was traced.</p>
     </div>
   </div>
 </div>
 
 <style>
-  #demo-patch .ap-lead { margin: 0 0 0.85rem !important; font-size: 0.96rem !important; color: var(--nn-body) !important; line-height: 1.6 !important; }
+  #demo-patch .ap-howto {
+    background: #fffaf3; border: 1px solid #ddb88e; border-radius: 4px;
+    padding: 0.7rem 0.95rem; margin-bottom: 0.85rem;
+  }
+  #demo-patch .ap-howto__title {
+    font-family: var(--nn-mono); font-size: 0.7rem; letter-spacing: 0.1em;
+    text-transform: uppercase; color: #7c4d0a; margin-bottom: 0.35rem; font-weight: 600;
+  }
+  #demo-patch .ap-howto__list {
+    margin: 0; padding: 0 0 0 1.1rem; font-size: 0.9rem;
+    color: var(--nn-body); line-height: 1.6;
+  }
+  #demo-patch .ap-howto__list li b { color: #7c4d0a; }
+
+  #demo-patch .ap-examples {
+    display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0.65rem;
+  }
+  #demo-patch .ap-ex {
+    padding: 0.32rem 0.7rem; font-family: var(--nn-mono); font-size: 0.74rem;
+    background: #fff; border: 1px solid var(--nn-line); border-radius: 3px;
+    color: var(--nn-ink); cursor: pointer;
+  }
+  #demo-patch .ap-ex:hover { border-color: #b77214; }
+  #demo-patch .ap-ex.is-active {
+    background: #b77214; color: #fff; border-color: #b77214;
+  }
+
   #demo-patch .ap-prompts {
     display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.85rem;
   }
@@ -61,40 +118,87 @@
     text-transform: uppercase; letter-spacing: 0.08em;
   }
   #demo-patch .ap-prompt--corrupt .ap-prompt__lbl { color: #7c4d0a; }
-  #demo-patch .ap-prompt__text {
-    font-family: var(--nn-mono); font-size: 0.82rem; color: var(--nn-ink);
-  }
-  #demo-patch .ap-prompt__ans {
-    font-family: var(--nn-mono); font-size: 0.78rem; color: var(--nn-muted);
-  }
+  #demo-patch .ap-prompt__text { font-family: var(--nn-mono); font-size: 0.82rem; color: var(--nn-ink); }
+  #demo-patch .ap-prompt__ans { font-family: var(--nn-mono); font-size: 0.78rem; color: var(--nn-muted); }
   #demo-patch .ap-prompt__ans strong { color: #7c4d0a; font-weight: 600; }
 
-  #demo-patch .ap-question {
-    font-family: var(--nn-mono); font-size: 0.74rem; color: var(--nn-muted);
-    margin-bottom: 0.45rem;
-  }
-  #demo-patch .ap-layers {
-    display: grid; grid-template-columns: repeat(12, 1fr); gap: 4px;
+  #demo-patch .ap-grid-wrap {
+    display: grid; grid-template-columns: 28px 1fr 90px; gap: 0.5rem;
     margin-bottom: 0.85rem;
   }
-  #demo-patch .ap-layer {
-    aspect-ratio: 1 / 1;
-    background: #fff; border: 1px solid var(--nn-line); border-radius: 3px;
-    cursor: pointer; position: relative;
-    display: flex; align-items: center; justify-content: center;
+  #demo-patch .ap-grid-axis { display: flex; align-items: center; justify-content: center; }
+  #demo-patch .ap-grid-axis--y {
+    writing-mode: vertical-rl; transform: rotate(180deg);
+    font-family: var(--nn-mono); font-size: 0.7rem; letter-spacing: 0.08em;
+    color: var(--nn-muted); text-transform: uppercase;
+  }
+  #demo-patch .ap-grid-axis--x {
+    display: flex; justify-content: space-between;
+    font-family: var(--nn-mono); font-size: 0.65rem; color: var(--nn-muted);
+    letter-spacing: 0.06em; text-transform: uppercase;
+    padding: 0.3rem 0.1rem 0;
+  }
+  #demo-patch .ap-grid-tokens {
+    display: grid; gap: 4px; margin-bottom: 4px;
     font-family: var(--nn-mono); font-size: 0.66rem; color: var(--nn-muted);
-    transition: all 180ms;
+    text-align: center;
   }
-  #demo-patch .ap-layer:hover { border-color: #b77214; color: #7c4d0a; }
-  #demo-patch .ap-layer.is-active {
-    background: #b77214; color: #fff; border-color: #b77214;
+  #demo-patch .ap-grid-tokens span {
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    padding: 1px 0;
   }
-  #demo-patch .ap-layer__bar {
-    position: absolute; left: 4px; right: 4px; bottom: 4px;
-    height: 4px; background: #b77214; border-radius: 1px;
-    transform-origin: left;
+  #demo-patch .ap-grid {
+    display: grid; gap: 4px;
   }
-  #demo-patch .ap-layer.is-active .ap-layer__bar { background: #fff; }
+  #demo-patch .ap-cell {
+    aspect-ratio: 1 / 1; min-height: 22px;
+    background: #fff; border: 1px solid var(--nn-line); border-radius: 2px;
+    cursor: pointer; position: relative;
+    transition: transform 120ms;
+  }
+  #demo-patch .ap-cell:hover { transform: scale(1.12); z-index: 2; box-shadow: 0 0 0 2px #b77214; border-color: #b77214; }
+  #demo-patch .ap-cell.is-revealed { background-color: var(--c, #fff); }
+  #demo-patch .ap-cell.is-selected { box-shadow: 0 0 0 2px #0d6b3a; z-index: 3; }
+  #demo-patch .ap-cell.is-scanning { animation: apPulse 350ms; }
+  @keyframes apPulse {
+    0% { box-shadow: 0 0 0 0 #b77214; }
+    50% { box-shadow: 0 0 0 4px rgba(183,114,20,0.6); }
+    100% { box-shadow: 0 0 0 0 #b77214; }
+  }
+
+  #demo-patch .ap-grid-legend {
+    display: flex; flex-direction: column; align-items: center; gap: 0.3rem;
+    font-family: var(--nn-mono); font-size: 0.62rem; color: var(--nn-muted);
+    text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  #demo-patch .ap-grid-legend__title { font-weight: 600; }
+  #demo-patch .ap-grid-legend__bar {
+    width: 16px; flex: 1; min-height: 90px;
+    background: linear-gradient(to top, #fffefb 0%, #ddb88e 35%, #b77214 70%, #7c4d0a 100%);
+    border: 1px solid var(--nn-line); border-radius: 2px;
+  }
+  #demo-patch .ap-grid-legend__scale { display: flex; flex-direction: column; gap: 75px; font-size: 0.6rem; }
+  #demo-patch .ap-grid-legend__hint {
+    text-transform: none; letter-spacing: 0; font-size: 0.62rem; line-height: 1.3;
+    text-align: center; max-width: 90px;
+  }
+
+  #demo-patch .ap-controls {
+    display: flex; align-items: center; gap: 0.55rem; flex-wrap: wrap;
+    margin-bottom: 0.85rem;
+  }
+  #demo-patch .ap-btn {
+    padding: 0.42rem 0.85rem; font-family: var(--nn-mono); font-size: 0.78rem;
+    background: #fff; border: 1px solid var(--nn-line); border-radius: 3px;
+    color: var(--nn-ink); cursor: pointer;
+  }
+  #demo-patch .ap-btn:hover { border-color: #b77214; }
+  #demo-patch .ap-btn--primary { background: #b77214; color: #fff; border-color: #b77214; }
+  #demo-patch .ap-btn--primary:hover { background: #7c4d0a; }
+  #demo-patch .ap-btn.is-running { background: #7c4d0a; color: #fff; border-color: #7c4d0a; }
+  #demo-patch .ap-counter {
+    margin-left: auto; font-family: var(--nn-mono); font-size: 0.74rem; color: var(--nn-muted);
+  }
 
   #demo-patch .ap-result {
     background: #fafaf7; border: 1px solid var(--nn-line); border-radius: 3px;
@@ -102,9 +206,8 @@
   }
   #demo-patch .ap-result__row {
     font-family: var(--nn-mono); font-size: 0.78rem; color: var(--nn-muted);
-    display: grid; grid-template-columns: 100px 1fr 56px;
-    align-items: center; gap: 0.55rem;
-    margin-bottom: 0.4rem;
+    display: grid; grid-template-columns: 130px 1fr 56px;
+    align-items: center; gap: 0.55rem; margin-bottom: 0.4rem;
   }
   #demo-patch .ap-result__row:first-child { display: block; margin-bottom: 0.55rem; }
   #demo-patch .ap-result__row strong { color: #7c4d0a; }
@@ -113,10 +216,10 @@
     height: 14px; background: #fff; border: 1px solid var(--nn-line); border-radius: 2px; overflow: hidden;
   }
   #demo-patch .ap-result__fill {
-    height: 100%; transition: width 280ms cubic-bezier(.3,.5,.3,1);
+    height: 100%; transition: width 280ms cubic-bezier(.3,.5,.3,1); width: 0%;
   }
-  #demo-patch .ap-result__fill--france { background: #b77214; }
-  #demo-patch .ap-result__fill--japan { background: #ddb88e; }
+  #demo-patch .ap-result__fill--clean { background: #b77214; }
+  #demo-patch .ap-result__fill--corrupt { background: #ddb88e; }
   #demo-patch .ap-result__num {
     font-family: var(--nn-mono); font-size: 0.74rem; text-align: right; color: var(--nn-ink);
   }
@@ -125,7 +228,7 @@
     padding: 0.7rem 0.85rem; background: #fff;
     border: 1px solid var(--nn-line); border-radius: 3px;
   }
-  #demo-patch .ap-hint strong { color: #7c4d0a; }
+  #demo-patch .ap-hint b { color: #7c4d0a; }
   #demo-patch .ap-hint a { color: #7c4d0a; }
 </style>
 
@@ -133,63 +236,236 @@
 (function(){
   var root = document.getElementById("demo-patch"); if (!root) return;
 
-  // Per-layer probability that the clean answer "France" wins after patching that layer
-  // from the corrupt run. Bell curve peaking around mid-layers, mirroring published causal
-  // tracing curves (Meng et al. 2022).
-  var BASELINE_FRANCE = 0.87;
-  var BASELINE_JAPAN  = 0.01;
-  // For each of 12 layers: how much the answer flips toward Japan when that layer is patched.
-  // 0 = no effect (still France). 1 = full flip (Japan wins).
-  var FLIP = [0.02, 0.05, 0.12, 0.28, 0.55, 0.78, 0.85, 0.78, 0.55, 0.28, 0.10, 0.04];
-
-  var layersEl = root.querySelector("[data-ap-layers]");
-  var layerEl  = root.querySelector("[data-ap-layer]");
-  var franceEl = root.querySelector("[data-ap-france]");
-  var japanEl  = root.querySelector("[data-ap-japan]");
-  var franceBar = root.querySelector("[data-ap-france-bar]");
-  var japanBar  = root.querySelector("[data-ap-japan-bar]");
-
-  var active = -1;
-
-  function renderLayers(){
-    var html = "";
-    for (var i = 0; i < FLIP.length; i++){
-      var pct = (FLIP[i] * 100).toFixed(0);
-      html += "<div class=\"ap-layer"+(active === i ? " is-active" : "")+"\" data-l=\""+i+"\">"+
-        "L"+i+
-        "<span class=\"ap-layer__bar\" style=\"transform: scaleX("+(FLIP[i]).toFixed(2)+")\"></span>"+
-        "</div>";
+  // Three example pairs. Each defines:
+  //   tokens: list of token strings shared across clean/corrupt
+  //   cleanAns / corruptAns: the two competing predictions
+  //   peakL / peakP: where the answer-bearing computation peaks (layer index, token index)
+  //   spread: how localized the effect is (smaller = more focused)
+  var EXAMPLES = [
+    {
+      id: "fact",
+      label: "factual recall (Paris→France)",
+      cleanText: "Paris is the capital of",
+      corruptText: "Tokyo is the capital of",
+      cleanAns: "France",
+      corruptAns: "Japan",
+      tokens: ["Paris/Tokyo", "is", "the", "capital", "of"],
+      peakL: 6, peakP: 0,
+      spreadL: 1.6, spreadP: 0.9,
+      baseClean: 0.87, baseCorrupt: 0.01
+    },
+    {
+      id: "ioi",
+      label: "IOI (John & Mary)",
+      cleanText: "When John and Mary went to the store, John gave a drink to",
+      corruptText: "When Mary and John went to the store, John gave a drink to",
+      cleanAns: "Mary",
+      corruptAns: "John",
+      tokens: ["John/Mary", "and", "Mary/John", "store", "John", "to"],
+      peakL: 8, peakP: 4,
+      spreadL: 1.4, spreadP: 0.8,
+      baseClean: 0.74, baseCorrupt: 0.05
+    },
+    {
+      id: "math",
+      label: "arithmetic (3→7)",
+      cleanText: "The answer to 4 plus 3 is",
+      corruptText: "The answer to 4 plus 8 is",
+      cleanAns: "7",
+      corruptAns: "12",
+      tokens: ["The", "to", "4", "plus", "3/8", "is"],
+      peakL: 5, peakP: 4,
+      spreadL: 1.2, spreadP: 0.7,
+      baseClean: 0.58, baseCorrupt: 0.06
     }
-    layersEl.innerHTML = html;
-    layersEl.querySelectorAll(".ap-layer").forEach(function(b){
+  ];
+
+  var N_LAYERS = 12;
+
+  var examplesEl = root.querySelector("[data-ap-examples]");
+  var cleanTextEl = root.querySelector("[data-ap-clean-text]");
+  var corruptTextEl = root.querySelector("[data-ap-corrupt-text]");
+  var cleanAnsEl = root.querySelector("[data-ap-clean-ans]");
+  var corruptAnsEl = root.querySelector("[data-ap-corrupt-ans]");
+  var tokensEl = root.querySelector("[data-ap-tokens]");
+  var gridEl = root.querySelector("[data-ap-grid]");
+  var whereEl = root.querySelector("[data-ap-where]");
+  var nameCleanEl = root.querySelector("[data-ap-name-clean]");
+  var nameCorruptEl = root.querySelector("[data-ap-name-corrupt]");
+  var cleanPctEl = root.querySelector("[data-ap-clean-pct]");
+  var corruptPctEl = root.querySelector("[data-ap-corrupt-pct]");
+  var cleanBar = root.querySelector("[data-ap-clean-bar]");
+  var corruptBar = root.querySelector("[data-ap-corrupt-bar]");
+  var scanBtn = root.querySelector("[data-ap-scan]");
+  var clearBtn = root.querySelector("[data-ap-clear]");
+  var counterEl = root.querySelector("[data-ap-counter]");
+
+  var current = EXAMPLES[0];
+  var revealed = {}; // "l,p" -> 1
+  var selected = null; // {l,p}
+  var scanning = false;
+  var scanTimer = null;
+
+  function flipAt(l, p, ex){
+    // 2D Gaussian centered at peak.
+    var dl = (l - ex.peakL) / ex.spreadL;
+    var dp = (p - ex.peakP) / ex.spreadP;
+    var f = Math.exp(-0.5 * (dl*dl + dp*dp));
+    return Math.max(0, Math.min(1, f));
+  }
+
+  function colorFor(f){
+    // Map flip strength 0..1 to amber gradient.
+    if (f < 0.04) return "#ffffff";
+    if (f < 0.15){ var a = (f - 0.04) / 0.11; return mix("#fff8ec", "#ffe4ba", a); }
+    if (f < 0.45){ var a = (f - 0.15) / 0.30; return mix("#ffe4ba", "#e8a657", a); }
+    if (f < 0.75){ var a = (f - 0.45) / 0.30; return mix("#e8a657", "#b77214", a); }
+    var a4 = (f - 0.75) / 0.25; return mix("#b77214", "#7c4d0a", a4);
+  }
+  function mix(c1, c2, t){
+    var r1 = parseInt(c1.slice(1,3),16), g1 = parseInt(c1.slice(3,5),16), b1 = parseInt(c1.slice(5,7),16);
+    var r2 = parseInt(c2.slice(1,3),16), g2 = parseInt(c2.slice(3,5),16), b2 = parseInt(c2.slice(5,7),16);
+    var r = Math.round(r1 + (r2-r1)*t), g = Math.round(g1 + (g2-g1)*t), b = Math.round(b1 + (b2-b1)*t);
+    return "rgb("+r+","+g+","+b+")";
+  }
+
+  function renderExamples(){
+    examplesEl.innerHTML = "";
+    EXAMPLES.forEach(function(ex){
+      var b = document.createElement("button");
+      b.className = "ap-ex" + (ex.id === current.id ? " is-active" : "");
+      b.textContent = ex.label;
       b.addEventListener("click", function(){
-        active = parseInt(b.getAttribute("data-l"), 10);
-        renderLayers();
-        renderResult();
+        current = ex; revealed = {}; selected = null; stopScan();
+        renderAll();
       });
+      examplesEl.appendChild(b);
     });
   }
 
-  function renderResult(){
-    if (active < 0){
-      layerEl.textContent = "—";
-      franceEl.textContent = (BASELINE_FRANCE * 100).toFixed(0) + "%";
-      japanEl.textContent  = (BASELINE_JAPAN  * 100).toFixed(0) + "%";
-      franceBar.style.width = (BASELINE_FRANCE * 100) + "%";
-      japanBar.style.width  = (BASELINE_JAPAN  * 100) + "%";
-      return;
-    }
-    var f = FLIP[active];
-    var pFrance = BASELINE_FRANCE * (1 - f) + 0.05 * f;
-    var pJapan  = 0.01 * (1 - f) + 0.85 * f;
-    layerEl.textContent = active;
-    franceEl.textContent = (pFrance * 100).toFixed(0) + "%";
-    japanEl.textContent  = (pJapan  * 100).toFixed(0) + "%";
-    franceBar.style.width = (pFrance * 100) + "%";
-    japanBar.style.width  = (pJapan  * 100) + "%";
+  function renderPrompts(){
+    cleanTextEl.textContent = current.cleanText;
+    corruptTextEl.textContent = current.corruptText;
+    cleanAnsEl.textContent = current.cleanAns;
+    corruptAnsEl.textContent = current.corruptAns;
+    nameCleanEl.textContent = "P(" + current.cleanAns + ")";
+    nameCorruptEl.textContent = "P(" + current.corruptAns + ")";
   }
 
-  renderLayers();
-  renderResult();
+  function renderGrid(){
+    var nP = current.tokens.length;
+    tokensEl.style.gridTemplateColumns = "repeat("+nP+", 1fr)";
+    var th = ""; current.tokens.forEach(function(t){ th += "<span title=\""+escAttr(t)+"\">"+escHtml(t)+"</span>"; });
+    tokensEl.innerHTML = th;
+
+    gridEl.style.gridTemplateColumns = "repeat("+nP+", 1fr)";
+    gridEl.innerHTML = "";
+    for (var l = N_LAYERS - 1; l >= 0; l--){
+      for (var p = 0; p < nP; p++){
+        var key = l + "," + p;
+        var c = document.createElement("div");
+        c.className = "ap-cell";
+        c.dataset.l = l; c.dataset.p = p;
+        var f = flipAt(l, p, current);
+        c.title = "L"+l+" · "+current.tokens[p]+" · flip="+f.toFixed(2);
+        if (revealed[key]){
+          c.classList.add("is-revealed");
+          c.style.setProperty("--c", colorFor(f));
+        }
+        if (selected && selected.l === l && selected.p === p){
+          c.classList.add("is-selected");
+        }
+        c.addEventListener("click", function(){
+          var ll = +this.dataset.l, pp = +this.dataset.p;
+          revealed[ll+","+pp] = 1;
+          selected = { l: ll, p: pp };
+          renderGrid();
+          renderResult();
+        });
+        c.addEventListener("mouseenter", function(){
+          if (scanning) return;
+          var ll = +this.dataset.l, pp = +this.dataset.p;
+          revealed[ll+","+pp] = 1;
+          this.classList.add("is-revealed");
+          this.style.setProperty("--c", colorFor(flipAt(ll, pp, current)));
+          updateCounter();
+        });
+        gridEl.appendChild(c);
+      }
+    }
+    updateCounter();
+  }
+
+  function updateCounter(){
+    var nP = current.tokens.length;
+    var total = N_LAYERS * nP;
+    var n = Object.keys(revealed).length;
+    counterEl.textContent = n + " / " + total + " cells revealed";
+  }
+
+  function renderResult(){
+    if (!selected){
+      whereEl.textContent = "nothing yet";
+      cleanPctEl.textContent = (current.baseClean*100).toFixed(0)+"%";
+      corruptPctEl.textContent = (current.baseCorrupt*100).toFixed(0)+"%";
+      cleanBar.style.width = (current.baseClean*100)+"%";
+      corruptBar.style.width = (current.baseCorrupt*100)+"%";
+      return;
+    }
+    var f = flipAt(selected.l, selected.p, current);
+    var pClean = current.baseClean * (1 - f) + 0.05 * f;
+    var pCorrupt = current.baseCorrupt * (1 - f) + 0.85 * f;
+    whereEl.textContent = "L"+selected.l+" at \"" + current.tokens[selected.p] + "\"";
+    cleanPctEl.textContent = (pClean*100).toFixed(0)+"%";
+    corruptPctEl.textContent = (pCorrupt*100).toFixed(0)+"%";
+    cleanBar.style.width = (pClean*100)+"%";
+    corruptBar.style.width = (pCorrupt*100)+"%";
+  }
+
+  function startScan(){
+    if (scanning) return;
+    scanning = true;
+    scanBtn.textContent = "■ stop";
+    scanBtn.classList.add("is-running");
+    var nP = current.tokens.length;
+    var order = [];
+    for (var l = N_LAYERS - 1; l >= 0; l--){
+      for (var p = 0; p < nP; p++) order.push({ l: l, p: p });
+    }
+    var idx = 0;
+    var step = function(){
+      if (!scanning || idx >= order.length){ stopScan(); return; }
+      var o = order[idx++];
+      revealed[o.l+","+o.p] = 1;
+      selected = o;
+      renderGrid();
+      renderResult();
+      var cell = gridEl.querySelector("[data-l='"+o.l+"'][data-p='"+o.p+"']");
+      if (cell){ cell.classList.add("is-scanning"); }
+      scanTimer = setTimeout(step, 36);
+    };
+    step();
+  }
+  function stopScan(){
+    scanning = false;
+    scanBtn.textContent = "▶ auto-scan all cells";
+    scanBtn.classList.remove("is-running");
+    if (scanTimer){ clearTimeout(scanTimer); scanTimer = null; }
+  }
+
+  function renderAll(){
+    renderExamples();
+    renderPrompts();
+    renderGrid();
+    renderResult();
+  }
+
+  function escHtml(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+  function escAttr(s){ return String(s).replace(/"/g,"&quot;"); }
+
+  scanBtn.addEventListener("click", function(){ if (scanning) stopScan(); else startScan(); });
+  clearBtn.addEventListener("click", function(){ revealed = {}; selected = null; stopScan(); renderGrid(); renderResult(); });
+
+  renderAll();
 })();
 </script>

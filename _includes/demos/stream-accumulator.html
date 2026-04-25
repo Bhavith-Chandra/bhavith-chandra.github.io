@@ -1,183 +1,178 @@
-<div class="idemo idemo--mini" id="demo-accumulator">
-  <div class="idemo__card">
-    <div class="idemo__head"><span class="idemo__title">Mini · Residual stream as a running sum</span></div>
-    <div class="idemo__body">
-
-      <p class="acc-lead">Each block does <em>not</em> replace the belt's contents. It adds a small contribution. Below: 6 blocks, each contributing a different vector (here just colored shape, real-life it's 768 numbers). Press <strong>add next block</strong> and watch the belt accumulate.</p>
-
-      <div class="acc-stage">
-        <div class="acc-row">
-          <div class="acc-row__label">Block contribution</div>
-          <div class="acc-row__belt" data-acc-blocks></div>
-        </div>
-        <div class="acc-row">
-          <div class="acc-row__label">Running sum (the belt)</div>
-          <div class="acc-row__belt acc-row__belt--accent" data-acc-sum>
-            <div class="acc-sum-cell" data-acc-sum-cell>
-              <span class="acc-sum-cell__layers" data-acc-sum-layers></span>
-              <span class="acc-sum-cell__label" data-acc-sum-label>start: just the embedding</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="acc-controls">
-        <button class="acc-btn acc-btn--primary" data-acc-next>add next block</button>
-        <button class="acc-btn" data-acc-reset>reset</button>
-        <span class="acc-stage__counter" data-acc-counter>0 / 6 blocks added</span>
-      </div>
-
-      <p class="acc-hint" data-acc-hint><strong>Why this matters:</strong> because the operation is <em>add</em>, not <em>replace</em>, every block has a direct line to every later block. The early embedding can survive intact to the very last layer if no block decides to write something contradicting it. This is why we can use the logit lens at any depth: the belt is always "in the same language."</p>
+<div class="idemo demo-acc2" id="demo-accumulator">
+  <div class="acc2__head">
+    <span class="acc2__title">Mini · Residual stream as a running sum</span>
+    <div class="acc2__how">
+      <strong>How to play:</strong> each row is a block. Toggle blocks on/off — the running sum at the bottom updates instantly, and so does the model's "best guess" at the next token. Reorder, mute, or invert any block. <em>The point: the belt is just whatever you've added so far.</em>
     </div>
   </div>
+
+  <div class="acc2__presets">
+    <span class="acc2__plabel">Prompt</span>
+    <button class="acc2__pbtn is-active" data-prompt="paris">Paris is the capital of</button>
+    <button class="acc2__pbtn" data-prompt="cat">The cat sat on the</button>
+    <button class="acc2__pbtn" data-prompt="ioi">When John and Mary went to the store, John gave a drink to</button>
+  </div>
+
+  <div class="acc2__board">
+    <div class="acc2__feature-axis">
+      <span>place</span><span>person</span><span>tense</span><span>plural</span><span>code</span>
+    </div>
+    <div class="acc2__rows" data-acc-rows></div>
+    <div class="acc2__sumrow">
+      <div class="acc2__sumlabel">RUNNING SUM</div>
+      <div class="acc2__sumbars" data-acc-sumbars></div>
+      <div class="acc2__lens" data-acc-lens>—</div>
+    </div>
+  </div>
+
+  <div class="acc2__controls">
+    <button class="acc2__btn" data-act="all-on">▶ All blocks on</button>
+    <button class="acc2__btn" data-act="step">⏭ Add next block</button>
+    <button class="acc2__btn" data-act="reset">⏮ Reset</button>
+    <button class="acc2__btn" data-act="play">🔁 Auto-play</button>
+  </div>
+
+  <p class="acc2__hint" data-acc-hint><strong>What you should notice:</strong> the embedding alone gives a vague guess. As more blocks get added, certain feature dimensions (place / person / tense …) light up and the prediction sharpens. Mute any single block — the loss in confidence tells you that block's contribution. That's exactly what direct logit attribution does at scale.</p>
 </div>
-
 <style>
-  #demo-accumulator .acc-lead { margin: 0 0 0.95rem !important; font-size: 0.96rem !important; color: var(--nn-body) !important; line-height: 1.6 !important; }
-  #demo-accumulator .acc-lead em { color: #7c4d0a; font-style: italic; }
-
-  #demo-accumulator .acc-stage {
-    background: #fafaf7; border: 1px solid var(--nn-line); border-radius: 4px;
-    padding: 0.85rem 0.95rem; margin-bottom: 0.9rem;
-  }
-  #demo-accumulator .acc-row { display: flex; align-items: center; gap: 0.7rem; margin-bottom: 0.7rem; }
-  #demo-accumulator .acc-row:last-child { margin-bottom: 0; }
-  #demo-accumulator .acc-row__label {
-    font-family: var(--nn-mono); font-size: 0.7rem; letter-spacing: 0.08em;
-    text-transform: uppercase; color: var(--nn-muted); min-width: 145px;
-  }
-  #demo-accumulator .acc-row__belt {
-    flex: 1; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr));
-    gap: 0.32rem; min-height: 56px;
-  }
-  #demo-accumulator .acc-row__belt--accent { grid-template-columns: 1fr; }
-
-  #demo-accumulator .acc-block {
-    border-radius: 4px; padding: 0.5rem 0.4rem; text-align: center;
-    background: #f5f1e8; border: 1px solid var(--nn-line); color: var(--nn-muted);
-    font-family: var(--nn-mono); font-size: 0.72rem;
-    transition: all 220ms cubic-bezier(.4,.05,.2,1);
-    opacity: 0.55;
-  }
-  #demo-accumulator .acc-block.is-added {
-    opacity: 1; transform: translateY(-2px);
-    border-color: #b77214; color: #7c4d0a; background: #fff6e0;
-    box-shadow: 0 2px 6px rgba(183,114,20,0.18);
-  }
-  #demo-accumulator .acc-block__bar {
-    display: block; height: 6px; border-radius: 2px;
-    margin-top: 0.3rem; background: #c98c3a; opacity: 0.4;
-  }
-  #demo-accumulator .acc-block.is-added .acc-block__bar { opacity: 1; }
-
-  #demo-accumulator .acc-sum-cell {
-    background: #fff; border: 1px solid #b77214; border-radius: 4px;
-    padding: 0.65rem 0.85rem; min-height: 64px;
-    display: flex; flex-direction: column; gap: 0.4rem; justify-content: center;
-  }
-  #demo-accumulator .acc-sum-cell__layers {
-    display: flex; gap: 4px; min-height: 12px;
-  }
-  #demo-accumulator .acc-sum-cell__layer {
-    flex: 1; height: 12px; border-radius: 2px;
-    transform: scaleY(0); transform-origin: bottom;
-    transition: transform 320ms cubic-bezier(.3,.5,.3,1);
-  }
-  #demo-accumulator .acc-sum-cell__layer.is-on { transform: scaleY(1); }
-  #demo-accumulator .acc-sum-cell__label {
-    font-family: var(--nn-mono); font-size: 0.78rem; color: var(--nn-body);
-  }
-
-  #demo-accumulator .acc-controls {
-    display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
-    padding: 0.55rem 0; margin-bottom: 0.65rem;
-  }
-  #demo-accumulator .acc-btn {
-    padding: 0.42rem 0.9rem; font-family: var(--nn-mono); font-size: 0.78rem;
-    background: #fff; border: 1px solid var(--nn-line); border-radius: 3px;
-    color: var(--nn-ink); cursor: pointer;
-  }
-  #demo-accumulator .acc-btn:hover { border-color: #b77214; }
-  #demo-accumulator .acc-btn--primary { background: #b77214; color: #fff; border-color: #b77214; font-weight: 600; }
-  #demo-accumulator .acc-btn--primary:hover { background: #7c4d0a; }
-  #demo-accumulator .acc-stage__counter {
-    margin-left: auto; font-family: var(--nn-mono); font-size: 0.74rem; color: var(--nn-muted);
-  }
-
-  #demo-accumulator .acc-hint {
-    font-size: 0.92rem; color: var(--nn-body); line-height: 1.6;
-    padding: 0.7rem 0.85rem; background: #fff;
-    border: 1px solid var(--nn-line); border-radius: 3px;
-  }
-  #demo-accumulator .acc-hint em { color: #7c4d0a; font-style: italic; }
-
-  @media (max-width: 620px){
-    #demo-accumulator .acc-row { flex-direction: column; align-items: stretch; }
-    #demo-accumulator .acc-row__label { min-width: 0; }
-  }
+  .demo-acc2{border:1px solid var(--nn-line,#e7e2da);border-radius:14px;padding:18px;margin:18px 0;background:#fffaf3;font-family:var(--nn-body,system-ui)}
+  .demo-acc2 .acc2__title{font-weight:700;color:#7c4d0a;font-size:15px;display:block;margin-bottom:6px}
+  .demo-acc2 .acc2__how{font-size:13px;color:#5a3d12;background:#fff6e0;border:1px dashed #ddb88e;padding:8px 12px;border-radius:8px;line-height:1.55}
+  .demo-acc2 .acc2__how strong{color:#7c4d0a}
+  .demo-acc2 .acc2__how em{font-style:italic;color:#7c4d0a}
+  .demo-acc2 .acc2__presets{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:14px 0 10px}
+  .demo-acc2 .acc2__plabel{font-size:11px;color:#7c4d0a;text-transform:uppercase;letter-spacing:0.06em;font-weight:700;margin-right:4px}
+  .demo-acc2 .acc2__pbtn{border:1px solid #ddb88e;background:#fff6e0;color:#7c4d0a;padding:5px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit}
+  .demo-acc2 .acc2__pbtn.is-active{background:#fbbf24;color:#3a2106;border-color:#b77214}
+  .demo-acc2 .acc2__board{background:#fffefb;border:1px solid #ecdbc0;border-radius:8px;padding:12px}
+  .demo-acc2 .acc2__feature-axis{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;font-size:10px;color:#a08562;text-transform:uppercase;letter-spacing:0.06em;font-weight:700;margin-left:178px;margin-bottom:6px}
+  .demo-acc2 .acc2__feature-axis span{text-align:center}
+  .demo-acc2 .acc2__rows{display:flex;flex-direction:column;gap:5px}
+  .demo-acc2 .acc2__row{display:grid;grid-template-columns:36px 130px 1fr 60px;gap:8px;align-items:center;padding:5px 6px;border-radius:6px;background:#fffaf3;border:1px solid #ecdbc0;transition:background 0.18s}
+  .demo-acc2 .acc2__row.is-muted{opacity:0.4;background:#f5f1e8}
+  .demo-acc2 .acc2__row.is-inv .acc2__rbars div{filter:hue-rotate(180deg) invert(0.05)}
+  .demo-acc2 .acc2__rtoggle{display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;width:24px;height:24px;border-radius:50%;background:#fbbf24;color:#3a2106;border:1px solid #b77214;font-weight:700;transition:all 0.15s}
+  .demo-acc2 .acc2__row.is-muted .acc2__rtoggle{background:#fff6e0;color:#a08562}
+  .demo-acc2 .acc2__rname{font-size:12px;font-weight:600;color:#7c4d0a;font-family:ui-monospace,Menlo,monospace}
+  .demo-acc2 .acc2__rname small{display:block;font-weight:400;color:#a08562;font-size:10px;margin-top:1px}
+  .demo-acc2 .acc2__rbars{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;height:22px;align-items:end}
+  .demo-acc2 .acc2__rbars div{height:100%;border-radius:3px;transition:transform 0.25s,background 0.2s}
+  .demo-acc2 .acc2__rinvert{font-size:10px;border:1px solid #ddb88e;background:#fff;color:#7c4d0a;padding:3px 6px;border-radius:4px;cursor:pointer;font-family:inherit;font-weight:600}
+  .demo-acc2 .acc2__rinvert.is-inv{background:#b25c2c;color:#fff;border-color:#b25c2c}
+  .demo-acc2 .acc2__sumrow{margin-top:14px;padding:10px;background:linear-gradient(to right,#fff6e0,#fde9bf);border:2px solid #b77214;border-radius:8px;display:grid;grid-template-columns:130px 1fr 1fr;gap:12px;align-items:center}
+  .demo-acc2 .acc2__sumlabel{font-size:11px;color:#7c4d0a;text-transform:uppercase;letter-spacing:0.08em;font-weight:700}
+  .demo-acc2 .acc2__sumbars{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;height:32px;align-items:end}
+  .demo-acc2 .acc2__sumbars div{border-radius:4px;background:#b77214;transition:height 0.35s cubic-bezier(.3,.6,.3,1)}
+  .demo-acc2 .acc2__lens{font-family:ui-monospace,Menlo,monospace;font-size:13px;color:#3a2106;background:#fffefb;border:1px solid #b77214;border-radius:6px;padding:6px 10px;text-align:center;font-weight:600}
+  .demo-acc2 .acc2__lens b{color:#b25c2c}
+  .demo-acc2 .acc2__controls{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0}
+  .demo-acc2 .acc2__btn{border:1px solid #ddb88e;background:#fff6e0;color:#7c4d0a;padding:6px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+  .demo-acc2 .acc2__btn:hover{background:#fbbf24;color:#3a2106}
+  .demo-acc2 .acc2__hint{font-size:13px;color:#5a3d12;background:#fff6e0;border:1px dashed #ddb88e;padding:8px 12px;border-radius:8px;line-height:1.6;margin:0}
+  .demo-acc2 .acc2__hint strong{color:#7c4d0a}
+  @media (max-width:560px){.demo-acc2 .acc2__row{grid-template-columns:32px 100px 1fr;}.demo-acc2 .acc2__rinvert{display:none}.demo-acc2 .acc2__sumrow{grid-template-columns:1fr}.demo-acc2 .acc2__feature-axis{margin-left:140px}}
 </style>
-
 <script>
 (function(){
-  var root = document.getElementById("demo-accumulator"); if (!root) return;
-
-  var BLOCKS = [
-    { name: "blk 0", color: "#fcd68b", label: "embedding only" },
-    { name: "blk 1", color: "#fbbf24", label: "+ block 0 (surface features)" },
-    { name: "blk 2", color: "#f59e0b", label: "+ block 1 (early syntax)" },
-    { name: "blk 3", color: "#d97706", label: "+ block 2 (mid-network mixing)" },
-    { name: "blk 4", color: "#b45309", label: "+ block 3 (semantic consolidation)" },
-    { name: "blk 5", color: "#92400e", label: "+ block 4 (answer narrows)" },
-    { name: "blk 6", color: "#7c4d0a", label: "+ block 5 (final answer)" }
-  ];
-
-  var blocksEl = root.querySelector("[data-acc-blocks]");
-  var layersEl = root.querySelector("[data-acc-sum-layers]");
-  var labelEl = root.querySelector("[data-acc-sum-label]");
-  var counterEl = root.querySelector("[data-acc-counter]");
-  var nextBtn = root.querySelector("[data-acc-next]");
-
-  var added = 0;
-
-  function drawBlocks(){
-    var html = "";
-    for (var i = 1; i < BLOCKS.length; i++){
-      var on = i <= added;
-      html += "<div class=\"acc-block "+(on ? "is-added" : "")+"\" data-block=\""+i+"\">"+
-        BLOCKS[i].name +
-        "<span class=\"acc-block__bar\" style=\"background:"+BLOCKS[i].color+"\"></span>"+
-        "</div>";
+  const root=document.getElementById('demo-accumulator'); if(!root) return;
+  const PROMPTS={
+    paris:{
+      label:'Paris is the capital of',
+      blocks:[
+        {n:'embedding',d:'tokens → vectors',v:[0.6,0.0,0.1,0.0,0.0]},
+        {n:'block 0',d:'previous-token, syntax',v:[0.3,0.0,0.05,0.05,0.0]},
+        {n:'block 1',d:'positional patterns',v:[0.2,0.05,0.1,0.0,0.0]},
+        {n:'block 2',d:'entity binding',v:[0.7,0.1,0.05,0.0,0.0]},
+        {n:'block 3',d:'fact lookup (MLP)',v:[1.0,0.05,0.1,0.05,0.0]},
+        {n:'block 4',d:'name-mover heads',v:[0.85,0.0,0.0,0.0,0.0]},
+        {n:'block 5',d:'late sharpening',v:[0.5,0.0,0.0,0.0,0.0]}
+      ],
+      lens:[0.05,0.10,0.18,0.25,0.45,0.78,0.93],
+      tokens:[' Paris',' France',' Europe',' Italy',' the']
+    },
+    cat:{
+      label:'The cat sat on the',
+      blocks:[
+        {n:'embedding',d:'tokens → vectors',v:[0.0,0.4,0.05,0.6,0.0]},
+        {n:'block 0',d:'previous-token, syntax',v:[0.0,0.1,0.1,0.3,0.0]},
+        {n:'block 1',d:'spatial relations',v:[0.1,0.2,0.05,0.2,0.0]},
+        {n:'block 2',d:'preposition handling',v:[0.05,0.15,0.1,0.4,0.0]},
+        {n:'block 3',d:'context blending',v:[0.0,0.3,0.1,0.55,0.0]},
+        {n:'block 4',d:'top-token selection',v:[0.0,0.4,0.1,0.6,0.0]},
+        {n:'block 5',d:'sharpening',v:[0.0,0.2,0.0,0.4,0.0]}
+      ],
+      lens:[0.05,0.08,0.12,0.20,0.35,0.55,0.72],
+      tokens:[' mat',' floor',' chair',' rug',' bed']
+    },
+    ioi:{
+      label:'When John and Mary went to the store, John gave a drink to',
+      blocks:[
+        {n:'embedding',d:'tokens → vectors',v:[0.0,0.5,0.0,0.0,0.0]},
+        {n:'block 0',d:'previous-token, syntax',v:[0.0,0.2,0.05,0.0,0.0]},
+        {n:'block 1',d:'duplicate-token detect',v:[0.0,0.4,0.0,0.0,0.0]},
+        {n:'block 2',d:'S-Inhibition (suppress John)',v:[0.0,-0.5,0.0,0.0,0.0]},
+        {n:'block 3',d:'Name-Mover (find Mary)',v:[0.0,0.9,0.05,0.0,0.0]},
+        {n:'block 4',d:'Negative Name-Mover',v:[0.0,-0.15,0.0,0.0,0.0]},
+        {n:'block 5',d:'final sharpening',v:[0.0,0.4,0.0,0.0,0.0]}
+      ],
+      lens:[0.05,0.12,0.18,0.28,0.55,0.82,0.90],
+      tokens:[' Mary',' John',' him',' her',' the']
     }
-    blocksEl.innerHTML = html;
+  };
+  let promptKey='paris', state=null;
+  function init(){
+    const P=PROMPTS[promptKey];
+    state={blocks:P.blocks.map((b,i)=>({...b,muted:false,inverted:false,added:i===0||i<=1}))};
+    render();
   }
-
-  function drawSum(){
-    var html = "";
-    // Always include embedding (i=0); each added block adds a layer
-    for (var i = 0; i <= added; i++){
-      html += "<span class=\"acc-sum-cell__layer is-on\" style=\"background:"+BLOCKS[i].color+"\"></span>";
+  function compute(){
+    const sum=[0,0,0,0,0]; let upTo=-1;
+    state.blocks.forEach((b,i)=>{ if(b.added && !b.muted){ const sign=b.inverted?-1:1; b.v.forEach((x,k)=>sum[k]+=x*sign); upTo=i;}});
+    return {sum,upTo};
+  }
+  function lensPredict(upTo){
+    const P=PROMPTS[promptKey]; if(upTo<0) return {tok:'(no signal)',conf:0};
+    const conf=P.lens[Math.min(upTo,P.lens.length-1)];
+    let mutedPenalty=state.blocks.filter(b=>b.added&&b.muted).length*0.12;
+    let invPenalty=state.blocks.filter(b=>b.added&&b.inverted).length*0.25;
+    const adjConf=Math.max(0.05,conf-mutedPenalty-invPenalty);
+    return {tok:P.tokens[0],conf:adjConf,others:P.tokens};
+  }
+  function render(){
+    const rows=root.querySelector('[data-acc-rows]'); rows.innerHTML='';
+    const P=PROMPTS[promptKey];
+    state.blocks.forEach((b,i)=>{
+      const r=document.createElement('div'); r.className='acc2__row'+(b.muted?' is-muted':'')+(b.inverted?' is-inv':'')+(b.added?'':' is-pending');
+      if(!b.added) r.style.opacity='0.35';
+      const tog=document.createElement('div'); tog.className='acc2__rtoggle'; tog.textContent=b.muted?'·':'●'; tog.title=b.muted?'click to enable':'click to mute';
+      tog.addEventListener('click',()=>{if(!b.added){b.added=true;} else {b.muted=!b.muted;} render();});
+      const name=document.createElement('div'); name.className='acc2__rname'; name.innerHTML=`${b.n}<small>${b.d}</small>`;
+      const bars=document.createElement('div'); bars.className='acc2__rbars';
+      b.v.forEach((x,k)=>{const d=document.createElement('div'); const a=Math.abs(x)*100; d.style.height=a+'%'; d.style.background=x>=0?'#fbbf24':'#b25c2c'; d.style.opacity=b.added&&!b.muted?'1':'0.25'; bars.appendChild(d);});
+      const inv=document.createElement('button'); inv.className='acc2__rinvert'+(b.inverted?' is-inv':''); inv.textContent=b.inverted?'INV':'inv'; inv.title='invert this block'; inv.addEventListener('click',()=>{b.inverted=!b.inverted; render();});
+      r.appendChild(tog); r.appendChild(name); r.appendChild(bars); r.appendChild(inv); rows.appendChild(r);
+    });
+    const {sum,upTo}=compute();
+    const sumbars=root.querySelector('[data-acc-sumbars]'); sumbars.innerHTML='';
+    const mx=Math.max(...sum.map(Math.abs),1);
+    sum.forEach(x=>{const d=document.createElement('div'); d.style.height=(Math.abs(x)/mx*100)+'%'; d.style.background=x>=0?'#b77214':'#b25c2c'; sumbars.appendChild(d);});
+    const lens=lensPredict(upTo);
+    const lensEl=root.querySelector('[data-acc-lens]');
+    if(upTo<0){ lensEl.innerHTML='no blocks yet · belt empty'; }
+    else {
+      const conf=(lens.conf*100).toFixed(0);
+      lensEl.innerHTML=`logit lens: <b>"${lens.tok}"</b> @ ${conf}%`;
     }
-    // ghost layers for not-yet-added blocks
-    for (var j = added + 1; j < BLOCKS.length; j++){
-      html += "<span class=\"acc-sum-cell__layer\" style=\"background:"+BLOCKS[j].color+"\"></span>";
-    }
-    layersEl.innerHTML = html;
-    labelEl.textContent = added === 0 ? "start: just the embedding" : BLOCKS[added].label;
-    counterEl.textContent = added + " / " + (BLOCKS.length - 1) + " blocks added";
-    nextBtn.disabled = added >= BLOCKS.length - 1;
-    nextBtn.style.opacity = nextBtn.disabled ? "0.5" : "1";
-    nextBtn.style.cursor = nextBtn.disabled ? "default" : "pointer";
   }
-
-  function next(){
-    if (added < BLOCKS.length - 1){ added++; drawBlocks(); drawSum(); }
-  }
-  function reset(){ added = 0; drawBlocks(); drawSum(); }
-
-  nextBtn.addEventListener("click", next);
-  root.querySelector("[data-acc-reset]").addEventListener("click", reset);
-
-  drawBlocks();
-  drawSum();
+  function allOn(){state.blocks.forEach(b=>{b.added=true; b.muted=false; b.inverted=false;}); render();}
+  function step(){const next=state.blocks.findIndex(b=>!b.added); if(next>=0){state.blocks[next].added=true; render();}}
+  let auto=null;
+  function play(){if(auto){clearInterval(auto); auto=null; return;} init(); auto=setInterval(()=>{const next=state.blocks.findIndex(b=>!b.added); if(next<0){clearInterval(auto); auto=null;} else {state.blocks[next].added=true; render();}},700);}
+  root.querySelectorAll('[data-prompt]').forEach(b=>b.addEventListener('click',()=>{root.querySelectorAll('[data-prompt]').forEach(x=>x.classList.remove('is-active')); b.classList.add('is-active'); promptKey=b.dataset.prompt; init();}));
+  root.querySelector('[data-act="all-on"]').addEventListener('click',allOn);
+  root.querySelector('[data-act="step"]').addEventListener('click',step);
+  root.querySelector('[data-act="reset"]').addEventListener('click',init);
+  root.querySelector('[data-act="play"]').addEventListener('click',play);
+  init();
 })();
 </script>

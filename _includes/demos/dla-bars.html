@@ -3,28 +3,75 @@
     <div class="idemo__head"><span class="idemo__title">Mini · Direct logit attribution, layer by layer</span></div>
     <div class="idemo__body">
 
-      <p class="dla-lead">For a given prompt, decompose the final logit of the answer token into per-layer contributions. Positive bars push the prediction toward the answer; negative bars push it away. The biggest bars locate where the work happened.</p>
+      <div class="dla-howto">
+        <div class="dla-howto__title">How to play</div>
+        <ol class="dla-howto__list">
+          <li>Pick a <b>prompt</b> — each one has 2–4 candidate tokens fighting to win.</li>
+          <li>Watch the <b>per-layer bars</b>: how much each layer pushes each candidate up or down.</li>
+          <li>The <b>cumulative line</b> on the right shows the running logit total — that's the actual logit that becomes the prediction.</li>
+          <li><b>Hover or click a layer</b> to see which circuit component (name-mover head, induction head, MLP) lives there.</li>
+          <li>Hit <b>play</b> to accumulate one layer at a time and watch the answer emerge.</li>
+        </ol>
+      </div>
 
       <div class="dla-prompts" data-dla-prompts></div>
 
-      <div class="dla-stage">
-        <div class="dla-meta">
-          <div class="dla-meta__row"><span>prompt:</span> <strong data-dla-prompt></strong></div>
-          <div class="dla-meta__row"><span>answer token:</span> <strong data-dla-answer></strong></div>
-        </div>
-        <div class="dla-bars" data-dla-bars></div>
-        <div class="dla-axis"><span>layer 0</span><span>final</span></div>
+      <div class="dla-meta">
+        <div class="dla-meta__row"><span class="dla-meta__lbl">prompt</span><strong data-dla-prompt></strong></div>
+        <div class="dla-meta__row"><span class="dla-meta__lbl">winner</span><strong data-dla-winner></strong></div>
       </div>
 
-      <p class="dla-hint"><strong>Read it like this:</strong> for the Paris prompt, layers 8, 9 carry most of the answer signal, those late blocks contain MLP neurons and attention heads writing "Paris" into the residual stream. For the John, Mary prompt, layers 9, 10 dominate, that's where the name-mover heads live. The negative bar in layer 11 is the "negative name-mover", a regularization-like component.</p>
+      <div class="dla-stage">
+        <div class="dla-stage__legend" data-dla-legend></div>
+
+        <div class="dla-grid">
+          <div class="dla-grid__col-label">per-layer contribution to logit</div>
+          <div class="dla-grid__col-label">cumulative</div>
+
+          <div class="dla-bars" data-dla-bars></div>
+          <div class="dla-cumulative" data-dla-cumulative>
+            <canvas data-dla-canvas width="240" height="200"></canvas>
+          </div>
+
+          <div class="dla-axis"><span>L0</span><span>layer →</span><span>final</span></div>
+          <div class="dla-axis dla-axis--right">final logits</div>
+        </div>
+
+        <div class="dla-component">
+          <div class="dla-component__lbl">selected component</div>
+          <div class="dla-component__body" data-dla-component>hover any bar to inspect →</div>
+        </div>
+      </div>
+
+      <div class="dla-controls">
+        <button class="dla-btn dla-btn--primary" data-dla-play>▶ accumulate</button>
+        <input type="range" min="1" max="12" value="12" step="1" data-dla-cursor class="dla-slider">
+        <span class="dla-step" data-dla-step>through L12</span>
+        <button class="dla-btn" data-dla-reset>↺ reset</button>
+      </div>
+
+      <p class="dla-hint"><b>What to notice:</b> the cumulative line is what the model's prediction <i>actually depends on</i>. Tiny early-layer bumps don't matter; the big middle/late layers (where name-movers, induction heads, and MLP fact-recall live) are doing the real work. Negative bars in late layers are <b>negative name-movers</b> — components that <i>suppress</i> the answer to keep calibration honest. This is the entire game of <a href="https://transformer-circuits.pub/2022/in-context-learning-and-induction-heads/index.html" target="_blank" rel="noopener">circuit attribution</a>.</p>
     </div>
   </div>
 </div>
 
 <style>
-  #demo-dla .dla-lead { margin: 0 0 0.85rem !important; font-size: 0.96rem !important; color: var(--nn-body) !important; line-height: 1.6 !important; }
+  #demo-dla .dla-howto {
+    background: #fffaf3; border: 1px solid #ddb88e; border-radius: 4px;
+    padding: 0.7rem 0.95rem; margin-bottom: 0.85rem;
+  }
+  #demo-dla .dla-howto__title {
+    font-family: var(--nn-mono); font-size: 0.7rem; letter-spacing: 0.1em;
+    text-transform: uppercase; color: #7c4d0a; margin-bottom: 0.35rem; font-weight: 600;
+  }
+  #demo-dla .dla-howto__list {
+    margin: 0; padding: 0 0 0 1.1rem; font-size: 0.9rem;
+    color: var(--nn-body); line-height: 1.6;
+  }
+  #demo-dla .dla-howto__list li b { color: #7c4d0a; }
+
   #demo-dla .dla-prompts {
-    display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0.85rem;
+    display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0.7rem;
   }
   #demo-dla .dla-prompt-btn {
     padding: 0.4rem 0.75rem; font-family: var(--nn-mono); font-size: 0.74rem;
@@ -32,95 +79,234 @@
     color: var(--nn-ink); cursor: pointer;
   }
   #demo-dla .dla-prompt-btn:hover { border-color: #b77214; }
-  #demo-dla .dla-prompt-btn.is-active {
-    background: #b77214; color: #fff; border-color: #b77214;
-  }
-  #demo-dla .dla-stage {
-    background: #fafaf7; border: 1px solid var(--nn-line); border-radius: 4px;
-    padding: 0.85rem 0.95rem; margin-bottom: 0.85rem;
-  }
+  #demo-dla .dla-prompt-btn.is-active { background: #b77214; color: #fff; border-color: #b77214; }
+
   #demo-dla .dla-meta {
-    display: flex; flex-direction: column; gap: 0.25rem; margin-bottom: 0.7rem;
+    background: #fafaf7; border: 1px solid var(--nn-line); border-radius: 3px;
+    padding: 0.5rem 0.75rem; margin-bottom: 0.55rem;
+    display: flex; flex-direction: column; gap: 0.18rem;
   }
   #demo-dla .dla-meta__row {
     font-family: var(--nn-mono); font-size: 0.78rem; color: var(--nn-muted);
+    display: flex; gap: 0.55rem; align-items: baseline;
   }
-  #demo-dla .dla-meta__row strong { color: var(--nn-ink); font-weight: 500; }
+  #demo-dla .dla-meta__lbl { width: 60px; text-transform: uppercase; font-size: 0.66rem; letter-spacing: 0.08em; }
+  #demo-dla .dla-meta__row strong { color: var(--nn-ink); font-weight: 600; }
+
+  #demo-dla .dla-stage {
+    background: #fafaf7; border: 1px solid var(--nn-line); border-radius: 4px;
+    padding: 0.85rem 0.95rem; margin-bottom: 0.7rem;
+  }
+  #demo-dla .dla-stage__legend {
+    display: flex; gap: 0.7rem; flex-wrap: wrap; margin-bottom: 0.7rem;
+  }
+  #demo-dla .dla-leg {
+    display: flex; align-items: center; gap: 0.32rem;
+    font-family: var(--nn-mono); font-size: 0.74rem; color: var(--nn-body);
+  }
+  #demo-dla .dla-leg__dot {
+    width: 12px; height: 12px; border-radius: 2px; border: 1px solid var(--nn-line);
+  }
+  #demo-dla .dla-leg.is-winner .dla-leg__dot { box-shadow: 0 0 0 1px #7c4d0a; }
+
+  #demo-dla .dla-grid {
+    display: grid; grid-template-columns: 1fr 240px;
+    column-gap: 0.7rem; row-gap: 0.25rem; align-items: end;
+  }
+  #demo-dla .dla-grid__col-label {
+    font-family: var(--nn-mono); font-size: 0.65rem; color: var(--nn-muted);
+    text-transform: uppercase; letter-spacing: 0.08em;
+    padding-bottom: 0.25rem;
+  }
+
   #demo-dla .dla-bars {
-    display: grid; grid-template-columns: repeat(12, 1fr);
-    gap: 4px; height: 140px; align-items: end;
-    background: linear-gradient(to bottom, transparent calc(50% - 0.5px), rgba(0,0,0,0.12) 50%, transparent calc(50% + 0.5px));
-    padding: 0;
+    display: grid; gap: 4px; height: 200px; align-items: stretch;
+    background: linear-gradient(to bottom, transparent calc(50% - 0.5px), rgba(0,0,0,0.18) 50%, transparent calc(50% + 0.5px));
   }
-  #demo-dla .dla-bar-cell {
+  #demo-dla .dla-col {
     position: relative; height: 100%;
     display: flex; flex-direction: column; justify-content: center;
+    cursor: pointer; transition: filter 120ms;
   }
-  #demo-dla .dla-bar {
-    background: #b77214; border-radius: 2px 2px 0 0;
-    transition: height 280ms cubic-bezier(.3,.5,.3,1);
+  #demo-dla .dla-col:hover { filter: brightness(1.1); }
+  #demo-dla .dla-col.is-selected { box-shadow: 0 0 0 2px #0d6b3a; border-radius: 3px; }
+  #demo-dla .dla-col.is-faded { opacity: 0.25; }
+  #demo-dla .dla-col__stack {
+    position: absolute; left: 1px; right: 1px;
+    display: flex; gap: 1px;
   }
-  #demo-dla .dla-bar--pos {
-    align-self: flex-end; margin-bottom: 50%;
+  #demo-dla .dla-col__stack--pos { top: 0; height: 50%; align-items: flex-end; }
+  #demo-dla .dla-col__stack--neg { bottom: 0; height: 50%; align-items: flex-start; }
+  #demo-dla .dla-cand {
+    flex: 1; min-height: 1px; border-radius: 2px;
+    transition: height 220ms cubic-bezier(.3,.5,.3,1);
   }
-  #demo-dla .dla-bar--neg {
-    align-self: flex-start; margin-top: 50%;
-    background: #ddb88e; border-radius: 0 0 2px 2px;
+  #demo-dla .dla-col__num {
+    position: absolute; left: 0; right: 0; text-align: center;
+    bottom: -16px;
+    font-family: var(--nn-mono); font-size: 0.6rem; color: var(--nn-muted);
   }
-  #demo-dla .dla-bar-cell__lbl {
-    position: absolute; bottom: -16px; left: 0; right: 0; text-align: center;
-    font-family: var(--nn-mono); font-size: 0.62rem; color: var(--nn-muted);
+
+  #demo-dla .dla-cumulative {
+    height: 200px;
+    background: #fff; border: 1px solid var(--nn-line); border-radius: 3px;
+    position: relative; padding: 4px;
   }
+  #demo-dla .dla-cumulative canvas {
+    width: 100% !important; height: 100% !important; display: block;
+  }
+
   #demo-dla .dla-axis {
-    display: flex; justify-content: space-between; margin-top: 24px;
-    font-family: var(--nn-mono); font-size: 0.7rem; color: var(--nn-muted);
+    display: flex; justify-content: space-between; padding-top: 18px;
+    font-family: var(--nn-mono); font-size: 0.66rem; color: var(--nn-muted);
+    text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  #demo-dla .dla-axis--right { justify-content: center; }
+
+  #demo-dla .dla-component {
+    margin-top: 0.85rem;
+    background: #fff; border: 1px solid var(--nn-line); border-radius: 3px;
+    padding: 0.55rem 0.75rem;
+    display: grid; grid-template-columns: 100px 1fr; gap: 0.7rem;
+  }
+  #demo-dla .dla-component__lbl {
+    font-family: var(--nn-mono); font-size: 0.66rem; color: var(--nn-muted);
+    text-transform: uppercase; letter-spacing: 0.08em;
+    padding-top: 0.2rem;
+  }
+  #demo-dla .dla-component__body {
+    font-family: var(--nn-mono); font-size: 0.8rem; color: var(--nn-ink);
+    line-height: 1.5;
+  }
+  #demo-dla .dla-component__body b { color: #7c4d0a; }
+  #demo-dla .dla-component__body em { color: var(--nn-muted); font-style: normal; }
+
+  #demo-dla .dla-controls {
+    display: flex; align-items: center; gap: 0.55rem; flex-wrap: wrap;
+    margin-bottom: 0.7rem;
+  }
+  #demo-dla .dla-btn {
+    padding: 0.42rem 0.85rem; font-family: var(--nn-mono); font-size: 0.78rem;
+    background: #fff; border: 1px solid var(--nn-line); border-radius: 3px;
+    color: var(--nn-ink); cursor: pointer;
+  }
+  #demo-dla .dla-btn:hover { border-color: #b77214; }
+  #demo-dla .dla-btn--primary { background: #b77214; color: #fff; border-color: #b77214; }
+  #demo-dla .dla-btn--primary:hover { background: #7c4d0a; }
+  #demo-dla .dla-btn.is-running { background: #7c4d0a; color: #fff; border-color: #7c4d0a; }
+  #demo-dla .dla-slider { flex: 1; min-width: 140px; accent-color: #b77214; }
+  #demo-dla .dla-step {
+    font-family: var(--nn-mono); font-size: 0.74rem; color: var(--nn-muted);
+    min-width: 90px; text-align: right;
   }
   #demo-dla .dla-hint {
     font-size: 0.92rem; color: var(--nn-body); line-height: 1.6;
     padding: 0.7rem 0.85rem; background: #fff;
     border: 1px solid var(--nn-line); border-radius: 3px;
   }
+  #demo-dla .dla-hint b { color: #7c4d0a; }
+  #demo-dla .dla-hint a { color: #7c4d0a; }
 </style>
 
 <script>
 (function(){
   var root = document.getElementById("demo-dla"); if (!root) return;
 
-  // 12-layer per-block contribution to the correct answer's final logit
-  // (illustrative; magnitudes hand-tuned to mirror published GPT-2 small DLA traces)
+  // Each prompt: 12-layer contributions for each candidate token,
+  // plus a per-layer "component" label (which circuit lives there).
+  var COLORS = ["#b77214", "#0d6b3a", "#b25c2c", "#7c4d0a"];
+
   var PROMPTS = [
     {
       key: "paris",
       label: "Paris is the capital of",
-      answer: "France",
-      contribs: [0.04, 0.06, 0.08, 0.10, 0.18, 0.32, 0.55, 0.95, 1.40, 1.60, 0.85, 0.20]
+      candidates: [
+        { tok: "France", contribs: [0.04, 0.06, 0.08, 0.12, 0.22, 0.45, 0.85, 1.30, 1.55, 1.05, 0.40, 0.10] },
+        { tok: "Italy",  contribs: [0.02, 0.03, 0.05, 0.08, 0.12, 0.18, 0.20, 0.18, 0.08, 0.02, 0.01, 0.00] },
+        { tok: "Germany",contribs: [0.02, 0.03, 0.05, 0.07, 0.10, 0.14, 0.16, 0.12, 0.05, 0.01, 0.00, -0.02] }
+      ],
+      components: [
+        "embed + early MLP, encodes the literal Paris token",
+        "syntax — \"is the capital of\" template detector",
+        "subject MLP, starts looking up city facts",
+        "MLP, country–city association strengthens",
+        "MLP, factual recall begins",
+        "<b>fact MLP block</b>, big France boost",
+        "<b>fact MLP block</b>, peak factual lookup",
+        "<b>fact MLP block</b>, late factual recall",
+        "fact MLP, final clean-up of France logit",
+        "smoothing layer, slight dampening",
+        "calibration, suppresses runner-up countries",
+        "final unembed, output projection"
+      ]
     },
     {
       key: "ioi",
       label: "When John and Mary went to the store, John gave a drink to",
-      answer: "Mary",
-      contribs: [0.02, 0.05, 0.10, 0.15, 0.20, 0.30, 0.40, 0.30, 0.55, 1.85, 1.65, -0.45]
+      candidates: [
+        { tok: "Mary", contribs: [0.02, 0.04, 0.08, 0.12, 0.18, 0.30, 0.45, 0.55, 0.95, 1.85, 1.55, -0.45] },
+        { tok: "John", contribs: [0.05, 0.08, 0.12, 0.18, 0.20, 0.22, 0.18, 0.10, -0.10, -0.65, -0.35, 0.20] },
+        { tok: "the",  contribs: [0.10, 0.12, 0.15, 0.10, 0.08, 0.06, 0.05, 0.04, 0.03, 0.02, 0.02, 0.05] },
+        { tok: "him",  contribs: [0.04, 0.05, 0.06, 0.07, 0.06, 0.05, 0.04, 0.03, 0.02, 0.01, 0.01, 0.02] }
+      ],
+      components: [
+        "token & position embed",
+        "early syntax — preposition tracking",
+        "duplicate token detector starts",
+        "<b>duplicate token head</b> fires on \"John\"",
+        "S-Inhibition Head builds up",
+        "<b>S-Inhibition Head</b> fully suppresses subject John",
+        "Backup Name-Mover prep",
+        "Mover head warm-up",
+        "<b>Name-Mover Head 9.6</b> begins copying Mary",
+        "<b>Name-Mover Head 9.6</b>, peak attribution",
+        "<b>Name-Mover Head 10.0</b>, supporting copy",
+        "<b>Negative Name-Mover</b>, calibration suppression"
+      ]
     },
     {
       key: "induction",
-      label: "A B C D A B C",
-      answer: "D",
-      contribs: [0.05, 0.10, 0.20, 0.30, 0.55, 1.20, 1.50, 0.95, 0.60, 0.40, 0.25, 0.15]
-    },
-    {
-      key: "code",
-      label: "def hello(): print('hello, world')\\nhello()\\n# output:",
-      answer: "hello",
-      contribs: [0.10, 0.20, 0.40, 0.55, 0.75, 0.95, 1.10, 1.20, 1.05, 0.85, 0.55, 0.20]
+      label: "A B C D … A B C →",
+      candidates: [
+        { tok: "D", contribs: [0.04, 0.10, 0.20, 0.30, 0.55, 1.20, 1.50, 0.95, 0.55, 0.30, 0.18, 0.05] },
+        { tok: "A", contribs: [0.05, 0.06, 0.08, 0.07, 0.04, 0.02, 0.00, -0.05, -0.08, -0.05, -0.02, 0.00] },
+        { tok: "?", contribs: [0.04, 0.05, 0.06, 0.05, 0.04, 0.03, 0.02, 0.02, 0.01, 0.01, 0.00, 0.00] }
+      ],
+      components: [
+        "char embed",
+        "early position info",
+        "<b>Previous-Token Head</b> warm-up",
+        "<b>Previous-Token Head</b> aligns",
+        "<b>Induction Head prep</b>",
+        "<b>Induction Head 5.x</b>, prefix-match copy",
+        "<b>Induction Head 6.x</b>, peak attribution",
+        "induction signal still propagating",
+        "stabilizing the choice",
+        "calibration",
+        "calibration",
+        "unembed"
+      ]
     }
   ];
 
   var promptsEl = root.querySelector("[data-dla-prompts]");
   var promptEl  = root.querySelector("[data-dla-prompt]");
-  var answerEl  = root.querySelector("[data-dla-answer]");
+  var winnerEl  = root.querySelector("[data-dla-winner]");
+  var legendEl  = root.querySelector("[data-dla-legend]");
   var barsEl    = root.querySelector("[data-dla-bars]");
+  var canvas    = root.querySelector("[data-dla-canvas]");
+  var ctx       = canvas.getContext("2d");
+  var cmpEl     = root.querySelector("[data-dla-component]");
+  var playBtn   = root.querySelector("[data-dla-play]");
+  var slider    = root.querySelector("[data-dla-cursor]");
+  var stepEl    = root.querySelector("[data-dla-step]");
+  var resetBtn  = root.querySelector("[data-dla-reset]");
 
   var active = 0;
+  var cursor = 12; // how many layers are "accumulated" so far
+  var hovered = -1;
+  var playing = false;
+  var playTimer = null;
 
   function renderTabs(){
     var html = "";
@@ -129,29 +315,183 @@
     });
     promptsEl.innerHTML = html;
     promptsEl.querySelectorAll(".dla-prompt-btn").forEach(function(b){
-      b.addEventListener("click", function(){ active = parseInt(b.getAttribute("data-i"), 10); renderTabs(); render(); });
+      b.addEventListener("click", function(){
+        active = +b.getAttribute("data-i");
+        cursor = 12; slider.value = 12; stopPlay();
+        renderAll();
+      });
     });
   }
 
-  function render(){
+  function renderLegend(){
+    var p = PROMPTS[active];
+    var html = "";
+    var winner = computeWinner(p, cursor);
+    p.candidates.forEach(function(c, i){
+      var isW = i === winner;
+      html += "<div class=\"dla-leg"+(isW ? " is-winner" : "")+"\">"+
+        "<span class=\"dla-leg__dot\" style=\"background:"+COLORS[i]+"\"></span>"+
+        "<span>"+esc(c.tok)+(isW ? " ← winning" : "")+"</span></div>";
+    });
+    legendEl.innerHTML = html;
+  }
+
+  function computeWinner(p, n){
+    var sums = p.candidates.map(function(c){
+      var s = 0; for (var k = 0; k < n; k++) s += c.contribs[k]; return s;
+    });
+    var w = 0; for (var i = 1; i < sums.length; i++) if (sums[i] > sums[w]) w = i;
+    return w;
+  }
+
+  function renderBars(){
+    var p = PROMPTS[active];
+    barsEl.style.gridTemplateColumns = "repeat(12, 1fr)";
+
+    // Find global max-abs across all candidates and layers for this prompt
+    var maxAbs = 0;
+    p.candidates.forEach(function(c){ c.contribs.forEach(function(v){ if (Math.abs(v) > maxAbs) maxAbs = Math.abs(v); }); });
+    if (maxAbs === 0) maxAbs = 1;
+
+    var html = "";
+    for (var L = 0; L < 12; L++){
+      var posStack = "", negStack = "";
+      p.candidates.forEach(function(c, ci){
+        var v = c.contribs[L];
+        var pct = (Math.abs(v) / maxAbs) * 100; // % of half-height
+        if (v >= 0){
+          posStack += "<div class=\"dla-cand\" style=\"height:"+pct.toFixed(1)+"%; background:"+COLORS[ci]+"\" title=\""+esc(c.tok)+": "+v.toFixed(2)+"\"></div>";
+        } else {
+          negStack += "<div class=\"dla-cand\" style=\"height:"+pct.toFixed(1)+"%; background:"+COLORS[ci]+"; opacity:0.55\" title=\""+esc(c.tok)+": "+v.toFixed(2)+"\"></div>";
+        }
+      });
+      var faded = (L >= cursor ? " is-faded" : "");
+      var sel = (L === hovered ? " is-selected" : "");
+      html += "<div class=\"dla-col"+faded+sel+"\" data-l=\""+L+"\">"+
+        "<div class=\"dla-col__stack dla-col__stack--pos\">"+posStack+"</div>"+
+        "<div class=\"dla-col__stack dla-col__stack--neg\">"+negStack+"</div>"+
+        "<div class=\"dla-col__num\">"+L+"</div>"+
+        "</div>";
+    }
+    barsEl.innerHTML = html;
+    barsEl.querySelectorAll(".dla-col").forEach(function(c){
+      c.addEventListener("mouseenter", function(){ hovered = +c.dataset.l; renderBars(); renderComponent(); });
+      c.addEventListener("mouseleave", function(){ hovered = -1; renderBars(); renderComponent(); });
+      c.addEventListener("click", function(){ cursor = +c.dataset.l + 1; slider.value = cursor; stopPlay(); renderAll(); });
+    });
+  }
+
+  function renderCumulative(){
+    var p = PROMPTS[active];
+    var w = canvas.width, h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+    // Background grid
+    ctx.fillStyle = "#fffefb";
+    ctx.fillRect(0, 0, w, h);
+    ctx.strokeStyle = "rgba(0,0,0,0.07)";
+    ctx.lineWidth = 1;
+    for (var gy = 0; gy <= 4; gy++){
+      var y = (gy/4) * h;
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+    }
+    // zero line
+    ctx.strokeStyle = "rgba(0,0,0,0.25)";
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(0, h/2); ctx.lineTo(w, h/2); ctx.stroke();
+
+    // Compute cumulative sums for each candidate
+    var cums = p.candidates.map(function(c){
+      var arr = [0], s = 0;
+      for (var i = 0; i < 12; i++){ s += c.contribs[i]; arr.push(s); }
+      return arr;
+    });
+    var maxAbs = 0.5;
+    cums.forEach(function(a){ a.forEach(function(v){ if (Math.abs(v) > maxAbs) maxAbs = Math.abs(v); }); });
+
+    // Draw each candidate line up to cursor
+    p.candidates.forEach(function(c, ci){
+      ctx.strokeStyle = COLORS[ci];
+      ctx.lineWidth = 2.2;
+      ctx.beginPath();
+      for (var i = 0; i <= cursor; i++){
+        var x = (i / 12) * (w - 8) + 4;
+        var y = h/2 - (cums[ci][i] / maxAbs) * (h/2 - 8);
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+
+      // dot at current cursor
+      var xe = (cursor / 12) * (w - 8) + 4;
+      var ye = h/2 - (cums[ci][cursor] / maxAbs) * (h/2 - 8);
+      ctx.fillStyle = COLORS[ci];
+      ctx.beginPath(); ctx.arc(xe, ye, 3.2, 0, Math.PI*2); ctx.fill();
+
+      // label at right
+      ctx.fillStyle = COLORS[ci];
+      ctx.font = "11px ui-monospace, Menlo, monospace";
+      ctx.textAlign = "left";
+      var labelY = ye;
+      if (labelY < 12) labelY = 12; if (labelY > h - 4) labelY = h - 4;
+      ctx.fillText(c.tok, Math.min(xe + 5, w - 36), labelY);
+    });
+  }
+
+  function renderComponent(){
+    var p = PROMPTS[active];
+    var L = hovered >= 0 ? hovered : cursor - 1;
+    if (L < 0) L = 0;
+    var contribStr = p.candidates.map(function(c, i){
+      return "<span style=\"color:"+COLORS[i]+"\">"+esc(c.tok)+"</span>=" + c.contribs[L].toFixed(2);
+    }).join(" · ");
+    cmpEl.innerHTML = "<b>L"+L+"</b> · " + p.components[L] + "<br><em>" + contribStr + "</em>";
+  }
+
+  function renderMeta(){
     var p = PROMPTS[active];
     promptEl.textContent = "\"" + p.label + "\"";
-    answerEl.textContent = p.answer;
-    var max = 0;
-    p.contribs.forEach(function(v){ if (Math.abs(v) > max) max = Math.abs(v); });
-    var html = "";
-    p.contribs.forEach(function(v, i){
-      var pct = (Math.abs(v) / max) * 50; // 50% of cell height max (centered axis)
-      var cls = v >= 0 ? "dla-bar--pos" : "dla-bar--neg";
-      html += "<div class=\"dla-bar-cell\">"+
-        "<div class=\"dla-bar "+cls+"\" style=\"height:"+pct.toFixed(2)+"%\"></div>"+
-        "<div class=\"dla-bar-cell__lbl\">"+i+"</div>"+
-        "</div>";
-    });
-    barsEl.innerHTML = html;
+    var w = computeWinner(p, cursor);
+    winnerEl.innerHTML = "<span style=\"color:"+COLORS[w]+"\">"+esc(p.candidates[w].tok)+"</span> through L" + cursor;
+    stepEl.textContent = "through L" + cursor;
   }
 
-  renderTabs();
-  render();
+  function renderAll(){
+    renderTabs();
+    renderLegend();
+    renderBars();
+    renderCumulative();
+    renderComponent();
+    renderMeta();
+  }
+
+  function startPlay(){
+    if (playing) return;
+    playing = true;
+    playBtn.textContent = "■ pause";
+    playBtn.classList.add("is-running");
+    cursor = 0; slider.value = 0; renderAll();
+    var tick = function(){
+      if (!playing) return;
+      cursor = Math.min(12, cursor + 1);
+      slider.value = cursor;
+      renderAll();
+      if (cursor >= 12){ stopPlay(); return; }
+      playTimer = setTimeout(tick, 320);
+    };
+    playTimer = setTimeout(tick, 320);
+  }
+  function stopPlay(){
+    playing = false;
+    playBtn.textContent = "▶ accumulate";
+    playBtn.classList.remove("is-running");
+    if (playTimer){ clearTimeout(playTimer); playTimer = null; }
+  }
+
+  function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+  slider.addEventListener("input", function(){ cursor = +slider.value; stopPlay(); renderAll(); });
+  playBtn.addEventListener("click", function(){ if (playing) stopPlay(); else startPlay(); });
+  resetBtn.addEventListener("click", function(){ cursor = 12; slider.value = 12; stopPlay(); renderAll(); });
+
+  renderAll();
 })();
 </script>
