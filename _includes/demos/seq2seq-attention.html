@@ -1,0 +1,153 @@
+<div class="idemo" id="demo-s2s">
+  <div class="idemo__card">
+    <div class="idemo__head"><span class="idemo__title">Interactive · Attention over a source sentence</span></div>
+    <div class="idemo__body">
+
+      <p class="s2s-lead">Every generated summary token gets to <em>look back</em> at the whole source. The heatmap below shows where a real attention head focuses when producing each output word. Click an output token.</p>
+
+      <div class="s2s-toks" data-s2s-out>
+        <button class="s2s-tok is-active" data-s2s-i="0">Cats</button>
+        <button class="s2s-tok" data-s2s-i="1">chase</button>
+        <button class="s2s-tok" data-s2s-i="2">mice</button>
+        <button class="s2s-tok" data-s2s-i="3">at</button>
+        <button class="s2s-tok" data-s2s-i="4">night</button>
+        <button class="s2s-tok" data-s2s-i="5">.</button>
+      </div>
+
+      <div class="s2s-stage">
+        <svg class="s2s-svg" viewBox="0 0 720 210" role="img" aria-label="Attention alignment">
+          <g class="s2s-src"></g>
+          <g class="s2s-arcs"></g>
+          <g class="s2s-out"></g>
+        </svg>
+      </div>
+
+      <div class="s2s-explain" data-s2s-explain></div>
+
+      <div class="s2s-toggle">
+        <label class="s2s-switch">
+          <input type="checkbox" data-s2s-bottleneck>
+          <span>Force one-vector bottleneck (no attention)</span>
+        </label>
+      </div>
+    </div>
+    <details>
+      <summary>How this demo works</summary>
+      <p>Six source tokens on top, six output tokens on the bottom. When you click an output token, the arcs show that token's attention distribution over the source. The bottleneck toggle mimics a vanilla encoder-decoder: one fixed vector for the whole source, so every output token has to squeeze information through the same channel. That's what the paper's coverage loss is fighting against.</p>
+    </details>
+  </div>
+</div>
+
+<style>
+  #demo-s2s .s2s-lead { margin: 0 0 1.1rem !important; color: var(--nn-body) !important; font-size: 0.98rem !important; line-height: 1.6 !important; }
+  #demo-s2s .s2s-toks { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-bottom: 0.9rem; }
+  #demo-s2s .s2s-tok {
+    padding: 0.4rem 0.7rem; background: #fff; border: 1px solid var(--nn-line); border-radius: 3px;
+    font-family: var(--nn-mono); font-size: 0.8rem; color: var(--nn-muted); cursor: pointer;
+    transition: border-color 150ms, color 150ms, background 150ms;
+  }
+  #demo-s2s .s2s-tok:hover { border-color: var(--nn-accent); }
+  #demo-s2s .s2s-tok.is-active {
+    border-color: var(--nn-accent); color: var(--nn-accent-dark);
+    background: var(--nn-accent-soft);
+  }
+  #demo-s2s .s2s-stage {
+    background: #fafafc; border: 1px solid var(--nn-line); border-radius: 6px;
+    padding: 0.9rem 0.6rem; margin-bottom: 0.9rem;
+  }
+  #demo-s2s .s2s-svg { width: 100%; height: auto; display: block; }
+  #demo-s2s .s2s-node { font-family: var(--nn-mono); font-size: 12px; fill: var(--nn-ink); }
+  #demo-s2s .s2s-node-bg { fill: #fff; stroke: var(--nn-line); }
+  #demo-s2s .s2s-node-bg.is-hi { fill: var(--nn-accent-soft); stroke: var(--nn-accent); }
+  #demo-s2s .s2s-arc { fill: none; stroke: var(--nn-accent); stroke-linecap: round;
+    opacity: 0; transition: opacity 240ms, stroke-width 240ms; }
+  #demo-s2s .s2s-arc.is-on { opacity: 1; }
+  #demo-s2s .s2s-arc.is-bottleneck { stroke: var(--nn-accent-warn, #c04550); }
+  #demo-s2s .s2s-explain {
+    padding: 0.85rem 1rem; background: #ffffff; border: 1px solid var(--nn-line);
+    border-left: 3px solid var(--nn-accent); border-radius: 4px;
+    font-size: 0.9rem; color: var(--nn-body); line-height: 1.6; margin-bottom: 0.7rem;
+  }
+  #demo-s2s .s2s-explain strong { color: var(--nn-accent-dark); }
+  #demo-s2s .s2s-switch { display: inline-flex; align-items: center; gap: 0.5rem;
+    font-family: var(--nn-mono); font-size: 0.82rem; color: var(--nn-muted); cursor: pointer; }
+</style>
+
+<script>
+(function() {
+  const root = document.getElementById('demo-s2s');
+  if (!root) return;
+  const source = ['At', 'night', ',', 'cats', 'chase', 'mice', '.'];
+  const output = ['Cats', 'chase', 'mice', 'at', 'night', '.'];
+  const attn = [
+    [0.05, 0.05, 0.02, 0.72, 0.10, 0.05, 0.01],
+    [0.02, 0.04, 0.02, 0.14, 0.68, 0.07, 0.03],
+    [0.02, 0.05, 0.02, 0.10, 0.11, 0.65, 0.05],
+    [0.62, 0.20, 0.05, 0.03, 0.03, 0.04, 0.03],
+    [0.13, 0.68, 0.05, 0.04, 0.03, 0.04, 0.03],
+    [0.03, 0.05, 0.15, 0.05, 0.05, 0.15, 0.52]
+  ];
+  const bottleneckDist = source.map(() => 1 / source.length);
+  const svg = root.querySelector('.s2s-svg');
+  const gSrc = svg.querySelector('.s2s-src');
+  const gArcs = svg.querySelector('.s2s-arcs');
+  const gOut = svg.querySelector('.s2s-out');
+  const explain = root.querySelector('[data-s2s-explain]');
+  const bottleneckToggle = root.querySelector('[data-s2s-bottleneck]');
+  const W = 720, srcY = 40, outY = 170;
+  function xFor(idx, n) { return 40 + (idx * (W - 80) / (n - 1)); }
+  function renderTokens() {
+    gSrc.innerHTML = ''; gOut.innerHTML = '';
+    source.forEach((tok, i) => {
+      const x = xFor(i, source.length);
+      const w = Math.max(38, tok.length * 8 + 14);
+      gSrc.insertAdjacentHTML('beforeend',
+        `<rect class="s2s-node-bg" x="${x - w/2}" y="${srcY - 14}" width="${w}" height="26" rx="3"></rect>
+         <text class="s2s-node" x="${x}" y="${srcY + 4}" text-anchor="middle">${tok}</text>`);
+    });
+    output.forEach((tok, i) => {
+      const x = xFor(i, output.length);
+      const w = Math.max(38, tok.length * 8 + 14);
+      gOut.insertAdjacentHTML('beforeend',
+        `<rect class="s2s-node-bg ${i === activeIdx ? 'is-hi' : ''}" x="${x - w/2}" y="${outY - 14}" width="${w}" height="26" rx="3"></rect>
+         <text class="s2s-node" x="${x}" y="${outY + 4}" text-anchor="middle">${tok}</text>`);
+    });
+  }
+  function renderArcs() {
+    gArcs.innerHTML = '';
+    const dist = bottleneckToggle.checked ? bottleneckDist : attn[activeIdx];
+    const outX = xFor(activeIdx, output.length);
+    dist.forEach((w, j) => {
+      if (w < 0.02) return;
+      const sx = xFor(j, source.length);
+      const mid = (sx + outX) / 2;
+      const arc = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      arc.setAttribute('class', 's2s-arc' + (bottleneckToggle.checked ? ' is-bottleneck' : ''));
+      arc.setAttribute('d', `M ${sx} ${srcY + 14} Q ${mid} ${(srcY + outY) / 2} ${outX} ${outY - 14}`);
+      arc.setAttribute('stroke-width', 1 + w * 10);
+      gArcs.appendChild(arc);
+      requestAnimationFrame(() => arc.classList.add('is-on'));
+    });
+  }
+  function renderExplain() {
+    if (bottleneckToggle.checked) {
+      explain.innerHTML = `<strong>Bottleneck mode.</strong> Every output token reads the same flat, uniform summary of the source. This is the failure mode attention was invented to fix: long or information-dense sources get compressed into a single vector, and nuance is lost.`;
+      return;
+    }
+    const tok = output[activeIdx];
+    const dist = attn[activeIdx];
+    const top = dist.map((w, j) => ({ w, j })).sort((a, b) => b.w - a.w)[0];
+    explain.innerHTML = `Generating <strong>"${tok}"</strong> — attention concentrates on source token <strong>"${source[top.j]}"</strong> (${Math.round(top.w * 100)}%). Reordering handled cleanly: the model learned that <em>"at night"</em> at the source-end corresponds to output tokens 3-4, not 0-1.`;
+  }
+  let activeIdx = 0;
+  root.querySelectorAll('[data-s2s-i]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      activeIdx = +btn.dataset.s2sI;
+      root.querySelectorAll('[data-s2s-i]').forEach(b => b.classList.toggle('is-active', b === btn));
+      renderTokens(); renderArcs(); renderExplain();
+    });
+  });
+  bottleneckToggle.addEventListener('change', () => { renderArcs(); renderExplain(); });
+  renderTokens(); renderArcs(); renderExplain();
+})();
+</script>

@@ -1,0 +1,221 @@
+<div class="idemo" id="demo-ga">
+  <div class="idemo__card">
+    <div class="idemo__head"><span class="idemo__title">Interactive · Watch a population find a good architecture</span></div>
+    <div class="idemo__body">
+
+      <p class="ga-lead">Each dot is a candidate architecture — layer counts, activation, dropout. Height is validation loss (lower is better). Hit "run" and watch the population evolve. Random search struggles; GA converges.</p>
+
+      <div class="ga-controls">
+        <button class="ga-btn ga-btn--play" data-ga-run>▶ Run 20 generations</button>
+        <button class="ga-btn" data-ga-reset>↺ Reset</button>
+        <label class="ga-check">
+          <input type="checkbox" data-ga-mode>
+          <span>Random search instead of GA</span>
+        </label>
+      </div>
+
+      <div class="ga-stage">
+        <svg viewBox="0 0 720 260" class="ga-svg" role="img" aria-label="Evolutionary search">
+          <g class="ga-grid"></g>
+          <g class="ga-dots"></g>
+          <g class="ga-best"></g>
+        </svg>
+      </div>
+
+      <div class="ga-stats">
+        <div><span class="ga-stats__k">Generation</span><span class="ga-stats__v" data-ga-gen>0</span></div>
+        <div><span class="ga-stats__k">Best val loss</span><span class="ga-stats__v" data-ga-best>—</span></div>
+        <div><span class="ga-stats__k">Population diversity</span><span class="ga-stats__v" data-ga-div>—</span></div>
+      </div>
+
+      <div class="ga-explain" data-ga-explain>Press <strong>▶ Run</strong> to evolve. Watch the median dot slide down every generation.</div>
+    </div>
+    <details>
+      <summary>How this demo works</summary>
+      <p>Each candidate is a tuple (depth, width, activation-type, dropout). The fitness function is a synthetic loss landscape that mimics the kind of ranked ordering we observed on the paper's downstream NLP task — sharply worse at depth 1 and depth 12, gentle valley in the middle. GA uses tournament selection + single-point crossover + a mutation rate of 15%. Random search re-samples uniformly each generation.</p>
+    </details>
+  </div>
+</div>
+
+<style>
+  #demo-ga .ga-lead { margin: 0 0 1rem !important; color: var(--nn-body) !important; font-size: 0.98rem !important; line-height: 1.6 !important; }
+  #demo-ga .ga-controls { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-bottom: 0.9rem; }
+  #demo-ga .ga-btn {
+    padding: 0.45rem 0.9rem; background: #fff; border: 1px solid var(--nn-line); border-radius: 3px;
+    font-family: var(--nn-mono); font-size: 0.8rem; color: var(--nn-muted); cursor: pointer;
+  }
+  #demo-ga .ga-btn:hover { border-color: var(--nn-accent); }
+  #demo-ga .ga-btn--play { background: var(--nn-accent); color: #fff; border-color: var(--nn-accent); }
+  #demo-ga .ga-btn--play:hover { background: var(--nn-accent-dark); }
+  #demo-ga .ga-check { margin-left: auto; display: inline-flex; align-items: center; gap: 0.4rem; font-family: var(--nn-mono); font-size: 0.82rem; color: var(--nn-muted); cursor: pointer; }
+  #demo-ga .ga-stage { background: #fbfcfd; border: 1px solid var(--nn-line); border-radius: 6px; padding: 0.5rem; margin-bottom: 0.9rem; }
+  #demo-ga .ga-svg { width: 100%; height: auto; display: block; }
+  #demo-ga .ga-axis { stroke: var(--nn-line); stroke-width: 0.5; }
+  #demo-ga .ga-axis-label { font-family: var(--nn-mono); font-size: 10px; fill: var(--nn-muted); }
+  #demo-ga .ga-dot { fill: var(--nn-accent); opacity: 0.55; transition: cx 300ms, cy 300ms, opacity 200ms; }
+  #demo-ga .ga-best-line { stroke: var(--nn-accent-dark); stroke-width: 1.6; fill: none; }
+  #demo-ga .ga-best-dot { fill: var(--nn-accent-dark); }
+  #demo-ga .ga-landscape { fill: var(--nn-accent-soft); opacity: 0.35; }
+  #demo-ga .ga-stats {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; margin-bottom: 0.9rem;
+    background: #fff; border: 1px solid var(--nn-line); border-radius: 4px; padding: 0.6rem 0.8rem;
+  }
+  #demo-ga .ga-stats__k { display: block; font-family: var(--nn-mono); font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--nn-muted); }
+  #demo-ga .ga-stats__v { display: block; font-family: var(--nn-mono); font-size: 1rem; color: var(--nn-accent-dark); font-weight: 600; }
+  #demo-ga .ga-explain {
+    padding: 0.85rem 1rem; background: #ffffff; border: 1px solid var(--nn-line);
+    border-left: 3px solid var(--nn-accent); border-radius: 4px;
+    font-size: 0.9rem; color: var(--nn-body); line-height: 1.6;
+  }
+  #demo-ga .ga-explain strong { color: var(--nn-accent-dark); }
+</style>
+
+<script>
+(function() {
+  const root = document.getElementById('demo-ga');
+  if (!root) return;
+  const svg = root.querySelector('.ga-svg');
+  const gGrid = svg.querySelector('.ga-grid');
+  const gDots = svg.querySelector('.ga-dots');
+  const gBest = svg.querySelector('.ga-best');
+  const runBtn = root.querySelector('[data-ga-run]');
+  const resetBtn = root.querySelector('[data-ga-reset]');
+  const modeEl = root.querySelector('[data-ga-mode]');
+  const genEl = root.querySelector('[data-ga-gen]');
+  const bestEl = root.querySelector('[data-ga-best]');
+  const divEl = root.querySelector('[data-ga-div]');
+  const explain = root.querySelector('[data-ga-explain]');
+  const POP = 24;
+  const GENS = 20;
+  function fitness([d, w, act, drop]) {
+    const dc = d - 5.5, wc = w - 6.5;
+    return 0.45 + 0.04 * dc * dc + 0.03 * wc * wc + (act === 0 ? 0.08 : 0) + Math.abs(drop - 0.2) * 0.2 + (Math.sin(d * 3 + w * 2) * 0.02);
+  }
+  function randCand() {
+    return [1 + Math.floor(Math.random() * 12), 2 + Math.floor(Math.random() * 10), Math.floor(Math.random() * 3), Math.random() * 0.5];
+  }
+  function mutate(c) {
+    const nc = c.slice();
+    if (Math.random() < 0.15) nc[0] = Math.max(1, Math.min(12, nc[0] + (Math.random() < 0.5 ? -1 : 1)));
+    if (Math.random() < 0.15) nc[1] = Math.max(2, Math.min(11, nc[1] + (Math.random() < 0.5 ? -1 : 1)));
+    if (Math.random() < 0.08) nc[2] = (nc[2] + 1 + Math.floor(Math.random() * 2)) % 3;
+    if (Math.random() < 0.15) nc[3] = Math.max(0, Math.min(0.5, nc[3] + (Math.random() - 0.5) * 0.1));
+    return nc;
+  }
+  function crossover(a, b) {
+    return a.map((v, i) => Math.random() < 0.5 ? v : b[i]);
+  }
+  function tournament(pop) {
+    const a = pop[Math.floor(Math.random() * pop.length)];
+    const b = pop[Math.floor(Math.random() * pop.length)];
+    return fitness(a) < fitness(b) ? a : b;
+  }
+  function diversity(pop) {
+    let sum = 0, n = 0;
+    for (let i = 0; i < pop.length; i++) {
+      for (let j = i + 1; j < pop.length; j++) {
+        const a = pop[i], b = pop[j];
+        sum += Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]) + Math.abs(a[3] - b[3]) * 4;
+        n++;
+      }
+    }
+    return sum / n;
+  }
+  let pop = [];
+  let gen = 0;
+  const bestHist = [];
+  function initGrid() {
+    gGrid.innerHTML = '';
+    for (let d = 1; d <= 12; d += 1) {
+      const x = 40 + (d - 1) * (640 / 11);
+      const w = 6, act = 1, drop = 0.2;
+      const f = fitness([d, w, act, drop]);
+      const y = 30 + f * 230;
+      const nextD = d + 1;
+      if (d < 12) {
+        const nx = 40 + d * (640 / 11);
+        const nf = fitness([nextD, w, act, drop]);
+        const ny = 30 + nf * 230;
+        gGrid.insertAdjacentHTML('beforeend', `<path class="ga-landscape" d="M ${x} 260 L ${x} ${y} L ${nx} ${ny} L ${nx} 260 Z"/>`);
+      }
+    }
+    gGrid.insertAdjacentHTML('beforeend',
+      `<line class="ga-axis" x1="40" y1="250" x2="680" y2="250"/>
+       <line class="ga-axis" x1="40" y1="20" x2="40" y2="250"/>
+       <text class="ga-axis-label" x="40" y="15">val loss</text>
+       <text class="ga-axis-label" x="360" y="258" text-anchor="middle">depth →</text>`);
+  }
+  function renderPop() {
+    gDots.innerHTML = '';
+    pop.forEach(c => {
+      const x = 40 + (c[0] - 1) * (640 / 11) + (c[1] - 6.5) * 3;
+      const y = 30 + fitness(c) * 230;
+      gDots.insertAdjacentHTML('beforeend', `<circle class="ga-dot" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="5"/>`);
+    });
+    gBest.innerHTML = '';
+    if (bestHist.length > 1) {
+      let d = '';
+      bestHist.forEach((b, i) => {
+        const x = 40 + (i / (GENS - 1)) * 640;
+        const y = 30 + b * 230;
+        d += (i === 0 ? 'M' : 'L') + x.toFixed(1) + ' ' + y.toFixed(1) + ' ';
+      });
+      gBest.insertAdjacentHTML('beforeend', `<path class="ga-best-line" d="${d}"/>`);
+      const last = bestHist[bestHist.length - 1];
+      const lx = 40 + ((bestHist.length - 1) / (GENS - 1)) * 640;
+      const ly = 30 + last * 230;
+      gBest.insertAdjacentHTML('beforeend', `<circle class="ga-best-dot" cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" r="4"/>`);
+    }
+    const best = Math.min(...pop.map(fitness));
+    const div = diversity(pop);
+    genEl.textContent = gen;
+    bestEl.textContent = best.toFixed(3);
+    divEl.textContent = div.toFixed(2);
+  }
+  function reset() {
+    pop = Array.from({ length: POP }, randCand);
+    gen = 0;
+    bestHist.length = 0;
+    bestHist.push(Math.min(...pop.map(fitness)));
+    renderPop();
+    explain.innerHTML = `Press <strong>▶ Run</strong> to evolve. Watch the dots migrate toward the valley.`;
+  }
+  function step() {
+    if (modeEl.checked) {
+      pop = Array.from({ length: POP }, randCand);
+    } else {
+      const next = [];
+      const sorted = pop.slice().sort((a, b) => fitness(a) - fitness(b));
+      next.push(sorted[0], sorted[1]);
+      while (next.length < POP) {
+        const p1 = tournament(pop), p2 = tournament(pop);
+        next.push(mutate(crossover(p1, p2)));
+      }
+      pop = next;
+    }
+    gen++;
+    bestHist.push(Math.min(...pop.map(fitness)));
+    renderPop();
+  }
+  async function run() {
+    reset();
+    runBtn.disabled = true;
+    for (let g = 0; g < GENS; g++) {
+      await new Promise(r => setTimeout(r, 220));
+      step();
+    }
+    runBtn.disabled = false;
+    const best = Math.min(...pop.map(fitness));
+    const div = diversity(pop);
+    if (modeEl.checked) {
+      explain.innerHTML = `<strong>Random search</strong> after ${GENS} generations. Best val loss: ${best.toFixed(3)}. Diversity stayed high (${div.toFixed(2)}) because every generation re-samples from scratch. No progress toward the valley.`;
+    } else {
+      explain.innerHTML = `<strong>GA</strong> after ${GENS} generations. Best val loss: ${best.toFixed(3)}. Diversity collapsed to ${div.toFixed(2)} — this is the early-convergence failure mode I flagged in the post. Tournament selection is greedy; without diversity preservation, the population all rushes to the same corner.`;
+    }
+  }
+  runBtn.addEventListener('click', run);
+  resetBtn.addEventListener('click', reset);
+  initGrid();
+  reset();
+})();
+</script>

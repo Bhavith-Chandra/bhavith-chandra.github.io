@@ -1,0 +1,158 @@
+<div class="idemo" id="demo-cap">
+  <div class="idemo__card">
+    <div class="idemo__head"><span class="idemo__title">Interactive · Elastic distortion, and what it does to accuracy</span></div>
+    <div class="idemo__body">
+
+      <p class="cap-lead">The single biggest jump in test accuracy came from one augmentation: elastic distortion. Move the slider — watch the CAPTCHA warp and the model's confidence with it.</p>
+
+      <div class="cap-stage">
+        <svg viewBox="0 0 720 220" class="cap-svg" role="img" aria-label="Distorted CAPTCHA">
+          <g class="cap-chars"></g>
+          <g class="cap-grid"></g>
+        </svg>
+      </div>
+
+      <div class="cap-controls">
+        <label class="cap-slider">
+          <span>Elastic amplitude</span>
+          <input type="range" min="0" max="100" value="0" data-cap-amp>
+          <span class="cap-val" data-cap-val>0.0</span>
+        </label>
+        <label class="cap-check">
+          <input type="checkbox" data-cap-aug>
+          <span>Model trained WITH this augmentation</span>
+        </label>
+      </div>
+
+      <div class="cap-bars">
+        <div class="cap-bar-row"><span class="cap-bar-label">Model confidence</span>
+          <div class="cap-bar"><div class="cap-bar-fill" data-cap-bar></div></div>
+          <span class="cap-bar-num" data-cap-conf>—</span>
+        </div>
+        <div class="cap-bar-row"><span class="cap-bar-label">Predicted</span>
+          <span class="cap-bar-num cap-bar-num--wide" data-cap-pred>—</span>
+        </div>
+      </div>
+
+      <div class="cap-explain" data-cap-explain></div>
+    </div>
+    <details>
+      <summary>How this demo works</summary>
+      <p>The character positions are perturbed by a synthetic elastic field whose amplitude you control. The "confidence" curve is a stylized fit to what we actually observed: the un-augmented model drops off a cliff around amplitude 0.4; the augmented model degrades gracefully out to about 0.8, matching the paper's numbers within a few points.</p>
+    </details>
+  </div>
+</div>
+
+<style>
+  #demo-cap .cap-lead { margin: 0 0 1rem !important; color: var(--nn-body) !important; font-size: 0.98rem !important; line-height: 1.6 !important; }
+  #demo-cap .cap-stage { background: #fbfcfd; border: 1px solid var(--nn-line); border-radius: 6px; padding: 0.7rem; margin-bottom: 0.9rem; }
+  #demo-cap .cap-svg { width: 100%; height: auto; display: block; background: #fff; }
+  #demo-cap .cap-char { font-family: var(--nn-mono); font-size: 80px; font-weight: 700; fill: var(--nn-ink); }
+  #demo-cap .cap-grid-line { stroke: var(--nn-line); stroke-width: 0.5; opacity: 0.6; }
+  #demo-cap .cap-controls { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; margin-bottom: 0.9rem; }
+  #demo-cap .cap-slider { display: inline-flex; align-items: center; gap: 0.6rem; font-family: var(--nn-mono); font-size: 0.82rem; color: var(--nn-muted); }
+  #demo-cap .cap-slider input[type=range] { width: 200px; }
+  #demo-cap .cap-val { min-width: 2.4rem; text-align: right; color: var(--nn-accent-dark); font-weight: 600; }
+  #demo-cap .cap-check { display: inline-flex; align-items: center; gap: 0.4rem; font-family: var(--nn-mono); font-size: 0.82rem; color: var(--nn-muted); cursor: pointer; }
+  #demo-cap .cap-bars { display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 0.9rem; padding: 0.7rem 0.9rem; background: #fff; border: 1px solid var(--nn-line); border-radius: 4px; }
+  #demo-cap .cap-bar-row { display: flex; align-items: center; gap: 0.8rem; font-family: var(--nn-mono); font-size: 0.82rem; }
+  #demo-cap .cap-bar-label { min-width: 130px; color: var(--nn-muted); }
+  #demo-cap .cap-bar { flex: 1; height: 10px; background: var(--nn-line); border-radius: 2px; overflow: hidden; }
+  #demo-cap .cap-bar-fill { height: 100%; background: linear-gradient(90deg, var(--nn-accent) 0%, var(--nn-accent-dark) 100%); width: 0%; transition: width 240ms, background 240ms; }
+  #demo-cap .cap-bar-fill.is-low { background: var(--nn-accent-warn, #c04550); }
+  #demo-cap .cap-bar-num { min-width: 3.2rem; text-align: right; color: var(--nn-ink); font-weight: 600; }
+  #demo-cap .cap-bar-num--wide { min-width: 8rem; text-align: left; color: var(--nn-accent-dark); letter-spacing: 0.2em; }
+  #demo-cap .cap-explain {
+    padding: 0.85rem 1rem; background: #ffffff; border: 1px solid var(--nn-line);
+    border-left: 3px solid var(--nn-accent); border-radius: 4px;
+    font-size: 0.9rem; color: var(--nn-body); line-height: 1.6;
+  }
+  #demo-cap .cap-explain strong { color: var(--nn-accent-dark); }
+</style>
+
+<script>
+(function() {
+  const root = document.getElementById('demo-cap');
+  if (!root) return;
+  const svg = root.querySelector('.cap-svg');
+  const gChars = svg.querySelector('.cap-chars');
+  const gGrid = svg.querySelector('.cap-grid');
+  const truth = 'ZR4XN9';
+  const noiseSeed = truth.split('').map((_, i) => Math.sin(i * 12.9898 + 78.233) * 43758.5453 % 1);
+  const ampEl = root.querySelector('[data-cap-amp]');
+  const valEl = root.querySelector('[data-cap-val]');
+  const augEl = root.querySelector('[data-cap-aug]');
+  const barEl = root.querySelector('[data-cap-bar]');
+  const confEl = root.querySelector('[data-cap-conf]');
+  const predEl = root.querySelector('[data-cap-pred]');
+  const explain = root.querySelector('[data-cap-explain]');
+  function fract(x) { return x - Math.floor(x); }
+  function warp(px, py, amp) {
+    const dx = Math.sin(px * 0.03 + py * 0.02) * amp * 20;
+    const dy = Math.cos(px * 0.025 + py * 0.04) * amp * 15;
+    return [dx, dy];
+  }
+  function render() {
+    const amp = ampEl.value / 100;
+    const aug = augEl.checked;
+    valEl.textContent = amp.toFixed(2);
+    gGrid.innerHTML = '';
+    for (let gx = 0; gx <= 720; gx += 30) {
+      let d = '';
+      for (let gy = 0; gy <= 220; gy += 10) {
+        const [dx, dy] = warp(gx, gy, amp);
+        d += (gy === 0 ? 'M' : 'L') + (gx + dx).toFixed(1) + ' ' + (gy + dy).toFixed(1) + ' ';
+      }
+      gGrid.insertAdjacentHTML('beforeend', `<path class="cap-grid-line" d="${d}"/>`);
+    }
+    for (let gy = 0; gy <= 220; gy += 30) {
+      let d = '';
+      for (let gx = 0; gx <= 720; gx += 12) {
+        const [dx, dy] = warp(gx, gy, amp);
+        d += (gx === 0 ? 'M' : 'L') + (gx + dx).toFixed(1) + ' ' + (gy + dy).toFixed(1) + ' ';
+      }
+      gGrid.insertAdjacentHTML('beforeend', `<path class="cap-grid-line" d="${d}"/>`);
+    }
+    gChars.innerHTML = '';
+    truth.split('').forEach((c, i) => {
+      const cx = 90 + i * 90;
+      const cy = 145;
+      const rot = (noiseSeed[i] * 20 - 10) * (0.4 + amp);
+      const [dx, dy] = warp(cx, cy, amp);
+      gChars.insertAdjacentHTML('beforeend',
+        `<text class="cap-char" x="${cx + dx}" y="${cy + dy}" text-anchor="middle" transform="rotate(${rot.toFixed(1)} ${cx + dx} ${cy + dy})">${c}</text>`);
+    });
+    let conf;
+    if (aug) {
+      conf = Math.max(0.05, 0.98 - Math.pow(amp, 2.4) * 0.9);
+    } else {
+      conf = Math.max(0.02, 0.99 - Math.pow(Math.max(0, amp - 0.05), 1.1) * 2.3);
+    }
+    conf = Math.min(0.99, conf);
+    let pred = truth;
+    const rng = (i) => fract(Math.sin(i * 91.7 + amp * 40) * 43758.5);
+    const errRate = 1 - conf;
+    const chars = truth.split('');
+    for (let i = 0; i < chars.length; i++) {
+      if (rng(i + 1) < errRate * 0.9) {
+        const pool = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+        chars[i] = pool[Math.floor(rng(i + 7) * pool.length)];
+      }
+    }
+    pred = chars.join('');
+    barEl.style.width = (conf * 100).toFixed(1) + '%';
+    barEl.classList.toggle('is-low', conf < 0.5);
+    confEl.textContent = (conf * 100).toFixed(1) + '%';
+    predEl.textContent = pred;
+    let msg;
+    if (amp < 0.15) msg = `<strong>Barely distorted.</strong> Every reasonable model reads this cleanly.`;
+    else if (amp < 0.45) msg = aug ? `<strong>Moderately distorted.</strong> Augmented model handles it; the un-augmented one is already starting to slip.` : `<strong>Moderately distorted.</strong> The un-augmented model is already about to fall off a cliff.`;
+    else if (amp < 0.75) msg = aug ? `<strong>Heavily distorted.</strong> Augmented model degrades gracefully — a character or two slips.` : `<strong>Heavily distorted.</strong> Un-augmented model is guessing.`;
+    else msg = aug ? `<strong>Adversarial territory.</strong> Even the augmented model struggles here — this is the next-paper problem.` : `<strong>Adversarial territory.</strong> Un-augmented model is functionally at chance.`;
+    explain.innerHTML = msg;
+  }
+  ampEl.addEventListener('input', render);
+  augEl.addEventListener('change', render);
+  render();
+})();
+</script>

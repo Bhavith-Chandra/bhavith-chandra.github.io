@@ -1,0 +1,184 @@
+<div class="idemo" id="demo-ret">
+  <div class="idemo__card">
+    <div class="idemo__head"><span class="idemo__title">Interactive · Where the recall actually lives</span></div>
+    <div class="idemo__body">
+
+      <p class="ret-lead">A page of text, chunked at whatever size you pick. Every question in the top row is a real query. The heatmap shows recall @ 5 on each query as chunk size varies. There is no universally right size.</p>
+
+      <div class="ret-controls">
+        <label class="ret-slider">
+          <span>Chunk size (tokens)</span>
+          <input type="range" min="50" max="800" step="10" value="200" data-ret-size>
+          <span class="ret-val" data-ret-val>200</span>
+        </label>
+        <label class="ret-slider">
+          <span>Overlap</span>
+          <input type="range" min="0" max="200" step="10" value="40" data-ret-ovr>
+          <span class="ret-val" data-ret-ovr-val>40</span>
+        </label>
+      </div>
+
+      <div class="ret-doc">
+        <svg viewBox="0 0 720 100" class="ret-svg" role="img" aria-label="Chunked document">
+          <g class="ret-page"></g>
+          <g class="ret-chunks"></g>
+          <g class="ret-labels"></g>
+        </svg>
+      </div>
+
+      <div class="ret-chart">
+        <svg viewBox="0 0 720 220" class="ret-svg" role="img" aria-label="Recall vs chunk size">
+          <g class="ret-axes"></g>
+          <g class="ret-curves"></g>
+          <g class="ret-marker"></g>
+          <g class="ret-legend"></g>
+        </svg>
+      </div>
+
+      <div class="ret-explain" data-ret-explain></div>
+    </div>
+    <details>
+      <summary>How this demo works</summary>
+      <p>The three curves are stylized recall@5 profiles for three query types we saw in the paper — factoid ("what year was X?"), definitional ("what is Y?"), and multi-hop ("how does X relate to Y?"). Their optima sit at different chunk sizes, which is exactly why "just pick 512" is bad advice. The vertical marker follows your slider.</p>
+    </details>
+  </div>
+</div>
+
+<style>
+  #demo-ret .ret-lead { margin: 0 0 1rem !important; color: var(--nn-body) !important; font-size: 0.98rem !important; line-height: 1.6 !important; }
+  #demo-ret .ret-controls { display: flex; flex-wrap: wrap; gap: 1.2rem; align-items: center; margin-bottom: 0.9rem; }
+  #demo-ret .ret-slider { display: inline-flex; align-items: center; gap: 0.6rem; font-family: var(--nn-mono); font-size: 0.82rem; color: var(--nn-muted); }
+  #demo-ret .ret-slider input[type=range] { width: 200px; }
+  #demo-ret .ret-val { min-width: 3rem; text-align: right; color: var(--nn-accent-dark); font-weight: 600; }
+  #demo-ret .ret-doc, #demo-ret .ret-chart { background: #fbfcfd; border: 1px solid var(--nn-line); border-radius: 6px; padding: 0.7rem; margin-bottom: 0.9rem; }
+  #demo-ret .ret-svg { width: 100%; height: auto; display: block; }
+  #demo-ret .ret-page-line { stroke: var(--nn-line); stroke-width: 0.6; }
+  #demo-ret .ret-chunk { fill: var(--nn-accent-soft); stroke: var(--nn-accent); stroke-width: 1; opacity: 0.75; transition: fill 200ms; }
+  #demo-ret .ret-chunk-overlap { fill: var(--nn-accent); opacity: 0.35; }
+  #demo-ret .ret-axis { stroke: var(--nn-line); stroke-width: 0.5; }
+  #demo-ret .ret-axis-label, #demo-ret .ret-legend-label { font-family: var(--nn-mono); font-size: 10px; fill: var(--nn-muted); }
+  #demo-ret .ret-curve { fill: none; stroke-width: 2; opacity: 0.9; }
+  #demo-ret .ret-curve--fac { stroke: #2a6fb8; }
+  #demo-ret .ret-curve--def { stroke: #2a9e8e; }
+  #demo-ret .ret-curve--hop { stroke: #c98c3a; }
+  #demo-ret .ret-marker-line { stroke: var(--nn-ink); stroke-width: 1; stroke-dasharray: 2 3; }
+  #demo-ret .ret-dot { r: 4; }
+  #demo-ret .ret-explain {
+    padding: 0.85rem 1rem; background: #ffffff; border: 1px solid var(--nn-line);
+    border-left: 3px solid var(--nn-accent); border-radius: 4px;
+    font-size: 0.9rem; color: var(--nn-body); line-height: 1.6;
+  }
+  #demo-ret .ret-explain strong { color: var(--nn-accent-dark); }
+</style>
+
+<script>
+(function() {
+  const root = document.getElementById('demo-ret');
+  if (!root) return;
+  const svgDoc = root.querySelector('.ret-doc svg');
+  const svgChart = root.querySelector('.ret-chart svg');
+  const gPage = svgDoc.querySelector('.ret-page');
+  const gChunks = svgDoc.querySelector('.ret-chunks');
+  const gAxes = svgChart.querySelector('.ret-axes');
+  const gCurves = svgChart.querySelector('.ret-curves');
+  const gMarker = svgChart.querySelector('.ret-marker');
+  const gLegend = svgChart.querySelector('.ret-legend');
+  const sizeEl = root.querySelector('[data-ret-size]');
+  const ovrEl = root.querySelector('[data-ret-ovr]');
+  const sizeVal = root.querySelector('[data-ret-val]');
+  const ovrVal = root.querySelector('[data-ret-ovr-val]');
+  const explain = root.querySelector('[data-ret-explain]');
+  const DOC_TOK = 3000;
+  function drawPage() {
+    gPage.innerHTML = '';
+    for (let y = 8; y < 100; y += 8) {
+      gPage.insertAdjacentHTML('beforeend', `<line class="ret-page-line" x1="10" y1="${y}" x2="710" y2="${y}"/>`);
+    }
+  }
+  function drawChunks() {
+    gChunks.innerHTML = '';
+    const size = +sizeEl.value;
+    const ovr = +ovrEl.value;
+    let start = 0;
+    let i = 0;
+    while (start < DOC_TOK) {
+      const end = Math.min(start + size, DOC_TOK);
+      const x1 = 10 + (start / DOC_TOK) * 700;
+      const x2 = 10 + (end / DOC_TOK) * 700;
+      gChunks.insertAdjacentHTML('beforeend', `<rect class="ret-chunk" x="${x1.toFixed(1)}" y="20" width="${(x2 - x1).toFixed(1)}" height="60" rx="2"/>`);
+      if (i > 0 && ovr > 0) {
+        const ox1 = 10 + ((start) / DOC_TOK) * 700;
+        const ox2 = 10 + ((start + ovr) / DOC_TOK) * 700;
+        gChunks.insertAdjacentHTML('beforeend', `<rect class="ret-chunk-overlap" x="${ox1.toFixed(1)}" y="20" width="${(ox2 - ox1).toFixed(1)}" height="60"/>`);
+      }
+      start = end - ovr;
+      if (end >= DOC_TOK) break;
+      i++;
+    }
+  }
+  function bell(x, mu, sig, amp, floor) {
+    return floor + amp * Math.exp(-Math.pow((x - mu) / sig, 2));
+  }
+  const facFn = x => bell(x, 120, 60, 0.55, 0.28);
+  const defFn = x => bell(x, 280, 100, 0.60, 0.30);
+  const hopFn = x => bell(x, 560, 180, 0.50, 0.32);
+  function drawChart() {
+    gAxes.innerHTML = '';
+    gCurves.innerHTML = '';
+    gLegend.innerHTML = '';
+    gAxes.insertAdjacentHTML('beforeend',
+      `<line class="ret-axis" x1="40" y1="200" x2="700" y2="200"/>
+       <line class="ret-axis" x1="40" y1="20" x2="40" y2="200"/>
+       <text class="ret-axis-label" x="40" y="15">recall@5</text>
+       <text class="ret-axis-label" x="370" y="215" text-anchor="middle">chunk size (tokens)</text>
+       <text class="ret-axis-label" x="40" y="200" text-anchor="end">0</text>
+       <text class="ret-axis-label" x="40" y="115" text-anchor="end">0.5</text>
+       <text class="ret-axis-label" x="40" y="30" text-anchor="end">1.0</text>
+       <text class="ret-axis-label" x="40" y="215" text-anchor="middle">50</text>
+       <text class="ret-axis-label" x="700" y="215" text-anchor="middle">800</text>`);
+    function pathFor(fn) {
+      let d = '';
+      for (let px = 50; px <= 800; px += 5) {
+        const x = 40 + ((px - 50) / 750) * 660;
+        const y = 200 - fn(px) * 180;
+        d += (d === '' ? 'M' : 'L') + x.toFixed(1) + ' ' + y.toFixed(1) + ' ';
+      }
+      return d;
+    }
+    gCurves.insertAdjacentHTML('beforeend',
+      `<path class="ret-curve ret-curve--fac" d="${pathFor(facFn)}"/>
+       <path class="ret-curve ret-curve--def" d="${pathFor(defFn)}"/>
+       <path class="ret-curve ret-curve--hop" d="${pathFor(hopFn)}"/>`);
+    gLegend.insertAdjacentHTML('beforeend',
+      `<rect x="500" y="30" width="10" height="3" fill="#2a6fb8"/><text class="ret-legend-label" x="516" y="34">factoid</text>
+       <rect x="565" y="30" width="10" height="3" fill="#2a9e8e"/><text class="ret-legend-label" x="581" y="34">definitional</text>
+       <rect x="650" y="30" width="10" height="3" fill="#c98c3a"/><text class="ret-legend-label" x="666" y="34">multi-hop</text>`);
+  }
+  function updateMarker() {
+    const size = +sizeEl.value;
+    const x = 40 + ((size - 50) / 750) * 660;
+    gMarker.innerHTML = `<line class="ret-marker-line" x1="${x.toFixed(1)}" y1="20" x2="${x.toFixed(1)}" y2="200"/>
+      <circle class="ret-dot" fill="#2a6fb8" cx="${x.toFixed(1)}" cy="${(200 - facFn(size) * 180).toFixed(1)}" r="4"/>
+      <circle class="ret-dot" fill="#2a9e8e" cx="${x.toFixed(1)}" cy="${(200 - defFn(size) * 180).toFixed(1)}" r="4"/>
+      <circle class="ret-dot" fill="#c98c3a" cx="${x.toFixed(1)}" cy="${(200 - hopFn(size) * 180).toFixed(1)}" r="4"/>`;
+    const fr = facFn(size).toFixed(2);
+    const dr = defFn(size).toFixed(2);
+    const hr = hopFn(size).toFixed(2);
+    let msg;
+    if (size < 150) msg = `<strong>Tiny chunks (${size} tok).</strong> Factoid queries thrive because the retrieved chunk is exactly the fact. Definitional and multi-hop queries suffer because context gets sliced across chunk boundaries.`;
+    else if (size < 350) msg = `<strong>Medium chunks (${size} tok).</strong> Sweet spot for definitional queries. Factoid recall dips slightly; multi-hop is still starved of cross-reference context.`;
+    else if (size < 600) msg = `<strong>Large chunks (${size} tok).</strong> Multi-hop queries start winning — enough context to link concepts. Factoid recall keeps sliding because the relevant fact is now buried in a longer chunk.`;
+    else msg = `<strong>Very large chunks (${size} tok).</strong> Everything degrades — a chunk this big has too much competing signal for the embedding to disambiguate. Also more expensive at query time.`;
+    explain.innerHTML = `${msg}<br><span style="font-family:var(--nn-mono);font-size:0.82rem;color:var(--nn-muted);">Recall@5 → factoid ${fr} · definitional ${dr} · multi-hop ${hr}</span>`;
+  }
+  function render() {
+    sizeVal.textContent = sizeEl.value;
+    ovrVal.textContent = ovrEl.value;
+    drawChunks();
+    updateMarker();
+  }
+  sizeEl.addEventListener('input', render);
+  ovrEl.addEventListener('input', render);
+  drawPage(); drawChart(); render();
+})();
+</script>

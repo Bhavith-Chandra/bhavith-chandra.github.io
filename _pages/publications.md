@@ -10,6 +10,15 @@ author_profile: false
 
 ---
 
+## *2026*
+---------------
+
+### *One Lens, Many Worlds: A Capability-Typed Interface for World-Model Interpretability*
+<ins>B. Challagundla</ins>, S. Pandey, P. Thakkar, R. Mallagundla, Y.R. Gogireddy, W. Lu, H. Roy Choudhury, S. Challagundla, M. Deraz Nasr, S. Deshpande
+[arXiv](https://arxiv.org/abs/2606.09936) · [Google Scholar](https://scholar.google.com/citations?view_op=view_citation&hl=en&user=nV1hdiMAAAAJ&sortby=pubdate&citation_for_view=nV1hdiMAAAAJ:zYLM7Y9cAGgC)
+
+---
+
 ## *2025*
 ---------------
 

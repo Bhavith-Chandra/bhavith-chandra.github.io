@@ -1,0 +1,186 @@
+<div class="idemo" id="demo-lim">
+  <div class="idemo__card">
+    <div class="idemo__head"><span class="idemo__title">Interactive · The U-shape, and what flattens it</span></div>
+    <div class="idemo__body">
+
+      <p class="lim-lead">Accuracy vs. answer position in a long context. Move the fine-tuning slider — the U-shape flattens as center-emphasized training kicks in. Click a depth to see the model's actual answer at that position.</p>
+
+      <div class="lim-controls">
+        <label class="lim-slider">
+          <span>Fine-tuning progress</span>
+          <input type="range" min="0" max="100" step="1" value="0" data-lim-ft>
+          <span class="lim-ftv" data-lim-ftv>0%</span>
+        </label>
+        <label class="lim-check">
+          <input type="checkbox" data-lim-ctx>
+          <span>Longer context (32k)</span>
+        </label>
+      </div>
+
+      <div class="lim-stage">
+        <svg viewBox="0 0 720 240" class="lim-svg" role="img" aria-label="U-shape curve">
+          <g class="lim-axes"></g>
+          <g class="lim-curve"></g>
+          <g class="lim-baseline"></g>
+          <g class="lim-marker"></g>
+          <g class="lim-buckets"></g>
+        </svg>
+      </div>
+
+      <div class="lim-answer" data-lim-answer>
+        <div class="lim-answer__q">Query: <em>"What year was the treaty signed?"</em></div>
+        <div class="lim-answer__row"><span class="lim-answer__label">Baseline:</span><span class="lim-answer__val lim-answer__val--baseline" data-lim-base>—</span></div>
+        <div class="lim-answer__row"><span class="lim-answer__label">Fine-tuned:</span><span class="lim-answer__val lim-answer__val--ft" data-lim-ftr>—</span></div>
+      </div>
+
+      <div class="lim-explain" data-lim-explain>Move the slider from 0% (baseline) to 100% (fully fine-tuned). Watch the middle bucket climb.</div>
+    </div>
+    <details>
+      <summary>How this demo works</summary>
+      <p>The curves are smooth analytical fits to the "lost in the middle" pattern observed in the literature and reproduced in our paper. The baseline curve peaks at the start and end of the context; the fine-tuned curve is the same shape at 0% fine-tuning, and progressively flattens toward uniform accuracy as the slider moves. Clicking a depth bucket shows a stylized model completion at that position — correct on the fine-tuned side, hallucinated on the baseline side when the depth is unfavorable.</p>
+    </details>
+  </div>
+</div>
+
+<style>
+  #demo-lim .lim-lead { margin: 0 0 1rem !important; color: var(--nn-body) !important; font-size: 0.98rem !important; line-height: 1.6 !important; }
+  #demo-lim .lim-controls { display: flex; flex-wrap: wrap; gap: 1.2rem; align-items: center; margin-bottom: 0.9rem; }
+  #demo-lim .lim-slider { display: inline-flex; align-items: center; gap: 0.6rem; font-family: var(--nn-mono); font-size: 0.82rem; color: var(--nn-muted); }
+  #demo-lim .lim-slider input[type=range] { width: 220px; }
+  #demo-lim .lim-ftv { min-width: 3rem; text-align: right; color: var(--nn-accent-dark); font-weight: 600; }
+  #demo-lim .lim-check { display: inline-flex; align-items: center; gap: 0.4rem; font-family: var(--nn-mono); font-size: 0.82rem; color: var(--nn-muted); cursor: pointer; }
+  #demo-lim .lim-stage { background: #fbfcfd; border: 1px solid var(--nn-line); border-radius: 6px; padding: 0.7rem; margin-bottom: 0.9rem; }
+  #demo-lim .lim-svg { width: 100%; height: auto; display: block; }
+  #demo-lim .lim-axis { stroke: var(--nn-line); stroke-width: 0.5; }
+  #demo-lim .lim-axis-label { font-family: var(--nn-mono); font-size: 10px; fill: var(--nn-muted); }
+  #demo-lim .lim-baseline-line { fill: none; stroke: var(--nn-accent-warn, #c04550); stroke-width: 2; stroke-dasharray: 4 3; opacity: 0.85; }
+  #demo-lim .lim-curve-line { fill: none; stroke: var(--nn-accent); stroke-width: 2.4; }
+  #demo-lim .lim-legend { font-family: var(--nn-mono); font-size: 10px; fill: var(--nn-muted); }
+  #demo-lim .lim-bucket { fill: transparent; stroke: transparent; cursor: pointer; }
+  #demo-lim .lim-bucket:hover { fill: var(--nn-accent-soft); }
+  #demo-lim .lim-bucket.is-active { stroke: var(--nn-ink); stroke-width: 1; stroke-dasharray: 2 2; }
+  #demo-lim .lim-answer {
+    background: #fff; border: 1px solid var(--nn-line); border-radius: 6px; padding: 0.8rem 1rem; margin-bottom: 0.9rem;
+  }
+  #demo-lim .lim-answer__q { font-family: var(--nn-mono); font-size: 0.82rem; color: var(--nn-muted); margin-bottom: 0.55rem; }
+  #demo-lim .lim-answer__q em { color: var(--nn-ink); font-style: italic; }
+  #demo-lim .lim-answer__row { display: flex; align-items: baseline; gap: 0.6rem; margin: 0.2rem 0; }
+  #demo-lim .lim-answer__label { min-width: 90px; font-family: var(--nn-mono); font-size: 0.78rem; color: var(--nn-muted); }
+  #demo-lim .lim-answer__val { font-family: var(--nn-mono); font-size: 0.9rem; font-weight: 600; }
+  #demo-lim .lim-answer__val--baseline { color: var(--nn-accent-warn, #c04550); }
+  #demo-lim .lim-answer__val--ft { color: var(--nn-accent-dark); }
+  #demo-lim .lim-explain {
+    padding: 0.85rem 1rem; background: #ffffff; border: 1px solid var(--nn-line);
+    border-left: 3px solid var(--nn-accent); border-radius: 4px;
+    font-size: 0.9rem; color: var(--nn-body); line-height: 1.6;
+  }
+  #demo-lim .lim-explain strong { color: var(--nn-accent-dark); }
+</style>
+
+<script>
+(function() {
+  const root = document.getElementById('demo-lim');
+  if (!root) return;
+  const svg = root.querySelector('.lim-svg');
+  const gAxes = svg.querySelector('.lim-axes');
+  const gCurve = svg.querySelector('.lim-curve');
+  const gBase = svg.querySelector('.lim-baseline');
+  const gMark = svg.querySelector('.lim-marker');
+  const gBuc = svg.querySelector('.lim-buckets');
+  const ftEl = root.querySelector('[data-lim-ft]');
+  const ftV = root.querySelector('[data-lim-ftv]');
+  const ctxEl = root.querySelector('[data-lim-ctx]');
+  const baseEl = root.querySelector('[data-lim-base]');
+  const ftrEl = root.querySelector('[data-lim-ftr]');
+  const explain = root.querySelector('[data-lim-explain]');
+  const N = 10;
+  let activeBucket = 4;
+  function baseline(x) {
+    const dip = 0.55 * Math.exp(-Math.pow((x - 0.5) / 0.28, 2));
+    return 0.9 - dip;
+  }
+  function tuned(x, ft, longCtx) {
+    const base = baseline(x);
+    const target = longCtx ? 0.78 - Math.abs(x - 0.5) * 0.05 : 0.86;
+    return base * (1 - ft) + target * ft;
+  }
+  function drawAxes() {
+    gAxes.innerHTML = '';
+    gAxes.insertAdjacentHTML('beforeend',
+      `<line class="lim-axis" x1="50" y1="200" x2="700" y2="200"/>
+       <line class="lim-axis" x1="50" y1="20" x2="50" y2="200"/>
+       <text class="lim-axis-label" x="50" y="15">accuracy</text>
+       <text class="lim-axis-label" x="45" y="200" text-anchor="end">0</text>
+       <text class="lim-axis-label" x="45" y="110" text-anchor="end">0.5</text>
+       <text class="lim-axis-label" x="45" y="30" text-anchor="end">1.0</text>
+       <text class="lim-axis-label" x="50" y="215">start</text>
+       <text class="lim-axis-label" x="375" y="215" text-anchor="middle">middle of context</text>
+       <text class="lim-axis-label" x="700" y="215" text-anchor="end">end</text>
+       <rect x="540" y="24" width="10" height="3" fill="var(--nn-accent-warn, #c04550)"/><text class="lim-legend" x="556" y="28">baseline</text>
+       <rect x="620" y="24" width="10" height="3" fill="var(--nn-accent)"/><text class="lim-legend" x="636" y="28">fine-tuned</text>`);
+  }
+  function drawCurves() {
+    const ft = ftEl.value / 100;
+    const longCtx = ctxEl.checked;
+    let dB = '';
+    let dC = '';
+    for (let i = 0; i <= 100; i++) {
+      const x = i / 100;
+      const px = 50 + x * 650;
+      const yB = 200 - baseline(x) * 170;
+      const yC = 200 - tuned(x, ft, longCtx) * 170;
+      dB += (i === 0 ? 'M' : 'L') + px.toFixed(1) + ' ' + yB.toFixed(1) + ' ';
+      dC += (i === 0 ? 'M' : 'L') + px.toFixed(1) + ' ' + yC.toFixed(1) + ' ';
+    }
+    gBase.innerHTML = `<path class="lim-baseline-line" d="${dB}"/>`;
+    gCurve.innerHTML = `<path class="lim-curve-line" d="${dC}"/>`;
+  }
+  function drawBuckets() {
+    gBuc.innerHTML = '';
+    for (let i = 0; i < N; i++) {
+      const x = 50 + (i / N) * 650;
+      const w = 650 / N;
+      gBuc.insertAdjacentHTML('beforeend',
+        `<rect class="lim-bucket ${i === activeBucket ? 'is-active' : ''}" data-lim-b="${i}" x="${x.toFixed(1)}" y="20" width="${w.toFixed(1)}" height="180" rx="1"/>`);
+    }
+    gBuc.querySelectorAll('[data-lim-b]').forEach(b => {
+      b.addEventListener('click', () => {
+        activeBucket = +b.dataset.limB;
+        drawBuckets(); updateAnswer();
+      });
+    });
+  }
+  function updateAnswer() {
+    const ft = ftEl.value / 100;
+    const longCtx = ctxEl.checked;
+    const x = (activeBucket + 0.5) / N;
+    const b = baseline(x);
+    const t = tuned(x, ft, longCtx);
+    const truth = '1856';
+    const wrong = ['1843', '1867', '1872', '1801', '1919'];
+    const rng = (s) => (Math.sin(s * 137.9) + 1) / 2;
+    baseEl.textContent = b > 0.55 ? truth : `"${wrong[activeBucket % wrong.length]} — I don't have that in my context."`;
+    ftrEl.textContent = t > 0.55 ? truth : `"${wrong[(activeBucket + 2) % wrong.length]} (still weak in this bucket)"`;
+  }
+  function updateExplain() {
+    const ft = ftEl.value / 100;
+    const longCtx = ctxEl.checked;
+    const midAccBase = baseline(0.5);
+    const midAccFt = tuned(0.5, ft, longCtx);
+    const gain = midAccFt - midAccBase;
+    let msg;
+    if (ft < 0.05) msg = `<strong>0% fine-tuning.</strong> The classic U. The middle-of-context bucket sits at ${(midAccBase*100).toFixed(0)}% while the endpoints are around ${(baseline(0)*100).toFixed(0)}%. This is what every long-context LLM does out of the box.`;
+    else if (ft < 0.4) msg = `<strong>${(ft*100).toFixed(0)}% fine-tuning.</strong> Middle bucket climbing: ${(midAccBase*100).toFixed(0)}% → ${(midAccFt*100).toFixed(0)}%. The endpoints haven't budged. This is what we want.`;
+    else if (ft < 0.85) msg = `<strong>${(ft*100).toFixed(0)}% fine-tuning.</strong> Curve almost flat. Middle: ${(midAccFt*100).toFixed(0)}%. A small dip at the endpoints is the fair trade — we gave up peak start-of-context accuracy for a much higher trough.`;
+    else msg = `<strong>${(ft*100).toFixed(0)}% fine-tuning.</strong> Flat. Middle bucket up ${(gain*100).toFixed(0)} points from baseline. ${longCtx ? '32k context still has residual softmax dispersion at the true center — you can see the tiny dip. That is the architectural cause I mention in the post: at some length no amount of data fixes it.' : ''}`;
+    explain.innerHTML = msg;
+  }
+  function render() {
+    ftV.textContent = ftEl.value + '%';
+    drawCurves(); drawBuckets(); updateAnswer(); updateExplain();
+  }
+  ftEl.addEventListener('input', render);
+  ctxEl.addEventListener('change', render);
+  drawAxes(); render();
+})();
+</script>

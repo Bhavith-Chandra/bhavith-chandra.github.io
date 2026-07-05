@@ -51,13 +51,15 @@ My research focuses on mechanistic interpretability, world models, and AI safety
 ## Stuff I've made
 
 - [World-Model-Lens](https://github.com/Bhavith-Chandra/WorldModelLens) — a mechanistic interpretability toolkit for world models: causal tracing, information-theory analysis, dynamical-systems tooling, multi-agent theory-of-mind probing, and explanation modules (SHAP / LIME).
+- [One Lens, Many Worlds: A Capability-Typed Interface for World-Model Interpretability](https://arxiv.org/abs/2606.09936) — capability-typed adapters that let one analysis run across RSSMs, token transformers, and JEPAs (2026).
 - [APEX: Adaptive Per-token Expert Loss](https://papers.ssrn.com/sol3/Delivery.cfm?abstractid=5877982) — a per-token loss for MoE routing that adapts expert allocation on the fly (2025).
 - [Never Lost in the Middle Again: Teaching LLMs to Care About the Center of Long Documents](https://papers.ssrn.com/sol3/Delivery.cfm?abstractid=5877962) — mitigating the "lost-in-the-middle" failure mode of long-context LLMs (2025).
 - [Neural Seq2Seq with Attention for Abstractive Summarization](https://arxiv.org/pdf/2404.08685) — IJMLC, 2024 · 26 citations.
-- [End-to-end Neural Embedding Pipeline for Large-scale PDF Retrieval](https://www.researchgate.net/profile/Yugandhar-Gogireddy/publication/384681635) — distributed FAISS + Sentence Transformers, 2024 · 11 citations.
-- [Multi-Lead ECG Arrhythmia Detection](https://arxiv.org/pdf/2404.15347) — IJFMR, 2024 · 9 citations.
-- [Efficient CAPTCHA Image Recognition with CNN + LSTM](https://www.ijarise.org/index.php/ijarise/article/download/82/78) — IJARISE, 2024 · 21 citations.
-- [Financial Advisory LLM for Financial Literacy in India](https://assets-eu.researchsquare.com/files/rs-4354348/v1_covered_341a77ab-9100-4c87-b9df-b5c2ee75aeb0.pdf) — 2024 · 4 citations.
+- [End-to-end Neural Embedding Pipeline for Large-scale PDF Retrieval](https://www.researchgate.net/profile/Yugandhar-Gogireddy/publication/384681635) — distributed FAISS + Sentence Transformers, 2024 · 14 citations.
+- [Multi-Lead ECG Arrhythmia Detection](https://arxiv.org/pdf/2404.15347) — IJFMR, 2024 · 12 citations.
+- [Efficient CAPTCHA Image Recognition with CNN + LSTM](https://www.ijarise.org/index.php/ijarise/article/download/82/78) — IJARISE, 2024 · 22 citations.
+- [Dynamic Adaptation of Genetic Algorithms and Deep Learning in NLP](https://scholar.google.com/citations?view_op=view_citation&hl=en&user=nV1hdiMAAAAJ&citation_for_view=nV1hdiMAAAAJ:Tyk-4Ss8FVUC) — 2024 · 13 citations.
+- [Financial Advisory LLM for Financial Literacy in India](https://assets-eu.researchsquare.com/files/rs-4354348/v1_covered_341a77ab-9100-4c87-b9df-b5c2ee75aeb0.pdf) — 2024 · 6 citations.
 
 [Full publication list → ]({{ '/publications/' | relative_url }})
 
@@ -82,6 +84,6 @@ Reach me at any of these. I'll usually reply within a day or two.
 
 ## Elsewhere
 
-- [Google Scholar](https://scholar.google.com/citations?user=nV1hdiMAAAAJ&hl=en) — 91 citations · h-index 2 · i10-index 2
+- [Google Scholar](https://scholar.google.com/citations?user=nV1hdiMAAAAJ&hl=en) — 102 citations · h-index 6 · i10-index 5
 - [GitHub](https://github.com/Bhavith-Chandra)
 - [LinkedIn](https://www.linkedin.com/in/bhavith-chandra)

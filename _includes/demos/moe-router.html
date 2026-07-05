@@ -1,0 +1,206 @@
+<div class="idemo" id="demo-moe">
+  <div class="idemo__card">
+    <div class="idemo__head"><span class="idemo__title">Interactive · Watch experts specialize (or die)</span></div>
+    <div class="idemo__body">
+
+      <p class="moe-lead">Eight experts. A stream of tokens flowing left to right. Each token gets routed to two experts. Standard load-balancing keeps them fed evenly, but flat. APEX weights the loss by router confidence — so specialization can actually form.</p>
+
+      <div class="moe-controls">
+        <button class="moe-btn moe-btn--play" data-moe-run>▶ Run 400 tokens</button>
+        <button class="moe-btn" data-moe-reset>↺ Reset</button>
+        <label class="moe-check">
+          <input type="checkbox" data-moe-apex checked>
+          <span>Use APEX loss (adaptive)</span>
+        </label>
+      </div>
+
+      <div class="moe-stage">
+        <svg viewBox="0 0 720 220" class="moe-svg" role="img" aria-label="MoE routing">
+          <g class="moe-experts"></g>
+          <g class="moe-tokens"></g>
+          <g class="moe-routes"></g>
+        </svg>
+      </div>
+
+      <div class="moe-stats">
+        <div><span class="moe-stats__k">Tokens routed</span><span class="moe-stats__v" data-moe-n>0</span></div>
+        <div><span class="moe-stats__k">Dead experts</span><span class="moe-stats__v" data-moe-dead>0</span></div>
+        <div><span class="moe-stats__k">Mean specialization</span><span class="moe-stats__v" data-moe-spec>—</span></div>
+      </div>
+
+      <div class="moe-explain" data-moe-explain>Press <strong>▶ Run</strong> to see routing over 400 tokens. Watch which experts light up and which stay dark.</div>
+    </div>
+    <details>
+      <summary>How this demo works</summary>
+      <p>Tokens are drawn from three synthetic "topics" (coloring corresponds to topic). Each expert has a latent affinity vector; router logits are affinities scored by dot product. The APEX toggle changes how the load-balance auxiliary loss is weighted per token — under APEX, confident-router tokens get lighter penalties, letting genuine specialization form. Under the standard loss, everyone gets balanced, and no topic-expert pairing survives.</p>
+    </details>
+  </div>
+</div>
+
+<style>
+  #demo-moe .moe-lead { margin: 0 0 1rem !important; color: var(--nn-body) !important; font-size: 0.98rem !important; line-height: 1.6 !important; }
+  #demo-moe .moe-controls { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-bottom: 0.9rem; }
+  #demo-moe .moe-btn {
+    padding: 0.45rem 0.9rem; background: #fff; border: 1px solid var(--nn-line); border-radius: 3px;
+    font-family: var(--nn-mono); font-size: 0.8rem; color: var(--nn-muted); cursor: pointer;
+  }
+  #demo-moe .moe-btn:hover { border-color: var(--nn-accent); }
+  #demo-moe .moe-btn--play { background: var(--nn-accent); color: #fff; border-color: var(--nn-accent); }
+  #demo-moe .moe-btn--play:hover { background: var(--nn-accent-dark); }
+  #demo-moe .moe-check { margin-left: auto; display: inline-flex; align-items: center; gap: 0.4rem; font-family: var(--nn-mono); font-size: 0.82rem; color: var(--nn-muted); cursor: pointer; }
+  #demo-moe .moe-stage { background: #fbfcfd; border: 1px solid var(--nn-line); border-radius: 6px; padding: 0.7rem; margin-bottom: 0.9rem; }
+  #demo-moe .moe-svg { width: 100%; height: auto; display: block; }
+  #demo-moe .moe-expert { fill: #fff; stroke: var(--nn-line); stroke-width: 1; transition: stroke 240ms, fill 240ms; }
+  #demo-moe .moe-expert.is-hot { stroke: var(--nn-accent); fill: var(--nn-accent-soft); }
+  #demo-moe .moe-expert.is-dead { stroke: var(--nn-accent-warn, #c04550); fill: #fff5f5; stroke-dasharray: 3 2; }
+  #demo-moe .moe-expert-label { font-family: var(--nn-mono); font-size: 10px; fill: var(--nn-muted); text-anchor: middle; }
+  #demo-moe .moe-expert-bar { transition: width 240ms; }
+  #demo-moe .moe-token { transition: cx 200ms, cy 200ms, opacity 200ms; }
+  #demo-moe .moe-route { fill: none; stroke-linecap: round; opacity: 0.15; transition: opacity 300ms; }
+  #demo-moe .moe-stats {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; margin-bottom: 0.9rem;
+    background: #fff; border: 1px solid var(--nn-line); border-radius: 4px; padding: 0.6rem 0.8rem;
+  }
+  #demo-moe .moe-stats__k { display: block; font-family: var(--nn-mono); font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--nn-muted); }
+  #demo-moe .moe-stats__v { display: block; font-family: var(--nn-mono); font-size: 1rem; color: var(--nn-accent-dark); font-weight: 600; }
+  #demo-moe .moe-explain {
+    padding: 0.85rem 1rem; background: #ffffff; border: 1px solid var(--nn-line);
+    border-left: 3px solid var(--nn-accent); border-radius: 4px;
+    font-size: 0.9rem; color: var(--nn-body); line-height: 1.6;
+  }
+  #demo-moe .moe-explain strong { color: var(--nn-accent-dark); }
+</style>
+
+<script>
+(function() {
+  const root = document.getElementById('demo-moe');
+  if (!root) return;
+  const svg = root.querySelector('.moe-svg');
+  const gExp = svg.querySelector('.moe-experts');
+  const gTok = svg.querySelector('.moe-tokens');
+  const gRts = svg.querySelector('.moe-routes');
+  const runBtn = root.querySelector('[data-moe-run]');
+  const resetBtn = root.querySelector('[data-moe-reset]');
+  const apexEl = root.querySelector('[data-moe-apex]');
+  const nEl = root.querySelector('[data-moe-n]');
+  const deadEl = root.querySelector('[data-moe-dead]');
+  const specEl = root.querySelector('[data-moe-spec]');
+  const explain = root.querySelector('[data-moe-explain]');
+  const NE = 8;
+  const NT = 400;
+  const topicColors = ['#2a6fb8', '#2a9e8e', '#c98c3a'];
+  let experts = [];
+  let usage = [];
+  let topicHist = [];
+  let n = 0;
+  function reset() {
+    experts = Array.from({ length: NE }, () => Array.from({ length: 3 }, () => Math.random() * 2 - 1));
+    usage = Array.from({ length: NE }, () => 0);
+    topicHist = Array.from({ length: NE }, () => [0, 0, 0]);
+    n = 0;
+    draw();
+    gTok.innerHTML = '';
+    gRts.innerHTML = '';
+    explain.innerHTML = `Press <strong>▶ Run</strong> to route 400 tokens. Watch which experts light up${apexEl.checked ? ' and specialize by topic' : ' — spoiler, none of them will'}.`;
+  }
+  function draw() {
+    gExp.innerHTML = '';
+    for (let i = 0; i < NE; i++) {
+      const y = 30 + i * 22;
+      const use = usage[i];
+      const total = usage.reduce((a, b) => a + b, 0) || 1;
+      const share = use / total;
+      const dead = n > 100 && use < (n / NE) * 0.15;
+      const hot = use > 0;
+      gExp.insertAdjacentHTML('beforeend',
+        `<rect class="moe-expert ${dead ? 'is-dead' : (hot ? 'is-hot' : '')}" x="590" y="${y - 8}" width="120" height="16" rx="2"/>
+         <text class="moe-expert-label" x="586" y="${y + 4}" text-anchor="end">E${i}</text>`);
+      const barW = share * 116;
+      const th = topicHist[i];
+      const s = th[0] + th[1] + th[2];
+      if (s > 0) {
+        let x = 592;
+        for (let t = 0; t < 3; t++) {
+          const w = (th[t] / s) * barW;
+          gExp.insertAdjacentHTML('beforeend', `<rect class="moe-expert-bar" x="${x}" y="${y - 6}" width="${w.toFixed(1)}" height="12" fill="${topicColors[t]}" opacity="0.85"/>`);
+          x += w;
+        }
+      }
+    }
+  }
+  function scoreExperts(tok) {
+    return experts.map(a => a[0] * tok[0] + a[1] * tok[1] + a[2] * tok[2]);
+  }
+  function topK(scores, k) {
+    const idx = scores.map((s, i) => [s, i]).sort((a, b) => b[0] - a[0]).slice(0, k).map(x => x[1]);
+    return idx;
+  }
+  function updateExperts(tok, chosen, isApex) {
+    const conf = Math.abs(scoreExperts(tok).sort((a, b) => b - a)[0] - scoreExperts(tok).sort((a, b) => b - a)[1]);
+    const balancePenalty = usage.map(u => u / Math.max(1, n / NE) - 1);
+    const alpha = 0.06;
+    for (let i = 0; i < NE; i++) {
+      const isCh = chosen.includes(i);
+      const routeSignal = isCh ? tok : tok.map(x => -x * 0.4);
+      const weight = isApex ? (isCh ? Math.min(1, 0.3 + conf * 0.6) : 0.35 / (1 + conf)) : 0.6;
+      const balW = isApex ? 0.35 / (1 + conf) : 0.9;
+      for (let d = 0; d < 3; d++) {
+        experts[i][d] += alpha * weight * routeSignal[d] - alpha * balW * balancePenalty[i] * routeSignal[d] * 0.5;
+      }
+    }
+  }
+  function drawRoutes(tokX, tokY, chosen) {
+    while (gRts.children.length > 60) gRts.removeChild(gRts.firstChild);
+    for (const i of chosen) {
+      const y = 30 + i * 22;
+      gRts.insertAdjacentHTML('beforeend',
+        `<path class="moe-route" d="M ${tokX} ${tokY} Q ${(tokX + 585) / 2} ${(tokY + y) / 2} 585 ${y}" stroke="${topicColors[tokY < 100 ? 0 : (tokY < 160 ? 1 : 2)]}" stroke-width="1.5"/>`);
+    }
+    Array.from(gRts.children).slice(0, -6).forEach(r => r.style.opacity = 0.06);
+  }
+  async function run() {
+    reset();
+    runBtn.disabled = true;
+    const isApex = apexEl.checked;
+    for (let t = 0; t < NT; t++) {
+      const topic = t % 3;
+      const centers = [[1, 0.2, -0.3], [-0.5, 1, 0.1], [0.2, -0.4, 1]];
+      const c = centers[topic];
+      const tok = [c[0] + (Math.random() - 0.5) * 0.3, c[1] + (Math.random() - 0.5) * 0.3, c[2] + (Math.random() - 0.5) * 0.3];
+      const scores = scoreExperts(tok);
+      const chosen = topK(scores, 2);
+      chosen.forEach(i => { usage[i]++; topicHist[i][topic]++; });
+      updateExperts(tok, chosen, isApex);
+      n++;
+      const tokY = topic === 0 ? 70 : (topic === 1 ? 130 : 190);
+      const tokX = 30;
+      gTok.innerHTML = `<circle class="moe-token" cx="${tokX}" cy="${tokY}" r="6" fill="${topicColors[topic]}"/>`;
+      drawRoutes(tokX, tokY, chosen);
+      if (t % 3 === 0) draw();
+      if (t % 6 === 0) await new Promise(r => setTimeout(r, 8));
+    }
+    draw();
+    const total = usage.reduce((a, b) => a + b, 0);
+    const dead = usage.filter(u => u < total / NE * 0.2).length;
+    const specs = topicHist.map(h => {
+      const s = h[0] + h[1] + h[2];
+      if (s < 2) return 0;
+      const max = Math.max(...h) / s;
+      return max;
+    });
+    const spec = specs.reduce((a, b) => a + b, 0) / NE;
+    nEl.textContent = n;
+    deadEl.textContent = dead;
+    specEl.textContent = spec.toFixed(2);
+    if (isApex) {
+      explain.innerHTML = `<strong>APEX loss:</strong> ${dead} dead experts, mean specialization ${spec.toFixed(2)}. Each surviving expert now leans toward one topic — that's the signal on the load bars, colored by topic. Confident routing was rewarded; the auxiliary loss backed off for tokens the router was already sure about.`;
+    } else {
+      explain.innerHTML = `<strong>Standard load-balance:</strong> ${dead} dead experts, mean specialization ${spec.toFixed(2)}. The auxiliary loss forced every expert to see every topic in equal proportion, so no specialization forms. Load is balanced. Everything else was averaged away.`;
+    }
+    runBtn.disabled = false;
+  }
+  runBtn.addEventListener('click', run);
+  resetBtn.addEventListener('click', reset);
+  reset();
+})();
+</script>

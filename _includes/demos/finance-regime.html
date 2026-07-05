@@ -1,0 +1,155 @@
+<div class="idemo" id="demo-fin">
+  <div class="idemo__card">
+    <div class="idemo__head"><span class="idemo__title">Interactive · Same question, two models</span></div>
+    <div class="idemo__body">
+
+      <p class="fin-lead">A user in Chennai types the same question at a generic assistant and at our Indian-context model. Move the salary slider — watch the answers diverge.</p>
+
+      <div class="fin-controls">
+        <label class="fin-slider">
+          <span>Annual salary (₹ lakh)</span>
+          <input type="range" min="6" max="40" step="1" value="12" data-fin-sal>
+          <span class="fin-val" data-fin-val>₹12L</span>
+        </label>
+        <div class="fin-regime">
+          <button class="fin-btn is-active" data-fin-r="new">New regime</button>
+          <button class="fin-btn" data-fin-r="old">Old regime (80C, HRA)</button>
+        </div>
+      </div>
+
+      <div class="fin-panels">
+        <div class="fin-panel">
+          <div class="fin-panel__head"><span class="fin-tag fin-tag--warn">Generic model</span></div>
+          <div class="fin-panel__msg" data-fin-generic></div>
+        </div>
+        <div class="fin-panel fin-panel--ours">
+          <div class="fin-panel__head"><span class="fin-tag">Indian-context model</span></div>
+          <div class="fin-panel__msg" data-fin-ours></div>
+        </div>
+      </div>
+
+      <div class="fin-explain" data-fin-explain></div>
+    </div>
+    <details>
+      <summary>How this demo works</summary>
+      <p>The tax numbers are computed live using FY 2024-25 Indian slab rates for the two regimes: the old regime with ₹1.5L 80C + ₹50k standard deduction assumed, and the new regime with the higher standard deduction and no exemptions. The generic-model panel is a stylized composite of the common failure modes we observed in generic assistants — USD framing, US-tax reasoning, or generic "consult an advisor" hedging.</p>
+    </details>
+  </div>
+</div>
+
+<style>
+  #demo-fin .fin-lead { margin: 0 0 1rem !important; color: var(--nn-body) !important; font-size: 0.98rem !important; line-height: 1.6 !important; }
+  #demo-fin .fin-controls { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; margin-bottom: 0.9rem; }
+  #demo-fin .fin-slider { display: inline-flex; align-items: center; gap: 0.6rem; font-family: var(--nn-mono); font-size: 0.82rem; color: var(--nn-muted); }
+  #demo-fin .fin-slider input[type=range] { width: 220px; }
+  #demo-fin .fin-val { min-width: 3rem; text-align: right; color: var(--nn-accent-dark); font-weight: 600; }
+  #demo-fin .fin-regime { display: inline-flex; gap: 0.3rem; }
+  #demo-fin .fin-btn {
+    padding: 0.4rem 0.7rem; background: #fff; border: 1px solid var(--nn-line); border-radius: 3px;
+    font-family: var(--nn-mono); font-size: 0.78rem; color: var(--nn-muted); cursor: pointer;
+  }
+  #demo-fin .fin-btn.is-active { border-color: var(--nn-accent); color: var(--nn-accent-dark); background: var(--nn-accent-soft); }
+  #demo-fin .fin-panels { display: grid; grid-template-columns: 1fr 1fr; gap: 0.9rem; margin-bottom: 0.9rem; }
+  @media (max-width: 640px) { #demo-fin .fin-panels { grid-template-columns: 1fr; } }
+  #demo-fin .fin-panel { background: #fff; border: 1px solid var(--nn-line); border-radius: 6px; padding: 0.9rem; }
+  #demo-fin .fin-panel--ours { border-color: var(--nn-accent); box-shadow: 0 0 0 1px var(--nn-accent-soft); }
+  #demo-fin .fin-panel__head { margin-bottom: 0.6rem; }
+  #demo-fin .fin-tag {
+    display: inline-block; padding: 0.15rem 0.5rem; border-radius: 2px; background: var(--nn-accent);
+    color: #fff; font-family: var(--nn-mono); font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase;
+  }
+  #demo-fin .fin-tag--warn { background: var(--nn-accent-warn, #c04550); }
+  #demo-fin .fin-panel__msg { font-size: 0.9rem; line-height: 1.6; color: var(--nn-body); }
+  #demo-fin .fin-panel__msg strong { color: var(--nn-accent-dark); }
+  #demo-fin .fin-panel__msg .fin-money { font-family: var(--nn-mono); }
+  #demo-fin .fin-explain {
+    padding: 0.85rem 1rem; background: #ffffff; border: 1px solid var(--nn-line);
+    border-left: 3px solid var(--nn-accent); border-radius: 4px;
+    font-size: 0.9rem; color: var(--nn-body); line-height: 1.6;
+  }
+  #demo-fin .fin-explain strong { color: var(--nn-accent-dark); }
+</style>
+
+<script>
+(function() {
+  const root = document.getElementById('demo-fin');
+  if (!root) return;
+  const salEl = root.querySelector('[data-fin-sal]');
+  const valEl = root.querySelector('[data-fin-val]');
+  const genericEl = root.querySelector('[data-fin-generic]');
+  const oursEl = root.querySelector('[data-fin-ours]');
+  const explainEl = root.querySelector('[data-fin-explain]');
+  let regime = 'new';
+  function fmt(n) { return '₹' + Math.round(n).toLocaleString('en-IN'); }
+  function computeNew(gross) {
+    const stdDed = 75000;
+    const taxable = Math.max(0, gross - stdDed);
+    let tax = 0;
+    const slabs = [[300000, 0], [700000, 0.05], [1000000, 0.10], [1200000, 0.15], [1500000, 0.20], [Infinity, 0.30]];
+    let prev = 0;
+    for (const [top, rate] of slabs) {
+      if (taxable > prev) {
+        const chunk = Math.min(taxable, top) - prev;
+        tax += chunk * rate;
+        prev = top;
+      }
+    }
+    if (taxable <= 700000) tax = 0;
+    const cess = tax * 0.04;
+    return { taxable, tax: tax + cess, stdDed };
+  }
+  function computeOld(gross) {
+    const stdDed = 50000;
+    const c80C = 150000;
+    const taxable = Math.max(0, gross - stdDed - c80C);
+    let tax = 0;
+    const slabs = [[250000, 0], [500000, 0.05], [1000000, 0.20], [Infinity, 0.30]];
+    let prev = 0;
+    for (const [top, rate] of slabs) {
+      if (taxable > prev) {
+        const chunk = Math.min(taxable, top) - prev;
+        tax += chunk * rate;
+        prev = top;
+      }
+    }
+    if (taxable <= 500000) tax = Math.max(0, tax - 12500);
+    const cess = tax * 0.04;
+    return { taxable, tax: tax + cess, stdDed, c80C };
+  }
+  function render() {
+    const lakh = +salEl.value;
+    const gross = lakh * 100000;
+    valEl.textContent = '₹' + lakh + 'L';
+    const nu = computeNew(gross);
+    const ol = computeOld(gross);
+    const better = ol.tax < nu.tax ? 'old' : 'new';
+    if (regime === 'new') {
+      genericEl.innerHTML = `<em>"For a salary of $${(gross/85).toFixed(0)}, you can contribute to a 401(k) up to $23,000 per year, and consider a Roth IRA. Federal tax brackets suggest…"</em><br><br><span style="color:var(--nn-muted);font-size:0.82rem;">Fails: USD framing. 401(k)/Roth IRA aren't Indian instruments. US brackets don't apply.</span>`;
+      oursEl.innerHTML = `On <strong>₹${lakh}L gross</strong> under the <strong>new regime</strong>:<br>
+        • Standard deduction: <span class="fin-money">${fmt(nu.stdDed)}</span><br>
+        • Taxable income: <span class="fin-money">${fmt(nu.taxable)}</span><br>
+        • Tax + 4% cess: <span class="fin-money">${fmt(nu.tax)}</span><br><br>
+        <em>Note: old regime works out to <span class="fin-money">${fmt(ol.tax)}</span> with ₹1.5L 80C. ${better === 'old' ? 'Old' : 'New'} regime is cheaper for your bracket. This isn't tax advice — file with your CA.</em>`;
+    } else {
+      genericEl.innerHTML = `<em>"You should itemize deductions including mortgage interest, state and local taxes, and charitable donations…"</em><br><br><span style="color:var(--nn-muted);font-size:0.82rem;">Fails: US itemization categories don't map to Indian old-regime exemptions (80C, 80D, HRA, LTA).</span>`;
+      oursEl.innerHTML = `On <strong>₹${lakh}L gross</strong> under the <strong>old regime</strong>:<br>
+        • Standard deduction: <span class="fin-money">${fmt(ol.stdDed)}</span><br>
+        • 80C investments (assumed max): <span class="fin-money">${fmt(ol.c80C)}</span><br>
+        • Taxable income: <span class="fin-money">${fmt(ol.taxable)}</span><br>
+        • Tax + 4% cess: <span class="fin-money">${fmt(ol.tax)}</span><br><br>
+        <em>Note: new regime works out to <span class="fin-money">${fmt(nu.tax)}</span>. ${better === 'old' ? 'Old' : 'New'} regime is cheaper for your bracket. This isn't tax advice — file with your CA.</em>`;
+    }
+    const delta = Math.abs(nu.tax - ol.tax);
+    explainEl.innerHTML = `<strong>Difference at this bracket:</strong> ${fmt(delta)}. The generic model isn't even in the right currency. The Indian-context model quotes the right law, picks the right regime, and stops at "consult your CA" — that refusal is deliberate.`;
+  }
+  salEl.addEventListener('input', render);
+  root.querySelectorAll('[data-fin-r]').forEach(b => {
+    b.addEventListener('click', () => {
+      regime = b.dataset.finR;
+      root.querySelectorAll('[data-fin-r]').forEach(x => x.classList.toggle('is-active', x === b));
+      render();
+    });
+  });
+  render();
+})();
+</script>

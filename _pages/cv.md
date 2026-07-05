@@ -79,7 +79,7 @@ redirect_from:
 ## Publications
 
 <p>
-<a href="https://scholar.google.com/citations?user=nV1hdiMAAAAJ&hl=en" target="_blank"><strong>Google Scholar</strong></a> · 91 citations · h-index 2
+<a href="https://scholar.google.com/citations?user=nV1hdiMAAAAJ&hl=en" target="_blank"><strong>Google Scholar</strong></a> · 102 citations · h-index 6 · i10-index 5
 </p>
 
   <ul>{% for post in site.publications %}

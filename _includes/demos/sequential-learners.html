@@ -1,0 +1,210 @@
+<div class="idemo" id="demo-seq">
+  <div class="idemo__card">
+    <div class="idemo__head"><span class="idemo__title">Interactive · Thirty-five years of sequential learners, one axis</span></div>
+    <div class="idemo__body">
+
+      <p class="seq-lead">Scrub the year slider. Watch the practical effective-context length climb from tens of steps to hundreds of thousands. Each era's dominant model gets its state visualized on the right.</p>
+
+      <div class="seq-controls">
+        <label class="seq-slider">
+          <span>Year</span>
+          <input type="range" min="1990" max="2024" step="1" value="1990" data-seq-year>
+          <span class="seq-year" data-seq-year-v>1990</span>
+        </label>
+      </div>
+
+      <div class="seq-panels">
+        <div class="seq-left">
+          <svg viewBox="0 0 400 220" class="seq-svg" role="img" aria-label="Effective context length over years">
+            <g class="seq-axes"></g>
+            <g class="seq-curve"></g>
+            <g class="seq-marker"></g>
+          </svg>
+        </div>
+        <div class="seq-right">
+          <svg viewBox="0 0 300 220" class="seq-svg seq-state" role="img" aria-label="State visualization">
+            <g class="seq-state-viz"></g>
+          </svg>
+        </div>
+      </div>
+
+      <div class="seq-card">
+        <div class="seq-card__title" data-seq-title></div>
+        <div class="seq-card__body" data-seq-body></div>
+      </div>
+    </div>
+    <details>
+      <summary>How this demo works</summary>
+      <p>Effective context length is the practical, "you can actually train and use it" number, not a theoretical bound. The curve is a piecewise fit to what each era actually delivered on published benchmarks — Elman/vanilla RNN (~10-20 steps), LSTM (~100s), Transformer (~2-8k, later 32-128k), SSM/Mamba (100k+). State visualizations are stylized: a small hidden vector for RNN/LSTM, a growing KV cache for transformers, a structured continuous state for SSMs.</p>
+    </details>
+  </div>
+</div>
+
+<style>
+  #demo-seq .seq-lead { margin: 0 0 1rem !important; color: var(--nn-body) !important; font-size: 0.98rem !important; line-height: 1.6 !important; }
+  #demo-seq .seq-controls { margin-bottom: 0.9rem; }
+  #demo-seq .seq-slider { display: flex; align-items: center; gap: 0.7rem; font-family: var(--nn-mono); font-size: 0.82rem; color: var(--nn-muted); }
+  #demo-seq .seq-slider input[type=range] { flex: 1; max-width: 400px; }
+  #demo-seq .seq-year { min-width: 3rem; color: var(--nn-accent-dark); font-weight: 700; font-size: 1rem; }
+  #demo-seq .seq-panels { display: grid; grid-template-columns: 1.4fr 1fr; gap: 0.7rem; margin-bottom: 0.9rem; }
+  @media (max-width: 640px) { #demo-seq .seq-panels { grid-template-columns: 1fr; } }
+  #demo-seq .seq-left, #demo-seq .seq-right { background: #fbfcfd; border: 1px solid var(--nn-line); border-radius: 6px; padding: 0.6rem; }
+  #demo-seq .seq-svg { width: 100%; height: auto; display: block; }
+  #demo-seq .seq-axis { stroke: var(--nn-line); stroke-width: 0.5; }
+  #demo-seq .seq-axis-label { font-family: var(--nn-mono); font-size: 10px; fill: var(--nn-muted); }
+  #demo-seq .seq-line { fill: none; stroke: var(--nn-accent); stroke-width: 2.2; }
+  #demo-seq .seq-marker-line { stroke: var(--nn-ink); stroke-width: 1; stroke-dasharray: 2 3; }
+  #demo-seq .seq-marker-dot { fill: var(--nn-accent-dark); }
+  #demo-seq .seq-era-band { opacity: 0.14; }
+  #demo-seq .seq-state-cell { transition: fill 200ms; }
+  #demo-seq .seq-state-label { font-family: var(--nn-mono); font-size: 9px; fill: var(--nn-muted); }
+  #demo-seq .seq-card { background: #fff; border: 1px solid var(--nn-line); border-radius: 6px; padding: 0.9rem 1rem; border-left: 3px solid var(--nn-accent); }
+  #demo-seq .seq-card__title { font-family: var(--nn-mono); font-weight: 700; color: var(--nn-accent-dark); margin-bottom: 0.35rem; font-size: 0.95rem; }
+  #demo-seq .seq-card__body { font-size: 0.9rem; line-height: 1.6; color: var(--nn-body); }
+</style>
+
+<script>
+(function() {
+  const root = document.getElementById('demo-seq');
+  if (!root) return;
+  const yearEl = root.querySelector('[data-seq-year]');
+  const yearV = root.querySelector('[data-seq-year-v]');
+  const svgLeft = root.querySelector('.seq-left svg');
+  const svgRight = root.querySelector('.seq-right svg');
+  const gAxes = svgLeft.querySelector('.seq-axes');
+  const gCurve = svgLeft.querySelector('.seq-curve');
+  const gMarker = svgLeft.querySelector('.seq-marker');
+  const gState = svgRight.querySelector('.seq-state-viz');
+  const titleEl = root.querySelector('[data-seq-title]');
+  const bodyEl = root.querySelector('[data-seq-body]');
+  const eras = [
+    { start: 1990, end: 1996, name: 'Elman / vanilla RNN', color: '#8ea6c0' },
+    { start: 1997, end: 2013, name: 'LSTM / GRU', color: '#8ec0ae' },
+    { start: 2014, end: 2016, name: 'Seq2seq + attention', color: '#c0ae8e' },
+    { start: 2017, end: 2022, name: 'Transformer', color: '#c98c8c' },
+    { start: 2023, end: 2024, name: 'State-space models (Mamba, S4)', color: '#a68ec9' }
+  ];
+  function logCtx(year) {
+    if (year <= 1996) return 1.0 + (year - 1990) * 0.06;
+    if (year <= 2013) return 1.4 + (year - 1996) * 0.06;
+    if (year <= 2016) return 2.4 + (year - 2013) * 0.15;
+    if (year <= 2022) return 2.85 + (year - 2017) * 0.35;
+    return 4.6 + (year - 2022) * 0.4;
+  }
+  function drawAxes() {
+    gAxes.innerHTML = '';
+    for (const e of eras) {
+      const x1 = 40 + ((e.start - 1990) / 34) * 340;
+      const x2 = 40 + ((e.end - 1990) / 34) * 340;
+      gAxes.insertAdjacentHTML('beforeend', `<rect class="seq-era-band" x="${x1}" y="15" width="${(x2 - x1)}" height="180" fill="${e.color}"/>`);
+    }
+    gAxes.insertAdjacentHTML('beforeend',
+      `<line class="seq-axis" x1="40" y1="195" x2="380" y2="195"/>
+       <line class="seq-axis" x1="40" y1="15" x2="40" y2="195"/>
+       <text class="seq-axis-label" x="40" y="10">context (log)</text>
+       <text class="seq-axis-label" x="40" y="208" text-anchor="middle">1990</text>
+       <text class="seq-axis-label" x="210" y="208" text-anchor="middle">2007</text>
+       <text class="seq-axis-label" x="380" y="208" text-anchor="middle">2024</text>
+       <text class="seq-axis-label" x="35" y="195" text-anchor="end">10</text>
+       <text class="seq-axis-label" x="35" y="120" text-anchor="end">1k</text>
+       <text class="seq-axis-label" x="35" y="60" text-anchor="end">100k</text>`);
+  }
+  function drawCurve() {
+    let d = '';
+    for (let y = 1990; y <= 2024; y++) {
+      const x = 40 + ((y - 1990) / 34) * 340;
+      const cy = 195 - logCtx(y) * 32;
+      d += (d === '' ? 'M' : 'L') + x.toFixed(1) + ' ' + cy.toFixed(1) + ' ';
+    }
+    gCurve.innerHTML = `<path class="seq-line" d="${d}"/>`;
+  }
+  function drawMarker(year) {
+    const x = 40 + ((year - 1990) / 34) * 340;
+    const y = 195 - logCtx(year) * 32;
+    gMarker.innerHTML = `<line class="seq-marker-line" x1="${x.toFixed(1)}" y1="15" x2="${x.toFixed(1)}" y2="195"/><circle class="seq-marker-dot" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="4"/>`;
+  }
+  function eraFor(year) { return eras.find(e => year >= e.start && year <= e.end); }
+  function drawState(year) {
+    const era = eraFor(year);
+    gState.innerHTML = '';
+    gState.insertAdjacentHTML('beforeend', `<text class="seq-state-label" x="150" y="14" text-anchor="middle">internal state at year ${year}</text>`);
+    if (era.name.includes('RNN')) {
+      for (let i = 0; i < 8; i++) {
+        const v = 0.3 + 0.7 * Math.sin(i * 2 + year);
+        gState.insertAdjacentHTML('beforeend', `<rect class="seq-state-cell" x="${40 + i * 30}" y="90" width="24" height="40" fill="${era.color}" fill-opacity="${v.toFixed(2)}" stroke="var(--nn-line)"/>`);
+      }
+      gState.insertAdjacentHTML('beforeend', `<text class="seq-state-label" x="150" y="150" text-anchor="middle">8-dim hidden vector · overwritten every step</text>`);
+    } else if (era.name.includes('LSTM')) {
+      for (let i = 0; i < 8; i++) {
+        const c = 0.4 + 0.5 * Math.sin(i * 1.4 + year * 0.5);
+        const h = 0.3 + 0.7 * Math.cos(i * 1.7 + year * 0.5);
+        gState.insertAdjacentHTML('beforeend',
+          `<rect class="seq-state-cell" x="${40 + i * 30}" y="60" width="24" height="30" fill="${era.color}" fill-opacity="${c.toFixed(2)}" stroke="var(--nn-line)"/>
+           <rect class="seq-state-cell" x="${40 + i * 30}" y="95" width="24" height="30" fill="${era.color}" fill-opacity="${h.toFixed(2)}" stroke="var(--nn-line)"/>`);
+      }
+      gState.insertAdjacentHTML('beforeend',
+        `<text class="seq-state-label" x="30" y="80" text-anchor="end">c</text>
+         <text class="seq-state-label" x="30" y="115" text-anchor="end">h</text>
+         <text class="seq-state-label" x="150" y="150" text-anchor="middle">cell + hidden · gated writes preserve past</text>`);
+    } else if (era.name.includes('attention')) {
+      for (let i = 0; i < 8; i++) {
+        const w = 0.2 + 0.6 * Math.exp(-Math.pow(i - 5, 2) / 3);
+        gState.insertAdjacentHTML('beforeend', `<rect class="seq-state-cell" x="${40 + i * 30}" y="80" width="24" height="60" fill="${era.color}" fill-opacity="${w.toFixed(2)}" stroke="var(--nn-line)"/>`);
+      }
+      gState.insertAdjacentHTML('beforeend', `<text class="seq-state-label" x="150" y="160" text-anchor="middle">encoder states + soft attention weights</text>`);
+    } else if (era.name.includes('Transformer')) {
+      const cache = Math.min(16, 4 + (year - 2017) * 2);
+      for (let i = 0; i < cache; i++) {
+        const w = 0.15 + 0.5 * Math.random();
+        gState.insertAdjacentHTML('beforeend', `<rect class="seq-state-cell" x="${20 + i * 16}" y="80" width="12" height="60" fill="${era.color}" fill-opacity="${w.toFixed(2)}" stroke="var(--nn-line)" stroke-width="0.5"/>`);
+      }
+      gState.insertAdjacentHTML('beforeend', `<text class="seq-state-label" x="150" y="160" text-anchor="middle">KV cache · grows linearly, attention is quadratic</text>`);
+    } else {
+      for (let i = 0; i < 12; i++) {
+        const w = 0.5 + 0.4 * Math.sin(i * 1.2 + year * 0.3);
+        gState.insertAdjacentHTML('beforeend', `<rect class="seq-state-cell" x="${20 + i * 22}" y="80" width="18" height="60" fill="${era.color}" fill-opacity="${w.toFixed(2)}" stroke="var(--nn-line)"/>`);
+      }
+      gState.insertAdjacentHTML('beforeend', `<text class="seq-state-label" x="150" y="160" text-anchor="middle">structured state · continuous-time dynamics</text>`);
+    }
+  }
+  const notes = {
+    rnn: {
+      title: 'Vanilla RNN · Elman networks',
+      body: 'Correct in theory: state carries information forward across time. Broken in practice past ~10-20 steps because gradients vanish or explode. Every subsequent architecture is an attempt to fix this without giving up on state.'
+    },
+    lstm: {
+      title: 'LSTM / GRU · gated recurrence',
+      body: 'Gates make the gradient path additive. Hundreds of steps become tractable. This is the era that gave us seq2seq translation, speech recognition, and the first sequence-modeling papers that felt like they might actually work in production.'
+    },
+    attn: {
+      title: 'Seq2seq + attention',
+      body: 'A weird middle era. Recurrence is still there, but attention lets the decoder re-read the whole encoder state. This is the innovation that eventually cannibalized recurrence entirely — the transformer paper was two years away.'
+    },
+    tr: {
+      title: 'Transformer · attention is all you need',
+      body: 'Recurrence is dead. Attention over all past tokens, in parallel. State becomes implicit in the KV cache. Trades linear-time compute for quadratic-time compute — which was a great trade, until context windows got really long.'
+    },
+    ssm: {
+      title: 'State-space models · Mamba, S4',
+      body: 'Recurrence returns, but with the good parts of the transformer era: parallel training, stable long-range gradients, linear-time inference. The current frontier. Also the era where "world model" starts to mean something concrete again.'
+    }
+  };
+  function render() {
+    const y = +yearEl.value;
+    yearV.textContent = y;
+    drawMarker(y);
+    drawState(y);
+    const era = eraFor(y);
+    let key;
+    if (era.name.includes('RNN')) key = 'rnn';
+    else if (era.name.includes('LSTM')) key = 'lstm';
+    else if (era.name.includes('attention')) key = 'attn';
+    else if (era.name.includes('Transformer')) key = 'tr';
+    else key = 'ssm';
+    titleEl.textContent = notes[key].title;
+    bodyEl.textContent = notes[key].body;
+  }
+  yearEl.addEventListener('input', render);
+  drawAxes(); drawCurve(); render();
+})();
+</script>
