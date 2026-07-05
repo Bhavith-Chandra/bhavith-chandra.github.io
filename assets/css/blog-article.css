@@ -745,3 +745,280 @@ body.blog-dark ::selection,
 }
 .math-block + .math-translate { margin-top: -0.4rem; }
 
+
+/* ================================================================
+   Distill pass — rebuild callouts, references, and figure chrome
+   Everything below intentionally overrides earlier rules. The old
+   colored-callout / research-card / traffic-light-demo aesthetic
+   is replaced with restrained editorial styling: quiet marginalia,
+   hanging-indent bibliography, unadorned figures with real captions.
+   ================================================================ */
+
+/* Reading column — narrow it toward Distill's ~680px for better rag. */
+.blog-article__body {
+  max-width: 700px;
+  margin: 0 auto;
+}
+.blog-article__body p,
+.blog-article__body li {
+  font-size: 1.05rem;
+  line-height: 1.72;
+  color: #2a2a2a;
+}
+.blog-article__body h2 {
+  font-family: var(--nn-serif) !important;
+  font-size: 1.65rem !important;
+  font-weight: 500 !important;
+  letter-spacing: -0.01em !important;
+  color: var(--nn-ink) !important;
+  margin: 3.2rem 0 1.1rem !important;
+  padding: 0 !important;
+  border: none !important;
+}
+.blog-article__body h3 {
+  font-family: var(--nn-mono) !important;
+  font-size: 0.78rem !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.14em !important;
+  text-transform: uppercase !important;
+  color: var(--nn-muted) !important;
+  margin: 2.4rem 0 0.6rem !important;
+  padding: 0 !important;
+  border: none !important;
+}
+.blog-article__body em {
+  color: inherit !important;
+  font-style: italic;
+}
+.blog-article__body strong { font-weight: 600; }
+
+/* Quiet, marginalia-style asides — replaces .callout everything.
+   No colored borders. No colored backgrounds. A single thin rule and
+   italic serif type. Variants keep the class name for backward compat
+   but render identically — variation via inline label only. */
+.callout,
+.callout--analogy,
+.callout--key,
+.callout--warning,
+.callout--research {
+  margin: 2rem 0 !important;
+  padding: 0.2rem 0 0.2rem 1.4rem !important;
+  background: transparent !important;
+  border: none !important;
+  border-left: 1px solid var(--nn-muted) !important;
+  border-radius: 0 !important;
+}
+.callout__label {
+  display: block !important;
+  margin: 0 0 0.35rem !important;
+  padding: 0 !important;
+  font-family: var(--nn-mono) !important;
+  font-size: 0.68rem !important;
+  font-weight: 400 !important;
+  letter-spacing: 0.22em !important;
+  text-transform: uppercase !important;
+  color: var(--nn-soft) !important;
+}
+.callout p,
+.callout--analogy p,
+.callout--key p,
+.callout--warning p {
+  font-family: var(--nn-serif) !important;
+  font-size: 1.02rem !important;
+  line-height: 1.62 !important;
+  color: var(--nn-body) !important;
+  font-style: italic !important;
+  margin: 0 !important;
+}
+.callout p strong,
+.callout--key p strong,
+.callout--warning p strong,
+.callout--analogy p strong {
+  font-style: normal;
+  color: var(--nn-ink);
+}
+.callout p em { font-style: normal; }
+
+/* Bibliography — hanging-indent numbered list, no cards. Overrides
+   .research-list / .research-card completely. */
+.research-list {
+  display: block !important;
+  gap: 0 !important;
+  margin: 2rem 0 0 !important;
+  padding: 1.4rem 0 0 !important;
+  border-top: 1px solid var(--nn-line) !important;
+  list-style: none !important;
+  counter-reset: bib;
+}
+.research-list li {
+  position: relative;
+  padding: 0.55rem 0 0.55rem 2.6rem !important;
+  margin: 0 !important;
+  list-style: none !important;
+  counter-increment: bib;
+}
+.research-list li::before {
+  content: counter(bib);
+  position: absolute;
+  left: 0;
+  top: 0.9rem;
+  font-family: var(--nn-mono);
+  font-size: 0.78rem;
+  color: var(--nn-soft);
+  letter-spacing: 0.04em;
+  width: 2rem;
+  text-align: right;
+}
+.research-card {
+  display: block !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  text-decoration: none !important;
+  transition: none !important;
+}
+.research-card:hover {
+  border-left-color: transparent !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+.research-card:hover .research-card__title {
+  color: var(--nn-accent-dark) !important;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+.research-card__title {
+  font-family: var(--nn-serif) !important;
+  font-size: 1rem !important;
+  font-weight: 500 !important;
+  color: var(--nn-ink) !important;
+  line-height: 1.4 !important;
+  margin: 0 0 0.2rem !important;
+  transition: color 180ms;
+}
+.research-card__authors {
+  font-family: var(--nn-mono) !important;
+  font-size: 0.72rem !important;
+  color: var(--nn-muted) !important;
+  letter-spacing: 0.02em !important;
+  line-height: 1.55;
+}
+
+/* Figures — kill the "app" chrome. No traffic-light dots. No card
+   shadow. Just a thin frame, a small serif caption, and the interactive
+   content itself. Demos can now break slightly wider than the reading
+   column, like Distill's inline figures. */
+.blog-article__body .idemo {
+  margin: 2.4rem calc(-1 * ((100% - 700px) / 2 - 40px)) !important;
+  max-width: none;
+}
+@media (max-width: 900px) {
+  .blog-article__body .idemo { margin: 2.4rem 0 !important; }
+}
+.idemo__card {
+  background: #fdfdfc !important;
+  border: 1px solid var(--nn-line) !important;
+  border-radius: 2px !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+}
+.idemo__head {
+  padding: 0.8rem 1.2rem !important;
+  background: transparent !important;
+  border-bottom: 1px solid var(--nn-line) !important;
+  font-family: var(--nn-mono) !important;
+  font-size: 0.66rem !important;
+  letter-spacing: 0.22em !important;
+  text-transform: uppercase !important;
+  color: var(--nn-soft) !important;
+}
+.idemo__head::before {
+  content: "Fig." !important;
+  display: inline !important;
+  width: auto !important;
+  height: auto !important;
+  background: none !important;
+  padding-right: 0.6rem;
+  color: var(--nn-muted);
+  font-weight: 500;
+}
+.idemo__title { color: var(--nn-muted) !important; font-weight: 400 !important; }
+.idemo__body { padding: 1.4rem 1.3rem !important; background: transparent !important; }
+.idemo details {
+  margin: 0 1.3rem 1.2rem !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  border-top: 1px solid var(--nn-line) !important;
+  border-radius: 0 !important;
+  padding-top: 0.9rem !important;
+}
+.idemo details summary {
+  font-family: var(--nn-mono) !important;
+  font-size: 0.66rem !important;
+  letter-spacing: 0.22em !important;
+  text-transform: uppercase !important;
+  color: var(--nn-soft) !important;
+}
+.idemo details p {
+  font-family: var(--nn-serif) !important;
+  font-size: 0.92rem !important;
+  font-style: italic;
+  color: var(--nn-muted) !important;
+  line-height: 1.6 !important;
+}
+
+/* Sidenote pattern for use in body copy: an inline superscript number
+   that reveals a short marginal note on hover. Use as:
+     <span class="sidenote"><sup>1</sup><span>your note here</span></span>
+*/
+.sidenote {
+  position: relative;
+  display: inline;
+  cursor: help;
+}
+.sidenote sup {
+  font-family: var(--nn-mono);
+  font-size: 0.68em;
+  color: var(--nn-accent-dark);
+  padding: 0 0.15em;
+  cursor: help;
+}
+.sidenote > span {
+  position: absolute;
+  left: 105%;
+  top: -0.4em;
+  width: 220px;
+  padding: 0.55rem 0.8rem;
+  background: #fdfdfc;
+  border: 1px solid var(--nn-line);
+  border-left: 2px solid var(--nn-accent);
+  font-family: var(--nn-serif);
+  font-size: 0.86rem;
+  line-height: 1.5;
+  color: var(--nn-muted);
+  font-style: italic;
+  opacity: 0;
+  transform: translateX(-4px);
+  transition: opacity 180ms, transform 180ms;
+  pointer-events: none;
+  z-index: 20;
+}
+.sidenote:hover > span,
+.sidenote:focus > span {
+  opacity: 1;
+  transform: translateX(0);
+  pointer-events: auto;
+}
+@media (max-width: 900px) {
+  .sidenote > span {
+    position: static;
+    display: block;
+    width: auto;
+    margin: 0.3rem 0;
+    opacity: 1;
+    transform: none;
+  }
+}

@@ -1,167 +1,318 @@
-<div class="idemo" id="demo-cap-adapter">
+<figure class="idemo" id="cap-fig">
   <div class="idemo__card">
-    <div class="idemo__head"><span class="idemo__title">Interactive · One lens, many worlds</span></div>
+    <div class="idemo__head"><span class="idemo__title">Fig. 1 — Capability resolution across three world-model architectures</span></div>
     <div class="idemo__body">
 
-      <p class="ca-lead">Pick a world-model architecture. Watch which capabilities its adapter exposes. Then pick an analysis — the harness checks in real time whether it can run on the model you picked.</p>
+      <svg viewBox="0 0 900 460" class="cap-schematic" role="img" aria-labelledby="cap-title cap-desc">
+        <title id="cap-title">Capability adapter schematic</title>
+        <desc id="cap-desc">Three architectures on the left connect to seven capabilities in the middle, which connect to five analyses on the right. Clicking an architecture reveals which capabilities it exposes and which analyses can run.</desc>
 
-      <div class="ca-panels">
-        <div class="ca-col">
-          <div class="ca-col__label">Architecture</div>
-          <div class="ca-archs">
-            <button class="ca-arch is-active" data-ca-arch="rssm">
-              <span class="ca-arch__name">RSSM</span>
-              <span class="ca-arch__sub">Dreamer-style</span>
-            </button>
-            <button class="ca-arch" data-ca-arch="token">
-              <span class="ca-arch__name">Token Transformer</span>
-              <span class="ca-arch__sub">Genie-style</span>
-            </button>
-            <button class="ca-arch" data-ca-arch="jepa">
-              <span class="ca-arch__name">JEPA</span>
-              <span class="ca-arch__sub">joint-embedding</span>
-            </button>
-          </div>
-        </div>
+        <!-- Column labels -->
+        <text class="cap-col-label" x="90" y="30" text-anchor="middle">Architecture</text>
+        <text class="cap-col-label" x="440" y="30" text-anchor="middle">Capabilities exposed</text>
+        <text class="cap-col-label" x="800" y="30" text-anchor="middle">Analysis</text>
 
-        <div class="ca-col ca-col--wide">
-          <div class="ca-col__label">Capabilities</div>
-          <div class="ca-caps" data-ca-caps></div>
-        </div>
-      </div>
+        <g class="cap-connections" data-cap-connections></g>
+        <g class="cap-architectures" data-cap-archs></g>
+        <g class="cap-caps" data-cap-caps></g>
+        <g class="cap-analyses" data-cap-analyses></g>
+      </svg>
 
-      <div class="ca-col__label">Analysis to run</div>
-      <div class="ca-analyses">
-        <button class="ca-anal is-active" data-ca-a="trace">Causal tracing</button>
-        <button class="ca-anal" data-ca-a="mi">Mutual-information probing</button>
-        <button class="ca-anal" data-ca-a="dyn">Trajectory dynamics</button>
-        <button class="ca-anal" data-ca-a="tom">Theory-of-mind probes</button>
-        <button class="ca-anal" data-ca-a="recon">Reconstruction attribution</button>
-      </div>
-
-      <div class="ca-status" data-ca-status></div>
-      <div class="ca-explain" data-ca-explain></div>
+      <p class="cap-caption">
+        Select an architecture on the left. Its four required capabilities are always
+        present; optional heads (<em>decode</em>, <em>value_head</em>, <em>agent_conditional</em>)
+        vary. Each analysis on the right lights up or is grayed out depending on whether
+        the selected adapter exposes the capabilities it depends on. Compatibility is
+        resolved statically — no wasted compute on a run that would fail.
+      </p>
     </div>
     <details>
-      <summary>How this demo works</summary>
-      <p>Each analysis declares a set of required capabilities. Each architecture's adapter declares which capabilities it supports. The harness resolves compatibility at load time — a green result means the analysis runs, a red result names exactly which capability the model doesn't have. This is the type-system check that keeps analyses honest across architectures.</p>
+      <summary>Method</summary>
+      <p>
+        Each analysis declares a set of required capabilities. Each architecture's adapter
+        declares which capabilities it exposes. Compatibility is a set-containment check.
+        The three architectures shown are stylized: RSSM after Hafner et al. (DreamerV3, 2023);
+        token transformer after Bruce et al. (Genie, 2024); JEPA after LeCun (V-JEPA, 2024).
+      </p>
     </details>
   </div>
-</div>
+</figure>
 
 <style>
-  #demo-cap-adapter .ca-lead { margin: 0 0 1rem !important; color: var(--nn-body) !important; font-size: 0.98rem !important; line-height: 1.6 !important; }
-  #demo-cap-adapter .ca-panels { display: grid; grid-template-columns: 1fr 1.4fr; gap: 0.9rem; margin-bottom: 0.9rem; }
-  @media (max-width: 640px) { #demo-cap-adapter .ca-panels { grid-template-columns: 1fr; } }
-  #demo-cap-adapter .ca-col__label { font-family: var(--nn-mono); font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--nn-muted); margin-bottom: 0.4rem; }
-  #demo-cap-adapter .ca-archs { display: flex; flex-direction: column; gap: 0.4rem; }
-  #demo-cap-adapter .ca-arch {
-    text-align: left; padding: 0.6rem 0.8rem; background: #fff; border: 1px solid var(--nn-line); border-radius: 3px;
-    font-family: var(--nn-mono); cursor: pointer; transition: border-color 150ms, background 150ms;
+  #cap-fig .cap-schematic {
+    width: 100%; height: auto; display: block;
+    font-family: var(--nn-serif);
   }
-  #demo-cap-adapter .ca-arch:hover { border-color: var(--nn-accent); }
-  #demo-cap-adapter .ca-arch.is-active { border-color: var(--nn-accent); background: var(--nn-accent-soft); }
-  #demo-cap-adapter .ca-arch__name { display: block; font-size: 0.9rem; font-weight: 700; color: var(--nn-ink); }
-  #demo-cap-adapter .ca-arch__sub { display: block; font-size: 0.75rem; color: var(--nn-muted); margin-top: 0.15rem; }
-  #demo-cap-adapter .ca-caps { display: grid; grid-template-columns: 1fr 1fr; gap: 0.3rem; padding: 0.6rem; background: #fbfcfd; border: 1px solid var(--nn-line); border-radius: 4px; }
-  #demo-cap-adapter .ca-cap {
-    display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.7rem; background: #fff; border: 1px solid var(--nn-line); border-radius: 3px;
-    font-family: var(--nn-mono); font-size: 0.78rem;
+  #cap-fig .cap-col-label {
+    font-family: var(--nn-mono);
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    fill: #8a8a90;
   }
-  #demo-cap-adapter .ca-cap.is-yes { border-color: var(--nn-accent); background: var(--nn-accent-soft); color: var(--nn-accent-dark); }
-  #demo-cap-adapter .ca-cap.is-no { border-color: var(--nn-line); color: var(--nn-muted); opacity: 0.55; }
-  #demo-cap-adapter .ca-cap__dot { width: 8px; height: 8px; border-radius: 50%; background: var(--nn-line); flex-shrink: 0; }
-  #demo-cap-adapter .ca-cap.is-yes .ca-cap__dot { background: var(--nn-accent); }
-  #demo-cap-adapter .ca-cap.is-no .ca-cap__dot { background: var(--nn-line); }
-  #demo-cap-adapter .ca-analyses { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-bottom: 0.9rem; }
-  #demo-cap-adapter .ca-anal {
-    padding: 0.42rem 0.75rem; background: #fff; border: 1px solid var(--nn-line); border-radius: 3px;
-    font-family: var(--nn-mono); font-size: 0.78rem; color: var(--nn-muted); cursor: pointer;
+
+  /* Architecture nodes */
+  #cap-fig .cap-arch {
+    cursor: pointer;
   }
-  #demo-cap-adapter .ca-anal:hover { border-color: var(--nn-accent); }
-  #demo-cap-adapter .ca-anal.is-active { border-color: var(--nn-accent); color: var(--nn-accent-dark); background: var(--nn-accent-soft); }
-  #demo-cap-adapter .ca-status {
-    padding: 0.7rem 1rem; margin-bottom: 0.7rem; border: 1px solid var(--nn-line); border-radius: 4px;
-    font-family: var(--nn-mono); font-size: 0.88rem; display: flex; align-items: center; gap: 0.6rem;
+  #cap-fig .cap-arch-box {
+    fill: #ffffff;
+    stroke: #333;
+    stroke-width: 1;
+    transition: fill 200ms, stroke 200ms, stroke-width 200ms;
   }
-  #demo-cap-adapter .ca-status.is-ok { border-color: var(--nn-accent); background: var(--nn-accent-soft); color: var(--nn-accent-dark); }
-  #demo-cap-adapter .ca-status.is-fail { border-color: var(--nn-accent-warn, #c04550); background: #fff5f5; color: var(--nn-accent-warn, #c04550); }
-  #demo-cap-adapter .ca-status__badge { padding: 0.15rem 0.5rem; border-radius: 2px; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; }
-  #demo-cap-adapter .ca-status.is-ok .ca-status__badge { background: var(--nn-accent); color: #fff; }
-  #demo-cap-adapter .ca-status.is-fail .ca-status__badge { background: var(--nn-accent-warn, #c04550); color: #fff; }
-  #demo-cap-adapter .ca-explain {
-    padding: 0.85rem 1rem; background: #ffffff; border: 1px solid var(--nn-line);
-    border-left: 3px solid var(--nn-accent); border-radius: 4px;
-    font-size: 0.9rem; color: var(--nn-body); line-height: 1.6;
+  #cap-fig .cap-arch.is-active .cap-arch-box {
+    fill: var(--nn-accent-soft);
+    stroke: var(--nn-accent-dark);
+    stroke-width: 1.5;
   }
-  #demo-cap-adapter .ca-explain strong { color: var(--nn-accent-dark); }
+  #cap-fig .cap-arch:hover .cap-arch-box { stroke: var(--nn-accent-dark); }
+  #cap-fig .cap-arch-name {
+    font-family: var(--nn-serif);
+    font-size: 15px;
+    font-weight: 500;
+    fill: #1a1a1a;
+    dominant-baseline: middle;
+  }
+  #cap-fig .cap-arch-sub {
+    font-family: var(--nn-mono);
+    font-size: 9.5px;
+    fill: #8a8a90;
+    letter-spacing: 0.06em;
+  }
+
+  /* Capability nodes */
+  #cap-fig .cap-node-dot {
+    fill: #ffffff;
+    stroke: #333;
+    stroke-width: 1;
+    transition: fill 260ms, stroke 260ms;
+  }
+  #cap-fig .cap-node-dot.is-on {
+    fill: var(--nn-accent-dark);
+    stroke: var(--nn-accent-dark);
+  }
+  #cap-fig .cap-node-dot.is-off {
+    fill: #ffffff;
+    stroke: #d0d0d5;
+  }
+  #cap-fig .cap-node-label {
+    font-family: var(--nn-serif);
+    font-size: 13px;
+    fill: #2a2a2a;
+    dominant-baseline: middle;
+    transition: fill 200ms, font-style 200ms;
+  }
+  #cap-fig .cap-node-label.is-off { fill: #b5b5ba; font-style: italic; }
+  #cap-fig .cap-node-opt {
+    font-family: var(--nn-mono);
+    font-size: 8.5px;
+    letter-spacing: 0.06em;
+    fill: #a5a5aa;
+    dominant-baseline: middle;
+  }
+
+  /* Connection lines */
+  #cap-fig .cap-line {
+    fill: none;
+    stroke: #d0d0d5;
+    stroke-width: 1;
+    transition: stroke 300ms, stroke-width 300ms, opacity 300ms;
+  }
+  #cap-fig .cap-line.is-on {
+    stroke: var(--nn-accent-dark);
+    stroke-width: 1.2;
+  }
+  #cap-fig .cap-line.is-analysis {
+    stroke-dasharray: 3 3;
+  }
+  #cap-fig .cap-line.is-analysis.is-on { stroke: var(--nn-accent-dark); }
+  #cap-fig .cap-line.is-analysis.is-fail {
+    stroke: #b5b5ba;
+    stroke-dasharray: 2 4;
+  }
+
+  /* Analyses */
+  #cap-fig .cap-analysis-label {
+    font-family: var(--nn-serif);
+    font-size: 13px;
+    fill: #2a2a2a;
+    dominant-baseline: middle;
+    transition: fill 200ms;
+  }
+  #cap-fig .cap-analysis-label.is-fail {
+    fill: #a8a8ad;
+    font-style: italic;
+  }
+  #cap-fig .cap-analysis-status {
+    font-family: var(--nn-mono);
+    font-size: 9px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    dominant-baseline: middle;
+  }
+  #cap-fig .cap-analysis-status.is-ok { fill: var(--nn-accent-dark); }
+  #cap-fig .cap-analysis-status.is-fail { fill: #a8a8ad; }
+  #cap-fig .cap-analysis-tick {
+    stroke: var(--nn-accent-dark);
+    stroke-width: 1.4;
+    fill: none;
+  }
+
+  #cap-fig .cap-caption {
+    margin: 1.2rem 0.4rem 0.2rem !important;
+    font-family: var(--nn-serif) !important;
+    font-size: 0.92rem !important;
+    line-height: 1.6 !important;
+    color: var(--nn-muted) !important;
+    font-style: italic;
+  }
+  #cap-fig .cap-caption em { color: var(--nn-ink); font-style: normal; font-family: var(--nn-mono); font-size: 0.86em; }
 </style>
 
 <script>
 (function() {
-  const root = document.getElementById('demo-cap-adapter');
+  const root = document.getElementById('cap-fig');
   if (!root) return;
-  const caps = ['encode', 'predict', 'rollout', 'extract', 'decode', 'value_head', 'agent_conditional'];
-  const capNames = {
-    encode: 'encode(obs) → state',
-    predict: 'predict(state, act)',
-    rollout: 'rollout(k steps)',
-    extract: 'extract activations',
-    decode: 'decode(state) → obs',
-    value_head: 'value head',
-    agent_conditional: 'agent-conditional rollout'
-  };
-  const archs = {
-    rssm: { encode: 1, predict: 1, rollout: 1, extract: 1, decode: 1, value_head: 1, agent_conditional: 0 },
-    token: { encode: 1, predict: 1, rollout: 1, extract: 1, decode: 1, value_head: 0, agent_conditional: 1 },
-    jepa: { encode: 1, predict: 1, rollout: 1, extract: 1, decode: 0, value_head: 0, agent_conditional: 0 }
-  };
-  const analyses = {
-    trace: { name: 'Causal tracing', req: ['predict', 'extract'], desc: 'Patch state at layer L, measure downstream divergence. Works anywhere predict + extract are available.' },
-    mi: { name: 'Mutual-information probing', req: ['encode', 'predict'], desc: 'Estimate MI between successive states. Requires only encode + predict, so it runs on everything.' },
-    dyn: { name: 'Trajectory dynamics', req: ['rollout', 'extract'], desc: 'Lyapunov exponents, clustering, dimensionality analysis on the state trajectory. Needs rollout.' },
-    tom: { name: 'Theory-of-mind probes', req: ['agent_conditional', 'rollout'], desc: 'Requires the world model to be able to roll out conditioned on a specific agent. RSSMs and JEPAs typically cannot; token transformers with agent tokens can.' },
-    recon: { name: 'Reconstruction attribution', req: ['decode', 'extract'], desc: 'Pixel-space attribution requires a decoder back to observations. JEPA doesn\'t have one — the analysis reports incompatible.' }
-  };
-  let curArch = 'rssm';
-  let curAnal = 'trace';
-  function renderCaps() {
-    const holder = root.querySelector('[data-ca-caps]');
-    holder.innerHTML = '';
-    for (const c of caps) {
-      const has = archs[curArch][c];
-      holder.insertAdjacentHTML('beforeend', `<div class="ca-cap ${has ? 'is-yes' : 'is-no'}"><span class="ca-cap__dot"></span><span>${capNames[c]}</span></div>`);
+  const svg = root.querySelector('.cap-schematic');
+
+  const CAPS = [
+    { id: 'encode',            label: 'encode(obs) → state',            required: true,  y: 70 },
+    { id: 'predict',           label: 'predict(state, act) → state',    required: true,  y: 110 },
+    { id: 'rollout',           label: 'rollout(state, k) → trajectory', required: true,  y: 150 },
+    { id: 'extract',           label: 'extract(layer) → activations',   required: true,  y: 190 },
+    { id: 'decode',            label: 'decode(state) → observation',    required: false, y: 250 },
+    { id: 'value_head',        label: 'value_head(state) → scalar',     required: false, y: 290 },
+    { id: 'agent_conditional', label: 'rollout_for_agent(id)',          required: false, y: 330 }
+  ];
+
+  const ARCHS = [
+    { id: 'rssm',  name: 'RSSM',              sub: 'Dreamer, DreamerV3',    y: 90,  caps: ['encode', 'predict', 'rollout', 'extract', 'decode', 'value_head'] },
+    { id: 'token', name: 'Token transformer', sub: 'Genie, GAIA',            y: 220, caps: ['encode', 'predict', 'rollout', 'extract', 'decode', 'agent_conditional'] },
+    { id: 'jepa',  name: 'JEPA',              sub: 'V-JEPA, I-JEPA',         y: 350, caps: ['encode', 'predict', 'rollout', 'extract'] }
+  ];
+
+  const ANALYSES = [
+    { id: 'trace',  label: 'Causal tracing',           needs: ['predict', 'extract'],                y: 65 },
+    { id: 'mi',     label: 'Mutual-information probe', needs: ['encode', 'predict'],                 y: 130 },
+    { id: 'dyn',    label: 'Trajectory dynamics',      needs: ['rollout', 'extract'],                y: 195 },
+    { id: 'tom',    label: 'Theory-of-mind probes',    needs: ['agent_conditional', 'rollout'],      y: 260 },
+    { id: 'recon',  label: 'Reconstruction attrib.',   needs: ['decode', 'extract'],                 y: 325 }
+  ];
+
+  const ARCH_COL_X = 30;
+  const ARCH_BOX_W = 130, ARCH_BOX_H = 44;
+  const CAP_DOT_X = 380;
+  const CAP_LABEL_X = 396;
+  const ANAL_X = 680;
+  const STATUS_X = 870;
+
+  let selectedArch = 'rssm';
+
+  const gArchs = svg.querySelector('[data-cap-archs]');
+  const gCaps = svg.querySelector('[data-cap-caps]');
+  const gAnal = svg.querySelector('[data-cap-analyses]');
+  const gLines = svg.querySelector('[data-cap-connections]');
+
+  function drawArchs() {
+    gArchs.innerHTML = '';
+    for (const a of ARCHS) {
+      const isActive = a.id === selectedArch;
+      const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+      g.setAttribute('class', 'cap-arch' + (isActive ? ' is-active' : ''));
+      g.setAttribute('data-arch', a.id);
+      g.setAttribute('tabindex', '0');
+      g.setAttribute('role', 'button');
+      g.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+      g.innerHTML = `
+        <rect class="cap-arch-box" x="${ARCH_COL_X}" y="${a.y - ARCH_BOX_H / 2}" width="${ARCH_BOX_W}" height="${ARCH_BOX_H}" rx="2"/>
+        <text class="cap-arch-name" x="${ARCH_COL_X + 14}" y="${a.y - 5}">${a.name}</text>
+        <text class="cap-arch-sub" x="${ARCH_COL_X + 14}" y="${a.y + 12}">${a.sub}</text>
+      `;
+      g.addEventListener('click', () => { selectedArch = a.id; render(); });
+      g.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectedArch = a.id; render(); }
+      });
+      gArchs.appendChild(g);
     }
   }
-  function renderResolve() {
-    const status = root.querySelector('[data-ca-status]');
-    const explain = root.querySelector('[data-ca-explain]');
-    const a = analyses[curAnal];
-    const missing = a.req.filter(c => !archs[curArch][c]);
-    if (missing.length === 0) {
-      status.className = 'ca-status is-ok';
-      status.innerHTML = `<span class="ca-status__badge">RUN</span><span>Analysis <strong>${a.name}</strong> is compatible with <strong>${curArch.toUpperCase()}</strong>. All required capabilities present. Harness proceeds.</span>`;
-      explain.innerHTML = `${a.desc}`;
-    } else {
-      status.className = 'ca-status is-fail';
-      status.innerHTML = `<span class="ca-status__badge">SKIP</span><span>Analysis <strong>${a.name}</strong> needs <em>${missing.map(m => capNames[m]).join(', ')}</em>, which <strong>${curArch.toUpperCase()}</strong> doesn't expose. Harness gracefully skips, doesn't crash.</span>`;
-      explain.innerHTML = `${a.desc} <br><br><strong>Why this matters:</strong> under a single-representation "unified" framework, this would either crash at runtime or silently produce meaningless output. Capability-typed adapters catch it at load time, before any compute is burned.`;
+
+  function drawCaps() {
+    gCaps.innerHTML = '';
+    const arch = ARCHS.find(a => a.id === selectedArch);
+    const exposed = new Set(arch.caps);
+    // Group header for required vs optional
+    gCaps.insertAdjacentHTML('beforeend',
+      `<text class="cap-node-opt" x="${CAP_LABEL_X}" y="52">— required —</text>
+       <text class="cap-node-opt" x="${CAP_LABEL_X}" y="232">— optional —</text>`);
+    for (const c of CAPS) {
+      const on = exposed.has(c.id);
+      const cls = on ? 'is-on' : 'is-off';
+      gCaps.insertAdjacentHTML('beforeend',
+        `<circle class="cap-node-dot ${cls}" cx="${CAP_DOT_X}" cy="${c.y}" r="4.5"/>
+         <text class="cap-node-label ${on ? '' : 'is-off'}" x="${CAP_LABEL_X}" y="${c.y}">${c.label}</text>`);
     }
   }
-  root.querySelectorAll('[data-ca-arch]').forEach(b => {
-    b.addEventListener('click', () => {
-      curArch = b.dataset.caArch;
-      root.querySelectorAll('[data-ca-arch]').forEach(x => x.classList.toggle('is-active', x === b));
-      renderCaps(); renderResolve();
-    });
-  });
-  root.querySelectorAll('[data-ca-a]').forEach(b => {
-    b.addEventListener('click', () => {
-      curAnal = b.dataset.caA;
-      root.querySelectorAll('[data-ca-a]').forEach(x => x.classList.toggle('is-active', x === b));
-      renderResolve();
-    });
-  });
-  renderCaps(); renderResolve();
+
+  function drawAnalyses() {
+    gAnal.innerHTML = '';
+    const arch = ARCHS.find(a => a.id === selectedArch);
+    const exposed = new Set(arch.caps);
+    for (const an of ANALYSES) {
+      const missing = an.needs.filter(n => !exposed.has(n));
+      const runs = missing.length === 0;
+      const cls = runs ? '' : 'is-fail';
+      const status = runs ? 'runs' : 'skip';
+      gAnal.insertAdjacentHTML('beforeend',
+        `<text class="cap-analysis-label ${cls}" x="${ANAL_X}" y="${an.y}">${an.label}</text>
+         <text class="cap-analysis-status ${runs ? 'is-ok' : 'is-fail'}" x="${STATUS_X}" y="${an.y}" text-anchor="end">${status}</text>`);
+      if (runs) {
+        // small tick mark right of the label
+        gAnal.insertAdjacentHTML('beforeend',
+          `<path class="cap-analysis-tick" d="M ${STATUS_X + 6} ${an.y - 1} l 3 3 l 6 -7"/>`);
+      }
+    }
+  }
+
+  function drawLines() {
+    gLines.innerHTML = '';
+    const arch = ARCHS.find(a => a.id === selectedArch);
+    const archRightX = ARCH_COL_X + ARCH_BOX_W;
+    const archY = arch.y;
+    const exposed = new Set(arch.caps);
+
+    // Arch → exposed capabilities
+    for (const c of CAPS) {
+      if (!exposed.has(c.id)) continue;
+      const midX = (archRightX + CAP_DOT_X) / 2;
+      const d = `M ${archRightX} ${archY} C ${midX} ${archY}, ${midX} ${c.y}, ${CAP_DOT_X - 5} ${c.y}`;
+      gLines.insertAdjacentHTML('beforeend', `<path class="cap-line is-on" d="${d}"/>`);
+    }
+    // Dim lines from other architectures
+    for (const other of ARCHS) {
+      if (other.id === selectedArch) continue;
+      // draw one short stub from unselected arch to show it exists but is inactive
+      gLines.insertAdjacentHTML('beforeend',
+        `<line class="cap-line" x1="${archRightX}" y1="${other.y}" x2="${archRightX + 24}" y2="${other.y}"/>`);
+    }
+
+    // Analyses → capabilities they need (dashed)
+    for (const an of ANALYSES) {
+      const missing = an.needs.filter(n => !exposed.has(n));
+      const runs = missing.length === 0;
+      for (const need of an.needs) {
+        const cap = CAPS.find(x => x.id === need);
+        const cls = runs ? ' is-on' : ' is-fail';
+        const startX = ANAL_X - 8;
+        const endX = CAP_DOT_X + 5;
+        const midX = (startX + endX) / 2;
+        const d = `M ${startX} ${an.y} C ${midX} ${an.y}, ${midX} ${cap.y}, ${endX} ${cap.y}`;
+        gLines.insertAdjacentHTML('beforeend', `<path class="cap-line is-analysis${cls}" d="${d}"/>`);
+      }
+    }
+  }
+
+  function render() { drawLines(); drawArchs(); drawCaps(); drawAnalyses(); }
+  render();
 })();
 </script>

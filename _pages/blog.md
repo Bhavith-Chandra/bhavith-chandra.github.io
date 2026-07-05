@@ -4,305 +4,185 @@ permalink: /blog/
 author_profile: false
 ---
 
-<section class="bl-hero">
-  <p class="bl-eyebrow">Writing</p>
-  <h1 class="bl-title">Notes, essays,<br>half-formed ideas.</h1>
-  <p class="bl-sub">Mechanistic interpretability, world models, and the papers I keep coming back to. Written when the thought is ready, published in the order it arrived.</p>
-  <div class="bl-meta">
-    <span data-bl-count>{{ site.posts.size }} entries</span>
-    <span class="bl-meta__sep">·</span>
-    <span>{{ site.posts.last.date | date: "%Y" }}–{{ site.posts.first.date | date: "%Y" }}</span>
-  </div>
+<section class="blidx-masthead">
+  <h1 class="blidx-title">Writing</h1>
+  <p class="blidx-dek">Notes on world models, interpretability, and the papers I keep returning to. In roughly the order they were written.</p>
 </section>
 
-<nav class="bl-filters" data-bl-filters>
-  <button class="bl-filter is-active" data-bl-filter="all">All</button>
-  <button class="bl-filter" data-bl-filter="essay">Essays</button>
-  <button class="bl-filter" data-bl-filter="paper">Paper notes</button>
-</nav>
-
 {% assign posts = site.posts | sort: "date" | reverse %}
-{% assign total = posts.size %}
+{% assign current_year = "" %}
 
-<ol class="bl-list" data-bl-list>
+<div class="blidx-list">
   {% for post in posts %}
+    {% assign year = post.date | date: "%Y" %}
+    {% if year != current_year %}
+      {% if current_year != "" %}</section>{% endif %}
+      <section class="blidx-year">
+        <h2 class="blidx-year__label">{{ year }}</h2>
+      {% assign current_year = year %}
+    {% endif %}
+
     {% assign is_paper = false %}
     {% if post.url contains "notes-on-" %}{% assign is_paper = true %}{% endif %}
-    {% assign kind = "essay" %}
-    {% assign kind_label = "Essay" %}
-    {% if is_paper %}{% assign kind = "paper" %}{% assign kind_label = "Paper note" %}{% endif %}
-    {% assign index_num = forloop.index | prepend: "000" %}
-    {% assign index_num = index_num | slice: -3, 3 %}
-    <li class="bl-entry" data-bl-kind="{{ kind }}">
-      <a class="bl-row" href="{{ post.url | relative_url }}">
-        <div class="bl-row__meta">
-          <span class="bl-row__idx">№ {{ index_num }}</span>
-          <time class="bl-row__date" datetime="{{ post.date | date_to_xmlschema }}">
-            {{ post.date | date: "%b %-d, %Y" }}
+
+    <article class="blidx-item">
+      <a class="blidx-item__link" href="{{ post.url | relative_url }}">
+        <div class="blidx-item__col-l">
+          <time class="blidx-item__date" datetime="{{ post.date | date_to_xmlschema }}">
+            {{ post.date | date: "%b %-d" }}
           </time>
-          {% if post.read_time_label %}
-          <span class="bl-row__read">{{ post.read_time_label }}</span>
+          {% if is_paper %}
+          <span class="blidx-item__tag">Paper note</span>
           {% endif %}
         </div>
-        <div class="bl-row__body">
-          <span class="bl-row__kind bl-row__kind--{{ kind }}">{{ kind_label }}</span>
-          <h2 class="bl-row__title">{{ post.title }}</h2>
-          <p class="bl-row__excerpt">{{ post.excerpt | strip_html | truncatewords: 42 }}</p>
-          <span class="bl-row__cta">Read <span aria-hidden="true">→</span></span>
+        <div class="blidx-item__col-r">
+          <h3 class="blidx-item__title">{{ post.title }}</h3>
+          <p class="blidx-item__dek">{{ post.excerpt | strip_html | truncatewords: 30 }}</p>
         </div>
       </a>
-    </li>
+    </article>
   {% endfor %}
-</ol>
-
-<div class="bl-empty" data-bl-empty hidden><p>Nothing here yet in that view.</p></div>
+  </section>
+</div>
 
 <style>
-  /* -------- Distill-style blog index (overrides earlier .bl-* rules) -------- */
+  /* ================================================================
+     Blog index — restrained editorial layout
+     Reference points: Distill.pub, Anthropic research blog
+     One column of thought per entry, hairline separators, quiet
+     typography. No cards, no badges, no CTAs.
+     ================================================================ */
 
-  .bl-hero {
-    max-width: 780px !important;
-    margin: 0.5rem 0 3.2rem !important;
-    padding: 0 !important;
+  .blidx-masthead {
+    max-width: 720px;
+    margin: 0.75rem 0 4.5rem;
+    padding: 0;
   }
-  .bl-eyebrow {
-    font-family: var(--nn-mono) !important;
-    font-size: 0.7rem !important;
-    letter-spacing: 0.32em !important;
-    text-transform: uppercase !important;
-    color: var(--nn-muted) !important;
+  .blidx-title {
+    font-family: var(--nn-serif) !important;
+    font-size: 3.6rem !important;
+    line-height: 0.98 !important;
+    letter-spacing: -0.03em !important;
+    color: var(--nn-ink) !important;
+    font-weight: 500 !important;
     margin: 0 0 1.4rem !important;
   }
-  .bl-title {
-    font-family: var(--nn-serif) !important;
-    font-size: 3rem !important;
-    line-height: 1.02 !important;
-    letter-spacing: -0.025em !important;
-    color: var(--nn-ink) !important;
-    font-weight: 500 !important;
-    margin: 0 0 1.2rem !important;
-  }
-  .bl-title br { display: block; }
-  .bl-sub {
-    font-family: var(--nn-serif) !important;
-    font-size: 1.15rem !important;
-    color: var(--nn-body) !important;
-    line-height: 1.55 !important;
-    font-style: italic !important;
-    max-width: 620px !important;
-    margin: 0 0 1.6rem !important;
-  }
-  .bl-meta {
-    font-family: var(--nn-mono);
-    font-size: 0.72rem;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--nn-soft);
-    display: flex;
-    gap: 0.7rem;
-    align-items: center;
-  }
-  .bl-meta__sep { color: var(--nn-line); }
-
-  .bl-filters {
-    display: flex;
-    gap: 0.4rem;
-    padding: 0 0 1rem;
-    margin: 0 0 0.5rem;
-    border-bottom: 1px solid var(--nn-line);
-  }
-  .bl-filter {
-    appearance: none;
-    background: transparent;
-    border: none;
-    padding: 0.5rem 0.9rem;
-    font-family: var(--nn-mono);
-    font-size: 0.74rem;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--nn-soft);
-    cursor: pointer;
-    border-radius: 2px;
-    transition: color 150ms, background 150ms;
-  }
-  .bl-filter:hover { color: var(--nn-ink); }
-  .bl-filter.is-active {
-    color: var(--nn-accent-dark);
-    background: var(--nn-accent-soft);
-  }
-
-  .bl-list {
-    list-style: none !important;
-    padding: 0 !important;
+  .blidx-dek {
+    font-family: var(--nn-serif);
+    font-size: 1.15rem;
+    line-height: 1.55;
+    color: var(--nn-body);
+    font-style: italic;
+    max-width: 560px;
     margin: 0 !important;
-    max-width: 960px !important;
-    display: block !important;
   }
-  .bl-entry {
-    list-style: none !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    border-bottom: 1px solid var(--nn-line);
-  }
-  .bl-entry:first-child { border-top: 1px solid var(--nn-line); }
-  .bl-entry[hidden] { display: none !important; }
 
-  .bl-row {
-    display: grid !important;
-    grid-template-columns: 160px 1fr !important;
-    gap: 2.2rem !important;
-    padding: 2.2rem 0 2.2rem !important;
+  .blidx-list { max-width: 920px; }
+
+  .blidx-year {
+    position: relative;
+    padding-top: 1rem;
+    margin-top: 2.4rem;
+  }
+  .blidx-year:first-of-type { margin-top: 0; }
+  .blidx-year__label {
+    font-family: var(--nn-mono) !important;
+    font-size: 0.72rem !important;
+    letter-spacing: 0.28em !important;
+    text-transform: uppercase !important;
+    color: var(--nn-soft) !important;
+    font-weight: 400 !important;
+    margin: 0 0 0.4rem !important;
+    padding-bottom: 0.9rem;
+    border-bottom: 1px solid var(--nn-ink);
+  }
+
+  .blidx-item {
+    border-bottom: 1px solid var(--nn-line);
+    margin: 0;
+  }
+  .blidx-item:last-child { border-bottom: none; }
+  .blidx-item__link {
+    display: grid;
+    grid-template-columns: 108px 1fr;
+    gap: 2.4rem;
+    padding: 1.7rem 0;
     text-decoration: none !important;
     color: inherit !important;
-    background: transparent !important;
-    border: none !important;
-    border-radius: 0 !important;
-    transition: background 180ms ease;
+    transition: none;
   }
-  .bl-row:hover {
-    background: linear-gradient(to right, var(--nn-accent-soft) 0%, rgba(255,255,255,0) 60%) !important;
-    transform: none !important;
-    box-shadow: none !important;
+  .blidx-item__link:hover .blidx-item__title {
+    color: var(--nn-accent-dark) !important;
+  }
+  .blidx-item__link:hover .blidx-item__title::after {
+    width: 100%;
   }
 
-  .bl-row__meta {
+  .blidx-item__col-l {
     display: flex;
     flex-direction: column;
-    gap: 0.35rem;
-    padding-top: 0.35rem;
+    gap: 0.4rem;
+    padding-top: 0.25rem;
   }
-  .bl-row__idx {
-    font-family: var(--nn-mono);
-    font-size: 0.68rem;
-    letter-spacing: 0.14em;
-    color: var(--nn-soft);
-  }
-  .bl-row__date {
+  .blidx-item__date {
     font-family: var(--nn-mono);
     font-size: 0.78rem;
-    letter-spacing: 0.06em;
     color: var(--nn-muted);
-    text-transform: uppercase;
+    letter-spacing: 0.02em;
   }
-  .bl-row__read {
+  .blidx-item__tag {
     font-family: var(--nn-mono);
-    font-size: 0.72rem;
-    letter-spacing: 0.06em;
+    font-size: 0.66rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
     color: var(--nn-soft);
   }
 
-  .bl-row__body { min-width: 0; }
-  .bl-row__kind {
-    display: inline-block;
-    font-family: var(--nn-mono);
-    font-size: 0.66rem;
-    letter-spacing: 0.22em;
-    text-transform: uppercase;
-    padding: 0.18rem 0.55rem;
-    border-radius: 2px;
-    margin-bottom: 0.7rem;
-    background: transparent;
-    border: 1px solid var(--nn-line);
-    color: var(--nn-muted);
-  }
-  .bl-row__kind--paper {
-    color: var(--nn-accent-dark);
-    border-color: var(--nn-accent);
-    background: var(--nn-accent-soft);
-  }
-  .bl-row__kind--essay {
-    color: #2a9e8e;
-    border-color: #2a9e8e;
-    background: rgba(42, 158, 142, 0.08);
-  }
-  .bl-row__title {
+  .blidx-item__col-r { min-width: 0; }
+  .blidx-item__title {
     font-family: var(--nn-serif) !important;
-    font-size: 1.65rem !important;
-    line-height: 1.18 !important;
-    letter-spacing: -0.012em !important;
+    font-size: 1.5rem !important;
+    line-height: 1.2 !important;
+    letter-spacing: -0.01em !important;
     color: var(--nn-ink) !important;
     font-weight: 500 !important;
-    margin: 0 0 0.7rem !important;
-    transition: color 150ms;
+    margin: 0 0 0.55rem !important;
+    position: relative;
+    display: inline;
+    background-image: linear-gradient(to right, var(--nn-accent-dark), var(--nn-accent-dark));
+    background-repeat: no-repeat;
+    background-position: 0 100%;
+    background-size: 0% 1px;
+    transition: color 220ms ease, background-size 320ms ease;
   }
-  .bl-row:hover .bl-row__title { color: var(--nn-accent-dark) !important; }
-  .bl-row__excerpt {
-    font-family: var(--nn-serif) !important;
-    font-size: 1.05rem !important;
-    color: var(--nn-body) !important;
-    line-height: 1.6 !important;
-    margin: 0 0 1rem !important;
-    max-width: 62ch;
+  .blidx-item__link:hover .blidx-item__title {
+    background-size: 100% 1px;
   }
-  .bl-row__cta {
-    font-family: var(--nn-mono);
-    font-size: 0.75rem;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    color: var(--nn-accent-dark);
-    opacity: 0.55;
-    transition: opacity 150ms, letter-spacing 200ms;
-  }
-  .bl-row:hover .bl-row__cta {
-    opacity: 1;
-    letter-spacing: 0.22em;
-  }
-
-  .bl-empty {
-    padding: 3rem 1rem !important;
-    text-align: center !important;
-    color: var(--nn-muted) !important;
+  .blidx-item__dek {
     font-family: var(--nn-serif);
+    font-size: 1.02rem;
+    line-height: 1.55;
+    color: var(--nn-muted);
+    margin: 0.5rem 0 0 !important;
+    max-width: 60ch;
     font-style: italic;
   }
 
   @media (max-width: 720px) {
-    .bl-title { font-size: 2.2rem !important; }
-    .bl-title br { display: none; }
-    .bl-sub { font-size: 1.02rem !important; }
-    .bl-row {
-      grid-template-columns: 1fr !important;
-      gap: 0.7rem !important;
-      padding: 1.8rem 0 !important;
+    .blidx-title { font-size: 2.4rem !important; }
+    .blidx-dek { font-size: 1rem; }
+    .blidx-item__link {
+      grid-template-columns: 1fr;
+      gap: 0.5rem;
+      padding: 1.4rem 0;
     }
-    .bl-row__meta {
+    .blidx-item__col-l {
       flex-direction: row;
-      flex-wrap: wrap;
-      gap: 0.8rem;
+      align-items: center;
+      gap: 0.9rem;
       padding-top: 0;
     }
-    .bl-row__title { font-size: 1.35rem !important; }
-    .bl-row__excerpt { font-size: 1rem !important; }
+    .blidx-item__title { font-size: 1.25rem !important; }
+    .blidx-item__dek { font-size: 0.98rem; }
   }
 </style>
-
-<script>
-(function() {
-  const filters = document.querySelectorAll('[data-bl-filter]');
-  const entries = document.querySelectorAll('.bl-entry');
-  const empty = document.querySelector('[data-bl-empty]');
-  const countEl = document.querySelector('[data-bl-count]');
-  const totalCount = entries.length;
-  if (!filters.length) return;
-
-  function apply(kind) {
-    let visible = 0;
-    entries.forEach(e => {
-      const show = kind === 'all' || e.dataset.blKind === kind;
-      e.hidden = !show;
-      if (show) visible++;
-    });
-    if (countEl) countEl.textContent = visible + (visible === 1 ? ' entry' : ' entries');
-    if (empty) empty.hidden = visible !== 0;
-  }
-
-  filters.forEach(f => {
-    f.addEventListener('click', () => {
-      filters.forEach(x => x.classList.toggle('is-active', x === f));
-      apply(f.dataset.blFilter);
-    });
-  });
-
-  if (countEl) countEl.textContent = totalCount + (totalCount === 1 ? ' entry' : ' entries');
-})();
-</script>
